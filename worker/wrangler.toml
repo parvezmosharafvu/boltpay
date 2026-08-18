@@ -1,0 +1,11 @@
+name = "boltpay-og-preview"
+main = "og-preview-worker.js"
+compatibility_date = "2025-01-01"
+
+[[routes]]
+pattern = "boltpay.io/u/*"
+zone_name = "boltpay.io"
+
+# Note: if you deploy via the Cloudflare dashboard (Quick Edit) instead
+# of wrangler CLI, add this route manually under
+# Worker → Settings → Triggers → Add route, using the same pattern/zone.

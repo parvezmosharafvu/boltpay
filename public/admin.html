@@ -1,0 +1,410 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Boltpay — Admin</title>
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;600;700&family=JetBrains+Mono:wght@400;600;700&display=swap" rel="stylesheet">
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script src="config.js"></script>
+<style>
+:root{
+  --bg:#141022; --panel:#1D1830; --panel-hi:#241C3B; --line:rgba(245,243,255,0.08);
+  --text:#F5F3FF; --text-dim:rgba(245,243,255,0.5); --text-faint:rgba(245,243,255,0.28);
+  --amber:#F5A623; --violet:#7C5CFF; --alert:#FF5C7A; --ok:#5CE0A0;
+}
+*{ margin:0; padding:0; box-sizing:border-box; -webkit-tap-highlight-color:transparent; }
+body{ font-family:'Space Grotesk',sans-serif; background:var(--bg); color:var(--text); min-height:100vh; padding-bottom:48px; }
+.mono{ font-family:'JetBrains Mono',monospace; }
+
+/* ===== LOGIN ===== */
+#loginScreen{ min-height:100vh; display:flex; align-items:center; justify-content:center; padding:20px; }
+.login-card{ background:var(--panel); border:1px solid var(--line); border-radius:20px; padding:32px 28px; width:100%; max-width:360px; }
+.login-mark{ width:48px; height:48px; border-radius:13px; background:linear-gradient(155deg,var(--amber),#d98a12);
+  display:flex; align-items:center; justify-content:center; margin-bottom:18px; box-shadow:0 0 18px rgba(245,166,35,0.3); }
+.login-title{ font-size:19px; font-weight:700; margin-bottom:4px; }
+.login-sub{ font-size:12px; color:var(--text-dim); margin-bottom:22px; }
+.field{ margin-bottom:12px; }
+.field label{ font-size:11px; color:var(--text-faint); text-transform:uppercase; letter-spacing:0.6px; font-weight:700; display:block; margin-bottom:6px; }
+.field input{ width:100%; background:var(--panel-hi); border:1px solid var(--line); color:var(--text); padding:12px 13px;
+  border-radius:10px; font-family:'Space Grotesk'; font-size:13px; outline:none; }
+.field input:focus{ border-color:var(--amber); }
+.btn-primary{ background:var(--amber); color:#1A1206; border:none; padding:13px 20px; border-radius:10px;
+  font-weight:700; font-size:13px; cursor:pointer; width:100%; font-family:'Space Grotesk'; margin-top:6px; }
+.login-error{ color:var(--alert); font-size:12px; margin-top:10px; display:none; }
+
+/* ===== APP SHELL ===== */
+#appShell{ display:none; }
+.header{ display:flex; align-items:center; justify-content:space-between; padding:16px 20px;
+  position:sticky; top:0; background:rgba(20,16,34,0.9); backdrop-filter:blur(12px); z-index:100; border-bottom:1px solid var(--line); }
+.header-left{ display:flex; align-items:center; gap:12px; }
+.bolt-mark{ width:36px; height:36px; border-radius:10px; background:linear-gradient(155deg,var(--amber),#d98a12);
+  display:flex; align-items:center; justify-content:center; }
+.header-title{ font-size:15px; font-weight:700; }
+.header-sub{ font-size:11px; color:var(--text-dim); }
+.btn-logout{ background:var(--panel); border:1px solid var(--line); color:var(--text-dim); padding:8px 16px;
+  border-radius:9px; font-size:12px; font-weight:600; cursor:pointer; font-family:'Space Grotesk'; }
+.btn-logout:hover{ background:rgba(255,92,122,0.12); color:var(--alert); border-color:rgba(255,92,122,0.3); }
+
+.content{ padding:20px 18px; max-width:1100px; margin:0 auto; }
+
+.range-bar{ display:flex; gap:8px; margin-bottom:16px; flex-wrap:wrap; }
+.range-btn{ background:var(--panel); border:1px solid var(--line); color:var(--text-dim); padding:8px 14px;
+  border-radius:9px; font-size:12px; font-weight:600; cursor:pointer; font-family:'Space Grotesk'; }
+.range-btn.active{ background:rgba(245,166,35,0.1); border-color:rgba(245,166,35,0.35); color:var(--amber); }
+
+.stats-grid{ display:grid; grid-template-columns:repeat(2,1fr); gap:12px; margin-bottom:18px; }
+@media (min-width:760px){ .stats-grid{ grid-template-columns:repeat(4,1fr); gap:14px; } }
+.stat-card{ background:var(--panel); border:1px solid var(--line); border-radius:16px; padding:16px; }
+.stat-label{ font-size:10px; color:var(--text-faint); text-transform:uppercase; letter-spacing:1px; font-weight:700; margin-bottom:8px; }
+.stat-val{ font-size:20px; font-weight:700; letter-spacing:-0.5px; font-family:'JetBrains Mono'; }
+.stat-val.amber{ color:var(--amber); } .stat-val.violet{ color:var(--violet); }
+.stat-val.ok{ color:var(--ok); } .stat-val.alert{ color:var(--alert); }
+.stat-sub{ font-size:11px; color:var(--text-faint); margin-top:6px; }
+
+.tabs{ display:flex; gap:8px; margin-bottom:14px; overflow-x:auto; }
+.tab-btn{ flex-shrink:0; background:var(--panel); border:1px solid var(--line); color:var(--text-dim); padding:10px 16px;
+  border-radius:11px; font-size:13px; font-weight:600; cursor:pointer; font-family:'Space Grotesk'; }
+.tab-btn.active{ background:rgba(245,166,35,0.1); border-color:rgba(245,166,35,0.35); color:var(--amber); }
+
+.panel{ background:var(--panel); border:1px solid var(--line); border-radius:18px; padding:18px; margin-bottom:16px; }
+.panel-head{ display:flex; justify-content:space-between; align-items:center; margin-bottom:14px; }
+.panel-title{ font-size:14px; font-weight:700; }
+.badge-count{ background:rgba(245,166,35,0.15); color:var(--amber); font-size:11px; font-weight:700; padding:3px 9px; border-radius:999px; }
+
+.wd-row{ background:var(--panel-hi); border:1px solid var(--line); border-radius:14px; padding:14px; margin-bottom:10px; }
+.wd-top{ display:flex; justify-content:space-between; align-items:flex-start; gap:10px; flex-wrap:wrap; }
+.wd-amt{ font-size:19px; font-weight:700; font-family:'JetBrains Mono'; }
+.wd-meta{ font-size:11px; color:var(--text-faint); margin-top:3px; font-family:'JetBrains Mono'; }
+.wd-dest{ font-size:12px; color:var(--text-dim); margin-top:6px; }
+.wd-actions{ display:flex; gap:8px; margin-top:12px; flex-wrap:wrap; }
+.act-btn{ border:none; padding:9px 14px; border-radius:9px; font-size:12px; font-weight:700; cursor:pointer; font-family:'Space Grotesk'; }
+.act-approve{ background:var(--ok); color:#0A1F16; }
+.act-reject{ background:rgba(255,92,122,0.15); color:var(--alert); border:1px solid rgba(255,92,122,0.3); }
+.act-paid{ background:var(--violet); color:#fff; }
+.act-btn:disabled{ opacity:0.5; cursor:not-allowed; }
+
+.badge{ display:inline-flex; align-items:center; gap:5px; padding:4px 9px; border-radius:999px; font-size:10px; font-weight:700; text-transform:uppercase; letter-spacing:.3px; }
+.badge.pending{ background:rgba(245,166,35,0.12); color:var(--amber); }
+.badge.approved{ background:rgba(124,92,255,0.15); color:var(--violet); }
+.badge.paid{ background:rgba(92,224,160,0.12); color:var(--ok); }
+.badge.rejected{ background:rgba(255,92,122,0.12); color:var(--alert); }
+.badge-dot{ width:5px; height:5px; border-radius:50%; background:currentColor; }
+.empty-state{ text-align:center; padding:30px 10px; color:var(--text-faint); font-size:13px; font-weight:500; }
+
+.settings-row{ display:flex; gap:10px; margin-bottom:12px; flex-wrap:wrap; }
+.settings-row .field{ flex:1; min-width:140px; margin-bottom:0; }
+.toast{ position:fixed; bottom:20px; left:50%; transform:translateX(-50%); background:var(--panel-hi);
+  border:1px solid var(--line); padding:12px 20px; border-radius:12px; font-size:13px; font-weight:600; z-index:999; display:none; }
+.toast.ok{ border-color:rgba(92,224,160,0.4); color:var(--ok); }
+.toast.err{ border-color:rgba(255,92,122,0.4); color:var(--alert); }
+</style>
+</head>
+<body>
+
+<div id="loginScreen">
+  <div class="login-card">
+    <div class="login-mark"><svg viewBox="0 0 24 24" width="20" height="20" fill="none"><path d="M13 2L4 14h6l-1 8 9-12h-6l1-8z" fill="#1A1206"/></svg></div>
+    <div class="login-title">Boltpay Admin</div>
+    <div class="login-sub">Restricted access — admin accounts only</div>
+    <div class="field"><label>Email</label><input type="email" id="loginEmail" placeholder="admin@boltpay.io"></div>
+    <div class="field"><label>Password</label><input type="password" id="loginPassword" placeholder="••••••••"></div>
+    <button class="btn-primary" onclick="doLogin()">Secure login</button>
+    <div class="login-error" id="loginError"></div>
+  </div>
+</div>
+
+<div id="appShell">
+  <div class="header">
+    <div class="header-left">
+      <div class="bolt-mark"><svg viewBox="0 0 24 24" width="16" height="16" fill="none"><path d="M13 2L4 14h6l-1 8 9-12h-6l1-8z" fill="#1A1206"/></svg></div>
+      <div><div class="header-title">Boltpay Admin</div><div class="header-sub" id="adminEmail">Loading…</div></div>
+    </div>
+    <button class="btn-logout" onclick="doLogout()">Log out</button>
+  </div>
+
+  <div class="content">
+
+    <div class="range-bar">
+      <button class="range-btn active" data-range="today" onclick="setRange('today', this)">Today</button>
+      <button class="range-btn" data-range="7d" onclick="setRange('7d', this)">7 days</button>
+      <button class="range-btn" data-range="30d" onclick="setRange('30d', this)">30 days</button>
+      <button class="range-btn" data-range="all" onclick="setRange('all', this)">All time</button>
+    </div>
+
+    <div class="stats-grid">
+      <div class="stat-card"><div class="stat-label">Total settled</div><div class="stat-val ok" id="statSettled">$0.00</div><div class="stat-sub" id="statPaymentCount">0 payments</div></div>
+      <div class="stat-card"><div class="stat-label">Admin profit</div><div class="stat-val amber" id="statProfit">$0.00</div><div class="stat-sub">Buy/sell spread</div></div>
+      <div class="stat-card"><div class="stat-label">Total withdrawn</div><div class="stat-val violet" id="statWithdrawn">$0.00</div><div class="stat-sub" id="statActiveCreators">0 active creators</div></div>
+      <div class="stat-card"><div class="stat-label">Pending payouts</div><div class="stat-val alert" id="statPendingAmt">$0.00</div><div class="stat-sub" id="statPendingCount">0 requests</div></div>
+    </div>
+
+    <div class="tabs">
+      <button class="tab-btn active" onclick="switchTab('pending', this)">Pending withdrawals</button>
+      <button class="tab-btn" onclick="switchTab('history', this)">All withdrawals</button>
+      <button class="tab-btn" onclick="switchTab('settings', this)">Settings</button>
+    </div>
+
+    <div id="tab-pending">
+      <div class="panel">
+        <div class="panel-head">
+          <div class="panel-title">Awaiting action</div>
+          <span class="badge-count" id="pendingCount">0</span>
+        </div>
+        <div id="pendingList"><div class="empty-state">No pending withdrawals</div></div>
+      </div>
+    </div>
+
+    <div id="tab-history" style="display:none;">
+      <div class="panel">
+        <div class="panel-head"><div class="panel-title">Withdrawal history</div></div>
+        <div id="historyList"><div class="empty-state">No withdrawal history</div></div>
+      </div>
+    </div>
+
+    <div id="tab-settings" style="display:none;">
+      <div class="panel">
+        <div class="panel-head"><div class="panel-title">Exchange rates</div></div>
+        <div class="settings-row">
+          <div class="field"><label>Buy rate</label><input type="number" step="0.0001" id="buyRate"></div>
+          <div class="field"><label>Sell rate</label><input type="number" step="0.0001" id="sellRate"></div>
+        </div>
+        <button class="btn-primary" style="max-width:200px;" onclick="saveExchangeRates()">Save rates</button>
+      </div>
+      <div class="panel">
+        <div class="panel-head"><div class="panel-title">Auto-withdraw threshold</div></div>
+        <div class="settings-row">
+          <div class="field"><label>Auto-approve under (USD)</label><input type="number" step="1" id="autoThreshold"></div>
+        </div>
+        <button class="btn-primary" style="max-width:200px;" onclick="saveThreshold()">Save threshold</button>
+      </div>
+    </div>
+
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+let currentRange = 'today';
+let pendingWithdrawals = [];
+let allWithdrawals = [];
+
+async function doLogin(){
+  const email = document.getElementById('loginEmail').value.trim();
+  const password = document.getElementById('loginPassword').value;
+  const errEl = document.getElementById('loginError');
+  errEl.style.display = 'none';
+
+  const { data, error } = await window.supabaseClient.auth.signInWithPassword({ email, password });
+  if (error){ errEl.textContent = error.message; errEl.style.display = 'block'; return; }
+
+  const { data: profile } = await window.supabaseClient.from('profiles').select('role').eq('id', data.user.id).single();
+  if (profile?.role !== 'admin'){
+    await window.supabaseClient.auth.signOut();
+    errEl.textContent = 'This account does not have admin access.';
+    errEl.style.display = 'block';
+    return;
+  }
+
+  document.getElementById('adminEmail').textContent = data.user.email;
+  document.getElementById('loginScreen').style.display = 'none';
+  document.getElementById('appShell').style.display = 'block';
+  await refreshAll();
+}
+
+async function doLogout(){
+  await window.supabaseClient.auth.signOut();
+  window.location.reload();
+}
+
+window.addEventListener('DOMContentLoaded', async () => {
+  const { data: { session } } = await window.supabaseClient.auth.getSession();
+  if (session){
+    const { data: profile } = await window.supabaseClient.from('profiles').select('role').eq('id', session.user.id).single();
+    if (profile?.role === 'admin'){
+      document.getElementById('adminEmail').textContent = session.user.email;
+      document.getElementById('loginScreen').style.display = 'none';
+      document.getElementById('appShell').style.display = 'block';
+      await refreshAll();
+    }
+  }
+});
+
+function setRange(range, btn){
+  currentRange = range;
+  document.querySelectorAll('.range-btn').forEach(b => b.classList.remove('active'));
+  btn.classList.add('active');
+  loadStats();
+}
+
+function rangeDates(){
+  const now = new Date();
+  if (currentRange === 'today') return { start: now.toISOString().slice(0,10), end: now.toISOString().slice(0,10) };
+  if (currentRange === '7d'){ const s = new Date(now); s.setDate(s.getDate()-7); return { start: s.toISOString().slice(0,10), end: now.toISOString().slice(0,10) }; }
+  if (currentRange === '30d'){ const s = new Date(now); s.setDate(s.getDate()-30); return { start: s.toISOString().slice(0,10), end: now.toISOString().slice(0,10) }; }
+  return { start: null, end: null };
+}
+
+async function refreshAll(){
+  await Promise.all([loadStats(), loadWithdrawals(), loadSettings()]);
+}
+
+async function loadStats(){
+  const { start, end } = rangeDates();
+  const { data, error } = await window.supabaseClient.rpc('admin_global_stats', { p_start: start, p_end: end });
+  if (error){ showToast('Failed to load stats: ' + error.message, 'err'); return; }
+  const row = Array.isArray(data) ? data[0] : data;
+  if (!row) return;
+  document.getElementById('statSettled').textContent = '$' + parseFloat(row.total_settled).toFixed(2);
+  document.getElementById('statPaymentCount').textContent = row.payment_count + ' payments';
+  document.getElementById('statProfit').textContent = '$' + parseFloat(row.total_admin_profit).toFixed(2);
+  document.getElementById('statWithdrawn').textContent = '$' + parseFloat(row.total_withdrawn).toFixed(2);
+  document.getElementById('statActiveCreators').textContent = row.active_creators + ' active creators';
+  document.getElementById('statPendingAmt').textContent = '$' + parseFloat(row.pending_withdrawals_amount).toFixed(2);
+  document.getElementById('statPendingCount').textContent = row.pending_withdrawals_count + ' requests';
+}
+
+async function loadWithdrawals(){
+  const { data, error } = await window.supabaseClient
+    .from('withdrawals')
+    .select('*, profiles(email, display_name)')
+    .order('requested_at', { ascending: false });
+  if (error){ showToast('Failed to load withdrawals: ' + error.message, 'err'); return; }
+  allWithdrawals = data || [];
+  pendingWithdrawals = allWithdrawals.filter(w => w.status === 'pending' || w.status === 'approved');
+  document.getElementById('pendingCount').textContent = pendingWithdrawals.length;
+  renderPending();
+  renderHistory();
+}
+
+function fmtDate(str){ return new Date(str).toLocaleString([], { month:'short', day:'numeric', hour:'2-digit', minute:'2-digit' }); }
+
+function renderPending(){
+  const c = document.getElementById('pendingList');
+  if (!pendingWithdrawals.length){ c.innerHTML = '<div class="empty-state">No pending withdrawals</div>'; return; }
+  c.innerHTML = pendingWithdrawals.map(w => {
+    const who = w.profiles?.display_name || w.profiles?.email || w.user_id;
+    let actions = '';
+    if (w.status === 'pending'){
+      actions = `
+        <button class="act-btn act-approve" onclick="handleAction('${w.id}','${w.method === 'binance' ? 'approve' : 'approve_manual_route'}',this)">
+          ${w.method === 'binance' ? 'Approve & pay' : 'Approve'}
+        </button>
+        <button class="act-btn act-reject" onclick="handleAction('${w.id}','reject',this)">Reject</button>`;
+    } else if (w.status === 'approved'){
+      if (w.method === 'binance'){
+        actions = `<button class="act-btn act-approve" onclick="handleAction('${w.id}','approve',this)">Send payout</button>`;
+      } else {
+        actions = `<button class="act-btn act-paid" onclick="handleAction('${w.id}','mark_paid_manual',this)">Mark paid (sent manually)</button>`;
+      }
+    }
+    return `
+      <div class="wd-row">
+        <div class="wd-top">
+          <div>
+            <div class="wd-amt">$${parseFloat(w.amount_requested).toFixed(2)} <span style="font-size:12px;color:var(--text-faint);">→ $${parseFloat(w.amount_after_fee).toFixed(2)} after fee</span></div>
+            <div class="wd-meta">${who} · ${w.method.toUpperCase()} · ${fmtDate(w.requested_at)}</div>
+            <div class="wd-dest">${w.destination}</div>
+          </div>
+          <span class="badge ${w.status}"><span class="badge-dot"></span>${w.status}</span>
+        </div>
+        <div class="wd-actions">${actions}</div>
+      </div>`;
+  }).join('');
+}
+
+function renderHistory(){
+  const c = document.getElementById('historyList');
+  if (!allWithdrawals.length){ c.innerHTML = '<div class="empty-state">No withdrawal history</div>'; return; }
+  c.innerHTML = allWithdrawals.map(w => {
+    const who = w.profiles?.display_name || w.profiles?.email || w.user_id;
+    return `
+      <div class="wd-row">
+        <div class="wd-top">
+          <div>
+            <div class="wd-amt">$${parseFloat(w.amount_after_fee).toFixed(2)}</div>
+            <div class="wd-meta">${who} · ${w.method.toUpperCase()} · ${fmtDate(w.requested_at)}</div>
+          </div>
+          <span class="badge ${w.status}"><span class="badge-dot"></span>${w.status}</span>
+        </div>
+      </div>`;
+  }).join('');
+}
+
+async function handleAction(withdrawalId, action, btnEl){
+  btnEl.disabled = true;
+  btnEl.textContent = 'Working…';
+
+  const { data: { session } } = await window.supabaseClient.auth.getSession();
+  const resolvedAction = action === 'approve_manual_route' ? 'reject_note' : action; // placeholder guard, replaced below
+
+  // "pending" bkash/nagad first step is just an approval flag, no payout yet —
+  // reuse the same edge function with action='approve' but it should NOT trigger BTCPay
+  // for non-binance methods. We branch client-side instead: for non-binance pending
+  // withdrawals, do a direct RLS-permitted status update to 'approved'.
+  if (action === 'approve_manual_route'){
+    const { error } = await window.supabaseClient
+      .from('withdrawals').update({ status: 'approved' }).eq('id', withdrawalId);
+    if (error){ showToast('Failed: ' + error.message, 'err'); btnEl.disabled = false; }
+    else { showToast('Marked approved — pay manually, then click Mark paid', 'ok'); await loadWithdrawals(); }
+    return;
+  }
+
+  try {
+    const res = await fetch(`${window.SUPABASE_URL}/functions/v1/process-withdrawal`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${session.access_token}` },
+      body: JSON.stringify({ withdrawalId, action }),
+    });
+    const result = await res.json();
+    if (!res.ok){ showToast('Failed: ' + (result.error || result.detail || 'Unknown error'), 'err'); btnEl.disabled = false; return; }
+    showToast('Success — status: ' + result.status, 'ok');
+    await Promise.all([loadWithdrawals(), loadStats()]);
+  } catch (e){
+    showToast('Network error: ' + e.message, 'err');
+    btnEl.disabled = false;
+  }
+}
+
+async function loadSettings(){
+  const { data } = await window.supabaseClient.from('app_settings').select('key, value');
+  const rates = data?.find(s => s.key === 'exchange_rates')?.value;
+  const threshold = data?.find(s => s.key === 'auto_withdraw_threshold')?.value;
+  if (rates){ document.getElementById('buyRate').value = rates.buy_rate; document.getElementById('sellRate').value = rates.sell_rate; }
+  if (threshold){ document.getElementById('autoThreshold').value = threshold.amount; }
+}
+
+async function saveExchangeRates(){
+  const buy_rate = parseFloat(document.getElementById('buyRate').value);
+  const sell_rate = parseFloat(document.getElementById('sellRate').value);
+  const { error } = await window.supabaseClient.from('app_settings')
+    .upsert({ key: 'exchange_rates', value: { buy_rate, sell_rate }, updated_at: new Date().toISOString() });
+  showToast(error ? 'Failed: ' + error.message : 'Exchange rates saved', error ? 'err' : 'ok');
+}
+
+async function saveThreshold(){
+  const amount = parseFloat(document.getElementById('autoThreshold').value);
+  const { error } = await window.supabaseClient.from('app_settings')
+    .upsert({ key: 'auto_withdraw_threshold', value: { amount }, updated_at: new Date().toISOString() });
+  showToast(error ? 'Failed: ' + error.message : 'Threshold saved', error ? 'err' : 'ok');
+}
+
+function switchTab(tab, btn){
+  document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+  btn.classList.add('active');
+  document.getElementById('tab-pending').style.display = tab === 'pending' ? 'block' : 'none';
+  document.getElementById('tab-history').style.display = tab === 'history' ? 'block' : 'none';
+  document.getElementById('tab-settings').style.display = tab === 'settings' ? 'block' : 'none';
+}
+
+function showToast(msg, type){
+  const t = document.getElementById('toast');
+  t.textContent = msg;
+  t.className = 'toast ' + type;
+  t.style.display = 'block';
+  setTimeout(() => { t.style.display = 'none'; }, 3500);
+}
+</script>
+</body>
+</html>

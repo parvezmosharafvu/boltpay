@@ -1,0 +1,252 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Boltpay — Dashboard</title>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;600;700&display=swap" rel="stylesheet">
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script src="config.js"></script>
+<style>
+:root{
+  --bg:#F5F6F8; --panel:#FFFFFF; --line:#E7E9EE;
+  --ink:#1C1D21; --ink-dim:#6B6E78; --ink-faint:#A0A3AC;
+  --blue:#3E6AE1; --blue-soft:#EBF0FD;
+  --amber:#C98A1F; --amber-soft:#FBF1E0;
+  --coral:#E1523E; --coral-soft:#FBE9E6;
+}
+*{ margin:0; padding:0; box-sizing:border-box; -webkit-tap-highlight-color:transparent; }
+body{ font-family:'Inter',sans-serif; background:var(--bg); color:var(--ink); min-height:100vh; padding-bottom:48px; }
+.mono{ font-family:'JetBrains Mono',monospace; }
+
+.header{ display:flex; align-items:center; justify-content:space-between; padding:18px 22px;
+  position:sticky; top:0; background:rgba(245,246,248,0.92); backdrop-filter:blur(10px);
+  z-index:100; border-bottom:1px solid var(--line); }
+.header-left{ display:flex; align-items:center; gap:12px; }
+.bolt-mark{ width:36px; height:36px; border-radius:10px; background:var(--blue);
+  display:flex; align-items:center; justify-content:center; }
+.bolt-mark svg{ width:16px; height:16px; }
+.header-title{ font-size:16px; font-weight:800; letter-spacing:-0.3px; }
+.header-sub{ font-size:11px; color:var(--ink-dim); font-weight:500; margin-top:1px; }
+.btn-logout{ background:var(--panel); border:1px solid var(--line); color:var(--ink-dim);
+  padding:8px 16px; border-radius:10px; font-size:12px; font-weight:600; cursor:pointer; font-family:'Inter'; }
+.btn-logout:hover{ background:var(--coral-soft); color:var(--coral); border-color:rgba(225,82,62,0.25); }
+
+.content{ padding:22px 18px; max-width:1080px; margin:0 auto; }
+
+/* Signature: layered soft-shadow balance card with horizontal spark bar */
+.balance-card{ background:var(--panel); border:1px solid var(--line); border-radius:20px;
+  padding:26px 24px; margin-bottom:18px; box-shadow:0 1px 2px rgba(28,29,33,0.03), 0 16px 32px -20px rgba(28,29,33,0.10); }
+.balance-label{ font-size:11px; letter-spacing:0.6px; text-transform:uppercase; color:var(--ink-faint); font-weight:700; margin-bottom:10px; }
+.balance-amount{ font-size:36px; font-weight:800; letter-spacing:-1.2px; }
+.balance-sub{ font-size:12px; color:var(--ink-dim); margin-top:5px; }
+.spark-bar{ height:8px; border-radius:99px; background:var(--bg); margin-top:18px; overflow:hidden; }
+.spark-fill{ height:100%; border-radius:99px; background:linear-gradient(90deg,var(--blue),#6C8FEB); width:0%; transition:width .6s ease; }
+.balance-badges{ display:flex; gap:8px; margin-top:14px; flex-wrap:wrap; }
+.chip{ font-size:11px; font-weight:600; padding:6px 12px; border-radius:999px; background:var(--blue-soft); color:var(--blue); }
+.chip b{ font-family:'JetBrains Mono'; font-weight:600; }
+
+.stats-grid{ display:grid; grid-template-columns:repeat(2,1fr); gap:12px; margin-bottom:18px; }
+@media (min-width:760px){ .stats-grid{ grid-template-columns:repeat(4,1fr); gap:14px; } }
+.stat-card{ background:var(--panel); border:1px solid var(--line); border-radius:16px; padding:16px;
+  box-shadow:0 1px 2px rgba(28,29,33,0.03); }
+.stat-label{ font-size:10px; color:var(--ink-faint); text-transform:uppercase; letter-spacing:1px; font-weight:700; margin-bottom:8px; }
+.stat-val{ font-family:'JetBrains Mono'; font-size:20px; font-weight:700; letter-spacing:-0.5px; color:var(--ink); }
+.stat-val.blue{ color:var(--blue); }
+.stat-val.amber{ color:var(--amber); }
+.stat-val.coral{ color:var(--coral); }
+.stat-sub{ font-size:11px; color:var(--ink-faint); margin-top:6px; }
+
+.tabs{ display:flex; gap:6px; margin-bottom:14px; background:var(--panel); border:1px solid var(--line); border-radius:12px; padding:4px; }
+.tab-btn{ flex:1; background:transparent; border:none; color:var(--ink-dim); padding:9px; border-radius:9px;
+  font-size:13px; font-weight:600; cursor:pointer; font-family:'Inter'; }
+.tab-btn.active{ background:var(--blue-soft); color:var(--blue); }
+
+.panel{ background:var(--panel); border:1px solid var(--line); border-radius:18px; padding:18px; margin-bottom:16px; box-shadow:0 1px 2px rgba(28,29,33,0.03); }
+.panel-head{ display:flex; justify-content:space-between; align-items:center; margin-bottom:14px; }
+.panel-title{ font-size:14px; font-weight:700; }
+
+.link-scroll{ display:flex; gap:10px; overflow-x:auto; padding-bottom:6px; }
+.link-scroll::-webkit-scrollbar{ height:0; display:none; }
+.link-card{ background:var(--bg); border:1px solid var(--line); padding:13px 14px; border-radius:13px;
+  min-width:230px; flex-shrink:0; display:flex; justify-content:space-between; align-items:center; gap:10px; }
+.link-name{ font-size:11px; font-weight:700; color:var(--blue); text-transform:uppercase; letter-spacing:0.4px; margin-bottom:3px; }
+.link-slug{ font-size:12px; font-family:'JetBrains Mono'; color:var(--ink-dim); }
+.btn-copy{ background:var(--panel); border:1px solid var(--line); color:var(--ink); width:30px; height:30px; border-radius:9px; cursor:pointer; flex-shrink:0; }
+
+.w-row{ display:flex; gap:10px; margin-bottom:10px; flex-wrap:wrap; }
+.w-input, .w-select{ background:var(--bg); border:1px solid var(--line); color:var(--ink); padding:12px 13px;
+  border-radius:10px; font-family:'Inter'; font-size:13px; outline:none; flex:1; min-width:140px; }
+.w-input:focus, .w-select:focus{ border-color:var(--blue); }
+.btn-primary{ background:var(--blue); color:#fff; border:none; padding:12px 20px; border-radius:10px;
+  font-weight:700; font-size:13px; cursor:pointer; font-family:'Inter'; }
+.hint{ font-size:11px; color:var(--ink-faint); margin-top:6px; }
+
+.item-row{ padding:14px; border-radius:13px; background:var(--bg); border:1px solid var(--line); margin-bottom:9px; }
+.item-top{ display:flex; justify-content:space-between; align-items:flex-start; gap:8px; }
+.item-amt{ font-family:'JetBrains Mono'; font-size:18px; font-weight:700; }
+.item-meta{ font-size:11px; color:var(--ink-faint); margin-top:3px; font-family:'JetBrains Mono'; }
+.badge{ display:inline-flex; align-items:center; gap:5px; padding:4px 9px; border-radius:999px; font-size:10px; font-weight:700; text-transform:uppercase; letter-spacing:.3px; }
+.badge.settled, .badge.paid, .badge.approved{ background:var(--blue-soft); color:var(--blue); }
+.badge.new, .badge.pending{ background:var(--amber-soft); color:var(--amber); }
+.badge.expired, .badge.rejected{ background:var(--coral-soft); color:var(--coral); }
+.badge-dot{ width:5px; height:5px; border-radius:50%; background:currentColor; }
+.empty-state{ text-align:center; padding:34px 10px; color:var(--ink-faint); font-size:13px; font-weight:500; }
+</style>
+</head>
+<body>
+
+<div class="header">
+  <div class="header-left">
+    <div class="bolt-mark"><svg viewBox="0 0 24 24" fill="none"><path d="M13 2L4 14h6l-1 8 9-12h-6l1-8z" fill="#fff"/></svg></div>
+    <div><div class="header-title">Boltpay</div><div class="header-sub" id="userEmailDisplay">Loading…</div></div>
+  </div>
+  <button class="btn-logout" onclick="logoutUser()">Log out</button>
+</div>
+
+<div class="content">
+
+  <div class="balance-card">
+    <div class="balance-label">Available balance</div>
+    <div class="balance-amount mono" id="statAvailable">$0.00</div>
+    <div class="balance-sub">Withdraw anytime — fee applied at request time</div>
+    <div class="spark-bar"><div class="spark-fill" id="sparkFill"></div></div>
+    <div class="balance-badges">
+      <div class="chip">Total earned&nbsp;<b id="statEarned">$0.00</b></div>
+      <div class="chip">Payments&nbsp;<b id="statEarnedCount">0</b></div>
+    </div>
+  </div>
+
+  <div class="stats-grid">
+    <div class="stat-card"><div class="stat-label">Pending payments</div><div class="stat-val amber" id="statPending">0</div><div class="stat-sub">Awaiting confirmation</div></div>
+    <div class="stat-card"><div class="stat-label">Withdrawn total</div><div class="stat-val blue" id="statWithdrawn">$0.00</div><div class="stat-sub" id="statWdCount">0 pending requests</div></div>
+    <div class="stat-card"><div class="stat-label">Active links</div><div class="stat-val" id="statLinks">0</div><div class="stat-sub">Payment slugs live</div></div>
+    <div class="stat-card"><div class="stat-label">Withdrawal fee</div><div class="stat-val coral" id="statFee">—%</div><div class="stat-sub">Deducted automatically</div></div>
+  </div>
+
+  <div class="panel">
+    <div class="panel-head"><div class="panel-title">Your payment links</div></div>
+    <div class="link-scroll" id="linksScroll"></div>
+  </div>
+
+  <div class="tabs">
+    <button class="tab-btn active" onclick="switchTab('income', this)">Income</button>
+    <button class="tab-btn" onclick="switchTab('cashout', this)">Cash out</button>
+  </div>
+
+  <div id="tab-income">
+    <div class="panel"><div class="panel-head"><div class="panel-title">Payment history</div></div>
+      <div id="paymentsList"><div class="empty-state">No payment records found</div></div>
+    </div>
+  </div>
+
+  <div id="tab-cashout" style="display:none;">
+    <div class="panel">
+      <div class="panel-head"><div class="panel-title">Request a withdrawal</div></div>
+      <div class="w-row">
+        <input type="number" class="w-input mono" id="wdAmount" placeholder="Amount (USD)">
+        <select class="w-select" id="wdMethod"><option value="bkash">bKash</option><option value="nagad">Nagad</option><option value="binance">Binance</option></select>
+      </div>
+      <div class="w-row"><input type="text" class="w-input" id="wdNote" placeholder="Account number / Binance ID"></div>
+      <button class="btn-primary" onclick="submitWithdrawal()" style="width:100%;">Submit request</button>
+      <div class="hint">Requests above the auto-approve threshold need a one-time admin confirmation.</div>
+    </div>
+    <div class="panel"><div class="panel-head"><div class="panel-title">Withdrawal history</div></div>
+      <div id="withdrawalsList"><div class="empty-state">No withdrawal history</div></div>
+    </div>
+  </div>
+
+</div>
+
+<script>
+let currentUser=null, allPayments=[], allWithdrawals=[], allLinks=[];
+async function init(){
+  const { data:{ user } } = await window.supabaseClient.auth.getUser();
+  if(!user){ window.location.href='login.html'; return; }
+  currentUser=user;
+  document.getElementById('userEmailDisplay').textContent=user.email;
+  await Promise.all([fetchProfile(), fetchLinks(), fetchPayments(), fetchWithdrawals()]);
+}
+async function fetchProfile(){
+  const { data } = await window.supabaseClient.from('profiles').select('withdrawal_fee_percent').eq('id',currentUser.id).single();
+  document.getElementById('statFee').textContent=(data?.withdrawal_fee_percent??3)+'%';
+}
+async function fetchLinks(){
+  const { data } = await window.supabaseClient.from('payment_links').select('*').eq('user_id',currentUser.id);
+  allLinks=data||[];
+  document.getElementById('statLinks').textContent=allLinks.filter(l=>l.is_active).length;
+  const scroll=document.getElementById('linksScroll');
+  if(!allLinks.length){ scroll.innerHTML='<div class="empty-state" style="min-width:100%;">No payment links yet</div>'; return; }
+  scroll.innerHTML=allLinks.map(l=>`
+    <div class="link-card"><div><div class="link-name">${l.display_name||l.slug}</div><div class="link-slug">boltpay.io/${l.slug}</div></div>
+    <button class="btn-copy" onclick="copyToClipboard('https://boltpay.io/${l.slug}')">⧉</button></div>`).join('');
+}
+async function fetchPayments(){
+  const { data } = await window.supabaseClient.from('payments').select('*').eq('user_id',currentUser.id).order('created_at',{ascending:false});
+  allPayments=data||[]; computeStats(); renderPayments();
+}
+async function fetchWithdrawals(){
+  const { data } = await window.supabaseClient.from('withdrawals').select('*').eq('user_id',currentUser.id).order('requested_at',{ascending:false});
+  allWithdrawals=data||[]; computeStats(); renderWithdrawals();
+}
+function computeStats(){
+  const settled=allPayments.filter(p=>p.status==='settled');
+  const earned=settled.reduce((s,p)=>s+parseFloat(p.amount_settled||0),0);
+  const pendingCount=allPayments.filter(p=>p.status==='new'||p.status==='pending').length;
+  const withdrawn=allWithdrawals.filter(w=>w.status==='paid').reduce((s,w)=>s+parseFloat(w.amount_after_fee||0),0);
+  const queued=allWithdrawals.filter(w=>w.status!=='rejected').reduce((s,w)=>s+parseFloat(w.amount_requested||0),0);
+  const available=Math.max(0, earned-queued);
+  const wdPending=allWithdrawals.filter(w=>w.status==='pending').length;
+  document.getElementById('statEarned').textContent='$'+earned.toFixed(2);
+  document.getElementById('statEarnedCount').textContent=settled.length;
+  document.getElementById('statPending').textContent=pendingCount;
+  document.getElementById('statAvailable').textContent='$'+available.toFixed(2);
+  document.getElementById('statWithdrawn').textContent='$'+withdrawn.toFixed(2);
+  document.getElementById('statWdCount').textContent=wdPending+' pending requests';
+  const pct = earned>0 ? Math.min(1, (available/earned)*100) : 0;
+  document.getElementById('sparkFill').style.width = pct+'%';
+}
+function fmtDate(str){ return new Date(str).toLocaleString([],{month:'short',day:'numeric',hour:'2-digit',minute:'2-digit'}); }
+function renderPayments(){
+  const c=document.getElementById('paymentsList');
+  if(!allPayments.length){ c.innerHTML='<div class="empty-state">No payment records found</div>'; return; }
+  c.innerHTML=allPayments.map(p=>`
+    <div class="item-row"><div class="item-top">
+      <div><div class="item-amt">$${parseFloat(p.amount_requested||0).toFixed(2)}</div>
+      <div class="item-meta">${(p.method||'lightning').toUpperCase()} · ${fmtDate(p.created_at)}</div></div>
+      <span class="badge ${p.status}"><span class="badge-dot"></span>${p.status}</span>
+    </div></div>`).join('');
+}
+function renderWithdrawals(){
+  const c=document.getElementById('withdrawalsList');
+  if(!allWithdrawals.length){ c.innerHTML='<div class="empty-state">No withdrawal history</div>'; return; }
+  c.innerHTML=allWithdrawals.map(w=>`
+    <div class="item-row"><div class="item-top">
+      <div><div class="item-amt" style="color:var(--coral);">-$${parseFloat(w.amount_after_fee||0).toFixed(2)}</div>
+      <div class="item-meta">${w.method.toUpperCase()} · ${fmtDate(w.requested_at)}</div></div>
+      <span class="badge ${w.status}"><span class="badge-dot"></span>${w.status}</span>
+    </div></div>`).join('');
+}
+async function submitWithdrawal(){
+  const amt=parseFloat(document.getElementById('wdAmount').value);
+  const method=document.getElementById('wdMethod').value;
+  const note=document.getElementById('wdNote').value.trim();
+  const available=parseFloat(document.getElementById('statAvailable').textContent.replace('$',''));
+  if(!amt||amt<5) return alert('Minimum withdrawal is $5');
+  if(!note) return alert('Please enter your account details');
+  if(amt>available) return alert('Insufficient balance');
+  const { error } = await window.supabaseClient.rpc('request_withdrawal',{ p_amount:amt, p_method:method, p_destination:note });
+  if(error) alert('Error: '+error.message);
+  else{ alert('Withdrawal request submitted'); document.getElementById('wdAmount').value=''; document.getElementById('wdNote').value=''; fetchWithdrawals(); }
+}
+function switchTab(tab,btn){
+  document.querySelectorAll('.tab-btn').forEach(b=>b.classList.remove('active')); btn.classList.add('active');
+  document.getElementById('tab-income').style.display=tab==='income'?'block':'none';
+  document.getElementById('tab-cashout').style.display=tab==='cashout'?'block':'none';
+}
+function copyToClipboard(text){ navigator.clipboard.writeText(text); alert('Link copied'); }
+async function logoutUser(){ await window.supabaseClient.auth.signOut(); window.location.href='login.html'; }
+init();
+</script>
+</body>
+</html>

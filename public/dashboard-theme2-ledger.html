@@ -1,0 +1,269 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Boltpay — Dashboard</title>
+<link href="https://fonts.googleapis.com/css2?family=Zilla+Slab:wght@500;600;700&family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;600;700&display=swap" rel="stylesheet">
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script src="config.js"></script>
+<style>
+:root{
+  --bg:#EEF1EC; --paper:#FBFBF9; --line:#D9DCD3;
+  --ink:#16221C; --ink-dim:#5C6A60; --ink-faint:#93A096;
+  --emerald:#0B6E4F; --emerald-soft:#E4F0E9;
+  --rust:#B8542E; --rust-soft:#F6E7DF;
+  --gold:#A9791E; --gold-soft:#F3ECD9;
+}
+*{ margin:0; padding:0; box-sizing:border-box; -webkit-tap-highlight-color:transparent; }
+body{ font-family:'Inter',sans-serif; background:var(--bg); color:var(--ink); min-height:100vh; padding-bottom:48px; }
+.slab{ font-family:'Zilla Slab',serif; }
+.mono{ font-family:'JetBrains Mono',monospace; }
+
+.header{ display:flex; align-items:center; justify-content:space-between; padding:18px 22px;
+  position:sticky; top:0; background:rgba(238,241,236,0.92); backdrop-filter:blur(10px);
+  z-index:100; border-bottom:1px solid var(--line); }
+.header-left{ display:flex; align-items:center; gap:12px; }
+.bolt-mark{ width:36px; height:36px; border-radius:8px; background:var(--emerald);
+  display:flex; align-items:center; justify-content:center; }
+.bolt-mark svg{ width:16px; height:16px; }
+.header-title{ font-family:'Zilla Slab'; font-size:17px; font-weight:700; letter-spacing:-0.2px; }
+.header-sub{ font-size:11px; color:var(--ink-dim); font-weight:500; margin-top:1px; }
+.btn-logout{ background:var(--paper); border:1px solid var(--line); color:var(--ink-dim);
+  padding:8px 16px; border-radius:8px; font-size:12px; font-weight:600; cursor:pointer; font-family:'Inter'; }
+.btn-logout:hover{ background:var(--rust-soft); color:var(--rust); border-color:rgba(184,84,46,0.3); }
+
+.content{ padding:22px 18px; max-width:1080px; margin:0 auto; }
+
+/* Signature: ledger sheet with a wax-stamp balance seal */
+.ledger-card{ background:var(--paper); border:1px solid var(--line); border-radius:6px;
+  padding:26px 24px; margin-bottom:18px; position:relative;
+  box-shadow:0 1px 0 var(--line), 0 12px 24px -18px rgba(22,34,28,0.25); }
+.ledger-row{ display:flex; align-items:center; gap:24px; flex-wrap:wrap; }
+.stamp{ width:84px; height:84px; border-radius:50%; border:2.5px solid var(--emerald); flex-shrink:0;
+  display:flex; flex-direction:column; align-items:center; justify-content:center; transform:rotate(-6deg); }
+.stamp-label{ font-family:'Zilla Slab'; font-size:9px; letter-spacing:1.5px; text-transform:uppercase; color:var(--emerald); font-weight:700; }
+.stamp-check{ font-size:22px; color:var(--emerald); margin-top:2px; }
+.ledger-label{ font-size:10px; letter-spacing:1.4px; text-transform:uppercase; color:var(--ink-faint); font-weight:700; margin-bottom:8px; }
+.ledger-amount{ font-family:'Zilla Slab'; font-size:34px; font-weight:700; letter-spacing:-1px; color:var(--ink); }
+.ledger-sub{ font-size:12px; color:var(--ink-dim); margin-top:4px; }
+.ledger-badges{ display:flex; gap:8px; margin-top:14px; flex-wrap:wrap; }
+.chip{ font-size:11px; font-weight:600; padding:6px 11px; border-radius:5px; background:var(--emerald-soft); color:var(--emerald); }
+.chip b{ font-family:'JetBrains Mono'; font-weight:600; }
+
+.stats-grid{ display:grid; grid-template-columns:repeat(2,1fr); gap:12px; margin-bottom:18px; }
+@media (min-width:760px){ .stats-grid{ grid-template-columns:repeat(4,1fr); gap:14px; } }
+.stat-card{ background:var(--paper); border:1px solid var(--line); border-radius:6px; padding:16px; }
+.stat-label{ font-size:10px; color:var(--ink-faint); text-transform:uppercase; letter-spacing:1px; font-weight:700; margin-bottom:8px; }
+.stat-val{ font-family:'JetBrains Mono'; font-size:20px; font-weight:700; letter-spacing:-0.5px; }
+.stat-val.emerald{ color:var(--emerald); }
+.stat-val.gold{ color:var(--gold); }
+.stat-val.rust{ color:var(--rust); }
+.stat-sub{ font-size:11px; color:var(--ink-faint); margin-top:6px; }
+
+.tabs{ display:flex; gap:1px; margin-bottom:14px; background:var(--line); border-radius:6px; overflow:hidden; border:1px solid var(--line); }
+.tab-btn{ flex:1; background:var(--paper); border:none; color:var(--ink-dim); padding:11px; font-size:13px;
+  font-weight:600; cursor:pointer; font-family:'Inter'; }
+.tab-btn.active{ background:var(--emerald-soft); color:var(--emerald); }
+
+.panel{ background:var(--paper); border:1px solid var(--line); border-radius:6px; padding:18px; margin-bottom:16px; }
+.panel-head{ display:flex; justify-content:space-between; align-items:center; margin-bottom:14px; padding-bottom:12px; border-bottom:1px solid var(--line); }
+.panel-title{ font-family:'Zilla Slab'; font-size:15px; font-weight:700; }
+
+.link-scroll{ display:flex; gap:10px; overflow-x:auto; padding-bottom:6px; }
+.link-scroll::-webkit-scrollbar{ height:0; display:none; }
+.link-card{ background:var(--bg); border:1px solid var(--line); padding:13px 14px; border-radius:5px;
+  min-width:230px; flex-shrink:0; display:flex; justify-content:space-between; align-items:center; gap:10px; }
+.link-name{ font-family:'Zilla Slab'; font-size:12px; font-weight:700; color:var(--emerald); text-transform:uppercase; letter-spacing:0.3px; margin-bottom:3px; }
+.link-slug{ font-size:12px; font-family:'JetBrains Mono'; color:var(--ink-dim); }
+.btn-copy{ background:var(--paper); border:1px solid var(--line); color:var(--ink); width:30px; height:30px; border-radius:5px; cursor:pointer; flex-shrink:0; }
+
+.w-row{ display:flex; gap:10px; margin-bottom:10px; flex-wrap:wrap; }
+.w-input, .w-select{ background:var(--bg); border:1px solid var(--line); color:var(--ink); padding:12px 13px;
+  border-radius:5px; font-family:'Inter'; font-size:13px; outline:none; flex:1; min-width:140px; }
+.w-input:focus, .w-select:focus{ border-color:var(--emerald); }
+.btn-primary{ background:var(--emerald); color:#fff; border:none; padding:12px 20px; border-radius:5px;
+  font-weight:700; font-size:13px; cursor:pointer; font-family:'Inter'; }
+.hint{ font-size:11px; color:var(--ink-faint); margin-top:6px; }
+
+.item-row{ padding:14px; border-radius:5px; background:var(--bg); border:1px solid var(--line); margin-bottom:9px; }
+.item-top{ display:flex; justify-content:space-between; align-items:flex-start; gap:8px; }
+.item-amt{ font-family:'JetBrains Mono'; font-size:18px; font-weight:700; }
+.item-meta{ font-size:11px; color:var(--ink-faint); margin-top:3px; font-family:'JetBrains Mono'; }
+.badge{ display:inline-flex; align-items:center; gap:5px; padding:4px 9px; border-radius:4px; font-size:10px; font-weight:700; text-transform:uppercase; letter-spacing:.3px; }
+.badge.settled, .badge.paid, .badge.approved{ background:var(--emerald-soft); color:var(--emerald); }
+.badge.new, .badge.pending{ background:var(--gold-soft); color:var(--gold); }
+.badge.expired, .badge.rejected{ background:var(--rust-soft); color:var(--rust); }
+.badge-dot{ width:5px; height:5px; border-radius:50%; background:currentColor; }
+.empty-state{ text-align:center; padding:34px 10px; color:var(--ink-faint); font-size:13px; font-weight:500; }
+</style>
+</head>
+<body>
+
+<div class="header">
+  <div class="header-left">
+    <div class="bolt-mark"><svg viewBox="0 0 24 24" fill="none"><path d="M13 2L4 14h6l-1 8 9-12h-6l1-8z" fill="#fff"/></svg></div>
+    <div>
+      <div class="header-title">Boltpay</div>
+      <div class="header-sub" id="userEmailDisplay">Loading…</div>
+    </div>
+  </div>
+  <button class="btn-logout" onclick="logoutUser()">Log out</button>
+</div>
+
+<div class="content">
+
+  <div class="ledger-card">
+    <div class="ledger-row">
+      <div class="stamp">
+        <div class="stamp-label">Verified</div>
+        <div class="stamp-check">✓</div>
+      </div>
+      <div style="flex:1; min-width:180px;">
+        <div class="ledger-label">Available balance</div>
+        <div class="ledger-amount mono" id="statAvailable">$0.00</div>
+        <div class="ledger-sub">Ready to withdraw — fee applied at request time</div>
+        <div class="ledger-badges">
+          <div class="chip">Total earned&nbsp;<b id="statEarned">$0.00</b></div>
+          <div class="chip">Payments&nbsp;<b id="statEarnedCount">0</b></div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="stats-grid">
+    <div class="stat-card"><div class="stat-label">Pending payments</div><div class="stat-val gold" id="statPending">0</div><div class="stat-sub">Awaiting confirmation</div></div>
+    <div class="stat-card"><div class="stat-label">Withdrawn total</div><div class="stat-val emerald" id="statWithdrawn">$0.00</div><div class="stat-sub" id="statWdCount">0 pending requests</div></div>
+    <div class="stat-card"><div class="stat-label">Active links</div><div class="stat-val" id="statLinks">0</div><div class="stat-sub">Payment slugs live</div></div>
+    <div class="stat-card"><div class="stat-label">Withdrawal fee</div><div class="stat-val rust" id="statFee">—%</div><div class="stat-sub">Deducted automatically</div></div>
+  </div>
+
+  <div class="panel">
+    <div class="panel-head"><div class="panel-title">Your payment links</div></div>
+    <div class="link-scroll" id="linksScroll"></div>
+  </div>
+
+  <div class="tabs">
+    <button class="tab-btn active" onclick="switchTab('income', this)">Income</button>
+    <button class="tab-btn" onclick="switchTab('cashout', this)">Cash out</button>
+  </div>
+
+  <div id="tab-income">
+    <div class="panel">
+      <div class="panel-head"><div class="panel-title">Payment history</div></div>
+      <div id="paymentsList"><div class="empty-state">No payment records found</div></div>
+    </div>
+  </div>
+
+  <div id="tab-cashout" style="display:none;">
+    <div class="panel">
+      <div class="panel-head"><div class="panel-title">Request a withdrawal</div></div>
+      <div class="w-row">
+        <input type="number" class="w-input mono" id="wdAmount" placeholder="Amount (USD)">
+        <select class="w-select" id="wdMethod"><option value="bkash">bKash</option><option value="nagad">Nagad</option><option value="binance">Binance</option></select>
+      </div>
+      <div class="w-row"><input type="text" class="w-input" id="wdNote" placeholder="Account number / Binance ID"></div>
+      <button class="btn-primary" onclick="submitWithdrawal()" style="width:100%;">Submit request</button>
+      <div class="hint">Requests above the auto-approve threshold need a one-time admin confirmation.</div>
+    </div>
+    <div class="panel">
+      <div class="panel-head"><div class="panel-title">Withdrawal history</div></div>
+      <div id="withdrawalsList"><div class="empty-state">No withdrawal history</div></div>
+    </div>
+  </div>
+
+</div>
+
+<script>
+let currentUser=null, allPayments=[], allWithdrawals=[], allLinks=[];
+
+async function init(){
+  const { data:{ user } } = await window.supabaseClient.auth.getUser();
+  if(!user){ window.location.href='login.html'; return; }
+  currentUser=user;
+  document.getElementById('userEmailDisplay').textContent=user.email;
+  await Promise.all([fetchProfile(), fetchLinks(), fetchPayments(), fetchWithdrawals()]);
+}
+async function fetchProfile(){
+  const { data } = await window.supabaseClient.from('profiles').select('withdrawal_fee_percent').eq('id',currentUser.id).single();
+  document.getElementById('statFee').textContent=(data?.withdrawal_fee_percent??3)+'%';
+}
+async function fetchLinks(){
+  const { data } = await window.supabaseClient.from('payment_links').select('*').eq('user_id',currentUser.id);
+  allLinks=data||[];
+  document.getElementById('statLinks').textContent=allLinks.filter(l=>l.is_active).length;
+  const scroll=document.getElementById('linksScroll');
+  if(!allLinks.length){ scroll.innerHTML='<div class="empty-state" style="min-width:100%;">No payment links yet</div>'; return; }
+  scroll.innerHTML=allLinks.map(l=>`
+    <div class="link-card">
+      <div><div class="link-name">${l.display_name||l.slug}</div><div class="link-slug">boltpay.io/${l.slug}</div></div>
+      <button class="btn-copy" onclick="copyToClipboard('https://boltpay.io/${l.slug}')">⧉</button>
+    </div>`).join('');
+}
+async function fetchPayments(){
+  const { data } = await window.supabaseClient.from('payments').select('*').eq('user_id',currentUser.id).order('created_at',{ascending:false});
+  allPayments=data||[]; computeStats(); renderPayments();
+}
+async function fetchWithdrawals(){
+  const { data } = await window.supabaseClient.from('withdrawals').select('*').eq('user_id',currentUser.id).order('requested_at',{ascending:false});
+  allWithdrawals=data||[]; computeStats(); renderWithdrawals();
+}
+function computeStats(){
+  const settled=allPayments.filter(p=>p.status==='settled');
+  const earned=settled.reduce((s,p)=>s+parseFloat(p.amount_settled||0),0);
+  const pendingCount=allPayments.filter(p=>p.status==='new'||p.status==='pending').length;
+  const withdrawn=allWithdrawals.filter(w=>w.status==='paid').reduce((s,w)=>s+parseFloat(w.amount_after_fee||0),0);
+  const queued=allWithdrawals.filter(w=>w.status!=='rejected').reduce((s,w)=>s+parseFloat(w.amount_requested||0),0);
+  const available=Math.max(0, earned-queued);
+  const wdPending=allWithdrawals.filter(w=>w.status==='pending').length;
+  document.getElementById('statEarned').textContent='$'+earned.toFixed(2);
+  document.getElementById('statEarnedCount').textContent=settled.length;
+  document.getElementById('statPending').textContent=pendingCount;
+  document.getElementById('statAvailable').textContent='$'+available.toFixed(2);
+  document.getElementById('statWithdrawn').textContent='$'+withdrawn.toFixed(2);
+  document.getElementById('statWdCount').textContent=wdPending+' pending requests';
+}
+function fmtDate(str){ return new Date(str).toLocaleString([],{month:'short',day:'numeric',hour:'2-digit',minute:'2-digit'}); }
+function renderPayments(){
+  const c=document.getElementById('paymentsList');
+  if(!allPayments.length){ c.innerHTML='<div class="empty-state">No payment records found</div>'; return; }
+  c.innerHTML=allPayments.map(p=>`
+    <div class="item-row"><div class="item-top">
+      <div><div class="item-amt">$${parseFloat(p.amount_requested||0).toFixed(2)}</div>
+      <div class="item-meta">${(p.method||'lightning').toUpperCase()} · ${fmtDate(p.created_at)}</div></div>
+      <span class="badge ${p.status}"><span class="badge-dot"></span>${p.status}</span>
+    </div></div>`).join('');
+}
+function renderWithdrawals(){
+  const c=document.getElementById('withdrawalsList');
+  if(!allWithdrawals.length){ c.innerHTML='<div class="empty-state">No withdrawal history</div>'; return; }
+  c.innerHTML=allWithdrawals.map(w=>`
+    <div class="item-row"><div class="item-top">
+      <div><div class="item-amt" style="color:var(--rust);">-$${parseFloat(w.amount_after_fee||0).toFixed(2)}</div>
+      <div class="item-meta">${w.method.toUpperCase()} · ${fmtDate(w.requested_at)}</div></div>
+      <span class="badge ${w.status}"><span class="badge-dot"></span>${w.status}</span>
+    </div></div>`).join('');
+}
+async function submitWithdrawal(){
+  const amt=parseFloat(document.getElementById('wdAmount').value);
+  const method=document.getElementById('wdMethod').value;
+  const note=document.getElementById('wdNote').value.trim();
+  const available=parseFloat(document.getElementById('statAvailable').textContent.replace('$',''));
+  if(!amt||amt<5) return alert('Minimum withdrawal is $5');
+  if(!note) return alert('Please enter your account details');
+  if(amt>available) return alert('Insufficient balance');
+  const { error } = await window.supabaseClient.rpc('request_withdrawal',{ p_amount:amt, p_method:method, p_destination:note });
+  if(error) alert('Error: '+error.message);
+  else{ alert('Withdrawal request submitted'); document.getElementById('wdAmount').value=''; document.getElementById('wdNote').value=''; fetchWithdrawals(); }
+}
+function switchTab(tab,btn){
+  document.querySelectorAll('.tab-btn').forEach(b=>b.classList.remove('active')); btn.classList.add('active');
+  document.getElementById('tab-income').style.display=tab==='income'?'block':'none';
+  document.getElementById('tab-cashout').style.display=tab==='cashout'?'block':'none';
+}
+function copyToClipboard(text){ navigator.clipboard.writeText(text); alert('Link copied'); }
+async function logoutUser(){ await window.supabaseClient.auth.signOut(); window.location.href='login.html'; }
+init();
+</script>
+</body>
+</html>

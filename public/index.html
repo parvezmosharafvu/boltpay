@@ -1,0 +1,103 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Boltpay — Lightning payments for creators</title>
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;600;700;800&family=JetBrains+Mono:wght@400;600&display=swap" rel="stylesheet">
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script src="config.js"></script>
+<style>
+:root{
+  --bg:#141022; --panel:#1D1830; --panel-hi:#241C3B; --line:rgba(245,243,255,0.08);
+  --text:#F5F3FF; --text-dim:rgba(245,243,255,0.55); --text-faint:rgba(245,243,255,0.3);
+  --amber:#F5A623; --violet:#7C5CFF;
+}
+*{ margin:0; padding:0; box-sizing:border-box; -webkit-tap-highlight-color:transparent; }
+body{ font-family:'Space Grotesk',sans-serif; background:var(--bg); color:var(--text); min-height:100vh;
+  background-image: radial-gradient(circle at 15% 0%, rgba(124,92,255,0.12), transparent 45%),
+                     radial-gradient(circle at 85% 15%, rgba(245,166,35,0.10), transparent 42%); }
+.mono{ font-family:'JetBrains Mono',monospace; }
+
+.nav{ display:flex; align-items:center; justify-content:space-between; padding:20px 24px; max-width:1000px; margin:0 auto; }
+.nav-left{ display:flex; align-items:center; gap:10px; }
+.mark{ width:34px; height:34px; border-radius:10px; background:linear-gradient(155deg,var(--amber),#d98a12);
+  display:flex; align-items:center; justify-content:center; }
+.nav-title{ font-size:15px; font-weight:700; }
+.nav-link{ color:var(--text-dim); text-decoration:none; font-size:13px; font-weight:600; padding:9px 16px;
+  border-radius:9px; border:1px solid var(--line); }
+.nav-link.primary{ background:var(--amber); color:#1A1206; border-color:transparent; }
+
+.hero{ max-width:640px; margin:0 auto; padding:60px 24px 40px; text-align:center; }
+.eyebrow{ font-size:11px; letter-spacing:1.4px; text-transform:uppercase; color:var(--amber); font-weight:700; margin-bottom:16px; }
+h1{ font-size:34px; font-weight:800; line-height:1.15; letter-spacing:-0.8px; margin-bottom:16px; }
+h1 span{ color:var(--amber); }
+.hero-sub{ font-size:15px; color:var(--text-dim); line-height:1.6; margin-bottom:28px; }
+.hero-actions{ display:flex; gap:12px; justify-content:center; flex-wrap:wrap; }
+.btn-cta{ padding:13px 24px; border-radius:11px; font-weight:700; font-size:14px; text-decoration:none; font-family:'Space Grotesk'; }
+.btn-cta.primary{ background:var(--amber); color:#1A1206; }
+.btn-cta.secondary{ background:var(--panel); color:var(--text); border:1px solid var(--line); }
+
+.features{ max-width:920px; margin:0 auto; padding:20px 24px 70px; display:grid; grid-template-columns:1fr; gap:14px; }
+@media (min-width:720px){ .features{ grid-template-columns:repeat(3,1fr); } }
+.feature{ background:var(--panel); border:1px solid var(--line); border-radius:16px; padding:20px; }
+.feature-num{ font-family:'JetBrains Mono'; font-size:11px; color:var(--violet); font-weight:600; margin-bottom:10px; }
+.feature h3{ font-size:15px; font-weight:700; margin-bottom:8px; }
+.feature p{ font-size:13px; color:var(--text-dim); line-height:1.55; }
+
+.foot{ text-align:center; padding:20px 24px 40px; font-size:12px; color:var(--text-faint); }
+</style>
+</head>
+<body>
+
+<div class="nav">
+  <div class="nav-left">
+    <div class="mark"><svg viewBox="0 0 24 24" width="16" height="16" fill="none"><path d="M13 2L4 14h6l-1 8 9-12h-6l1-8z" fill="#1A1206"/></svg></div>
+    <div class="nav-title">Boltpay</div>
+  </div>
+  <div style="display:flex; gap:8px;">
+    <a href="login.html" class="nav-link">Log in</a>
+    <a href="register.html" class="nav-link primary">Get started</a>
+  </div>
+</div>
+
+<div class="hero">
+  <div class="eyebrow">Lightning Network payments</div>
+  <h1>Get paid instantly, <span>keep more of it</span></h1>
+  <p class="hero-sub">Boltpay gives freelancers and shop owners a payment link customers can pay in seconds — low fees, fast settlement, withdraw to bKash, Nagad, or Binance whenever you're ready.</p>
+  <div class="hero-actions">
+    <a href="register.html" class="btn-cta primary">Create your link</a>
+    <a href="login.html" class="btn-cta secondary">I already have an account</a>
+  </div>
+</div>
+
+<div class="features">
+  <div class="feature">
+    <div class="feature-num mono">01</div>
+    <h3>One link, unlimited invoices</h3>
+    <p>Generate a personal payment link and share it anywhere. Every payment becomes a tracked invoice in your dashboard.</p>
+  </div>
+  <div class="feature">
+    <div class="feature-num mono">02</div>
+    <h3>Settles in seconds</h3>
+    <p>Lightning Network confirms almost instantly — no waiting on block confirmations to know a payment landed.</p>
+  </div>
+  <div class="feature">
+    <div class="feature-num mono">03</div>
+    <h3>Cash out your way</h3>
+    <p>Request a withdrawal to bKash, Nagad, or Binance. Small amounts auto-approve; larger ones get a quick review.</p>
+  </div>
+</div>
+
+<div class="foot">© Boltpay</div>
+
+<script>
+window.addEventListener('DOMContentLoaded', async () => {
+  const { data: { session } } = await window.supabaseClient.auth.getSession();
+  if (!session) return;
+  const { data: profile } = await window.supabaseClient.from('profiles').select('role').eq('id', session.user.id).single();
+  window.location.href = profile?.role === 'admin' ? 'admin.html' : 'dashboard.html';
+});
+</script>
+</body>
+</html>

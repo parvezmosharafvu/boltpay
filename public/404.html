@@ -1,0 +1,37 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Boltpay — Page not found</title>
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;600;700;800&family=JetBrains+Mono:wght@600&display=swap" rel="stylesheet">
+<style>
+:root{
+  --bg:#141022; --panel:#1D1830; --line:rgba(245,243,255,0.08);
+  --text:#F5F3FF; --text-dim:rgba(245,243,255,0.5); --amber:#F5A623;
+}
+*{ margin:0; padding:0; box-sizing:border-box; }
+body{ font-family:'Space Grotesk',sans-serif; background:var(--bg); color:var(--text);
+  min-height:100vh; display:flex; align-items:center; justify-content:center; padding:20px; text-align:center;
+  background-image: radial-gradient(circle at 20% 10%, rgba(124,92,255,0.12), transparent 45%),
+                     radial-gradient(circle at 80% 20%, rgba(245,166,35,0.10), transparent 42%); }
+.wrap{ max-width:360px; }
+.mark{ width:52px; height:52px; border-radius:14px; background:linear-gradient(155deg,var(--amber),#d98a12);
+  display:flex; align-items:center; justify-content:center; margin:0 auto 24px; box-shadow:0 0 20px rgba(245,166,35,0.3); }
+.code{ font-family:'JetBrains Mono'; font-size:13px; color:var(--amber); font-weight:600; letter-spacing:1px; margin-bottom:8px; }
+h1{ font-size:22px; font-weight:800; margin-bottom:10px; letter-spacing:-0.4px; }
+p{ font-size:14px; color:var(--text-dim); line-height:1.6; margin-bottom:26px; }
+.btn{ display:inline-block; background:var(--amber); color:#1A1206; text-decoration:none; padding:12px 22px;
+  border-radius:10px; font-weight:700; font-size:14px; }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <div class="mark"><svg viewBox="0 0 24 24" width="22" height="22" fill="none"><path d="M13 2L4 14h6l-1 8 9-12h-6l1-8z" fill="#1A1206"/></svg></div>
+  <div class="code">404</div>
+  <h1>This link doesn't lead anywhere</h1>
+  <p>The page you're looking for doesn't exist, or the payment link may have been deactivated by its creator.</p>
+  <a href="/" class="btn">Back to Boltpay</a>
+</div>
+</body>
+</html>
