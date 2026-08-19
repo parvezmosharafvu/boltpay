@@ -196,8 +196,8 @@ async function fetchLinks(){
   if(!allLinks.length){ scroll.innerHTML='<div class="empty-state" style="min-width:100%;">No payment links yet</div>'; return; }
   scroll.innerHTML=allLinks.map(l=>`
     <div class="link-card">
-      <div><div class="link-name">${l.display_name||l.slug}</div><div class="link-slug">boltpay.io/${l.slug}</div></div>
-      <button class="btn-copy" onclick="copyToClipboard('https://boltpay.io/${l.slug}')">⧉</button>
+      <div><div class="link-name">${l.display_name||l.slug}</div><div class="link-slug">pay.parvez.website/${l.slug}</div></div>
+      <button class="btn-copy" onclick="copyToClipboard('https://pay.parvez.website/${l.slug}')">⧉</button>
     </div>`).join('');
 }
 async function fetchPayments(){

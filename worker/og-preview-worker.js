@@ -1,7 +1,7 @@
 /**
  * Boltpay — OG Preview Worker
  *
- * Purpose: when a payment link like boltpay.io/u/emily is shared on
+ * Purpose: when a payment link like pay.parvez.website/u/emily is shared on
  * WhatsApp/Telegram/Facebook, their crawler bots request the URL to build
  * a link preview. Bots don't run JavaScript, so a plain SPA/static page
  * would show no title/image. This worker intercepts ONLY /u/:slug requests,
@@ -20,7 +20,7 @@
 const SUPABASE_URL = "https://ohwzmxwsphsfzudmlins.supabase.co";
 const SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...."; // same anon key used client-side
 const SITE_NAME = "Boltpay";
-const DEFAULT_OG_IMAGE = "https://boltpay.io/assets/og-default.png";
+const DEFAULT_OG_IMAGE = "https://pay.parvez.website/assets/og-default.png";
 
 // Known crawler user-agent substrings (case-insensitive match)
 const CRAWLER_PATTERNS = [
@@ -71,7 +71,7 @@ function renderOgHtml(slug, data) {
     ? `Pay ${escapeHtml(data.display_name)} — ${SITE_NAME}`
     : `${SITE_NAME} — Lightning payment`;
   const description = `Send a secure Lightning payment via ${SITE_NAME}. Fast, low-fee, no account required to pay.`;
-  const url = `https://boltpay.io/u/${encodeURIComponent(slug)}`;
+  const url = `https://pay.parvez.website/u/${encodeURIComponent(slug)}`;
 
   return `<!DOCTYPE html>
 <html lang="en">
