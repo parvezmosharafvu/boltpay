@@ -80,20 +80,32 @@ serve(async (req) => {
     return json({ error: "Payment provider unreachable" }, 502);
   }
 
-  // Fetch the Lightning payment method to get the actual bolt11 payment request
+  // Fetch the Lightning payment method to get the actual bolt11 payment request.
+  // BTCPay sometimes takes a moment to generate the Lightning invoice after
+  // the parent invoice is created, so retry a few times with a short delay.
   let payCode = "";
-  try {
-    const pmRes = await fetch(
-      `${BTCPAY_URL}/api/v1/stores/${BTCPAY_STORE_ID}/invoices/${btcpayInvoice.id}/payment-methods`,
-      { headers: { "Authorization": `token ${BTCPAY_API_KEY}` } }
-    );
-    if (pmRes.ok) {
-      const methods = await pmRes.json();
-      const ln = methods.find((m: any) => m.paymentMethod === "BTC-LightningNetwork");
-      payCode = ln?.destination || "";
+  for (let attempt = 0; attempt < 3; attempt++) {
+    if (attempt > 0) {
+      await new Promise((resolve) => setTimeout(resolve, 800));
     }
-  } catch (e) {
-    console.error("Failed to fetch payment methods:", e);
+    try {
+      const pmRes = await fetch(
+        `${BTCPAY_URL}/api/v1/stores/${BTCPAY_STORE_ID}/invoices/${btcpayInvoice.id}/payment-methods`,
+        { headers: { "Authorization": `token ${BTCPAY_API_KEY}` } }
+      );
+      if (pmRes.ok) {
+        const methods = await pmRes.json();
+        const ln = methods.find((m: any) => m.paymentMethod === "BTC-LightningNetwork");
+        if (ln?.destination) {
+          payCode = ln.destination;
+          break;
+        }
+      } else {
+        console.error("payment-methods fetch not ok, attempt", attempt, pmRes.status);
+      }
+    } catch (e) {
+      console.error("Failed to fetch payment methods, attempt", attempt, e);
+    }
   }
 
   const expiresAt = new Date(Date.now() + expirationMinutes * 60 * 1000).toISOString();
@@ -133,4 +145,3 @@ function json(body: unknown, status = 200) {
     headers: { "Content-Type": "application/json", ...CORS_HEADERS },
   });
 }
-
