@@ -38,7 +38,6 @@ serve(async (req) => {
     return json({ error: "Amount must be between $1 and $5000" }, 400);
   }
 
-  // Look up the payment link — must exist and be active
   const { data: link, error: linkErr } = await supabaseAdmin
     .from("payment_links")
     .select("id, user_id, slug, display_name, is_active")
@@ -48,7 +47,6 @@ serve(async (req) => {
   if (linkErr || !link) return json({ error: "Payment link not found" }, 404);
   if (!link.is_active) return json({ error: "This payment link is no longer active" }, 410);
 
-  // Create the BTCPay invoice
   const expirationMinutes = 60;
   let btcpayInvoice: any;
   try {
@@ -63,8 +61,8 @@ serve(async (req) => {
         currency: "USD",
         checkout: {
           expirationMinutes,
-          paymentMethods: ["BTC-LightningNetwork"],
-          defaultPaymentMethod: "BTC-LightningNetwork",
+          paymentMethods: ["BTC-LN"],
+          defaultPaymentMethod: "BTC-LN",
         },
       }),
     });
@@ -80,9 +78,10 @@ serve(async (req) => {
     return json({ error: "Payment provider unreachable" }, 502);
   }
 
-  // Fetch the Lightning payment method to get the actual bolt11 payment request.
-  // BTCPay sometimes takes a moment to generate the Lightning invoice after
-  // the parent invoice is created, so retry a few times with a short delay.
+  // Match by destination pattern (lnbc/lntb prefix), not by method name —
+  // BTCPay's method identifier for Lightning varies by server version/config
+  // (e.g. "BTC-LN" vs "BTC-LightningNetwork"), but a bolt11 string is always
+  // reliably identifiable by its prefix.
   let payCode = "";
   for (let attempt = 0; attempt < 3; attempt++) {
     if (attempt > 0) {
@@ -95,11 +94,14 @@ serve(async (req) => {
       );
       if (pmRes.ok) {
         const methods = await pmRes.json();
-        const ln = methods.find((m: any) => m.paymentMethod === "BTC-LightningNetwork");
-        if (ln?.destination) {
-          payCode = ln.destination;
-          break;
+        for (const pm of methods) {
+          const dest = (pm.destination || "").trim();
+          if (dest.startsWith("lnbc") || dest.startsWith("lntb")) {
+            payCode = dest;
+            break;
+          }
         }
+        if (payCode) break;
       } else {
         console.error("payment-methods fetch not ok, attempt", attempt, pmRes.status);
       }
@@ -110,7 +112,6 @@ serve(async (req) => {
 
   const expiresAt = new Date(Date.now() + expirationMinutes * 60 * 1000).toISOString();
 
-  // Record the payment in our own database
   const { data: payment, error: insertErr } = await supabaseAdmin
     .from("payments")
     .insert({
