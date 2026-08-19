@@ -18,7 +18,7 @@
  */
 
 const SUPABASE_URL = "https://ohwzmxwsphsfzudmlins.supabase.co";
-const SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...."; // same anon key used client-side
+const SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im9od3pteHdzcGhzZnp1ZG1saW5zIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODYwMzE0MTksImV4cCI6MjEwMTYwNzQxOX0.frTl7qnDx7SK2IBMQxFCkKGe5u4XAQweRxPhQ-2r8rU"; // same anon key used client-side
 const SITE_NAME = "Boltpay";
 const DEFAULT_OG_IMAGE = "https://pay.parvez.website/assets/og-default.png";
 
