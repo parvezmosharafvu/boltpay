@@ -63,6 +63,64 @@ serve(async (req) => {
   const url = new URL(req.url);
 
   // ==========================================
+  // ROUTE: /admin-mark-settled  (admin-only)
+  // Manually mark a stuck/missed payment as settled AND run the
+  // exact same auto-withdrawal queueing logic as a real webhook would.
+  // This is for support cases where BTCPay settled a payment but the
+  // webhook was missed — it must behave identically to the real flow,
+  // not just flip a status flag.
+  // ==========================================
+  if (url.pathname.endsWith("/admin-mark-settled")) {
+    const auth = await verifyAdminCaller(req);
+    if (!auth.ok) {
+      return new Response("Unauthorized — admin session required", { status: 401 });
+    }
+
+    try {
+      const { paymentId, amountSettled } = await req.json();
+
+      const { data: payment, error: fetchErr } = await supabaseAdmin
+        .from("payments")
+        .select("id, user_id, amount_requested, status")
+        .eq("id", paymentId)
+        .single();
+
+      if (fetchErr || !payment) {
+        return new Response("Payment not found", { status: 404 });
+      }
+      if (payment.status === "settled") {
+        return new Response("Already settled", { status: 409 });
+      }
+
+      const finalAmount = amountSettled ?? payment.amount_requested;
+
+      const { error: updateErr } = await supabaseAdmin
+        .from("payments")
+        .update({
+          status: "settled",
+          settled_at: new Date().toISOString(),
+          amount_settled: finalAmount,
+        })
+        .eq("id", payment.id);
+
+      if (updateErr) {
+        return new Response(JSON.stringify({ error: "Failed to update payment" }), { status: 500 });
+      }
+
+      // Same real auto-withdrawal logic as the actual BTCPay webhook uses —
+      // no separate/duplicate code path, no shortcuts.
+      await maybeQueueAutoWithdrawal(payment.user_id);
+
+      return new Response(JSON.stringify({ status: "settled" }), {
+        status: 200, headers: { "Content-Type": "application/json" },
+      });
+    } catch (e) {
+      console.error("admin-mark-settled error:", e);
+      return new Response("Error marking payment settled", { status: 500 });
+    }
+  }
+
+  // ==========================================
   // ROUTE: /process-withdrawal  (admin-only)
   // ==========================================
   if (url.pathname.endsWith("/process-withdrawal")) {
@@ -251,7 +309,7 @@ async function maybeQueueAutoWithdrawal(userId: string) {
 
   const { data: profile } = await supabaseAdmin
     .from("profiles")
-    .select("withdrawal_fee_percent")
+    .select("withdrawal_fee_percent, default_withdrawal_method, default_withdrawal_destination")
     .eq("id", userId)
     .single();
 
@@ -280,6 +338,7 @@ async function maybeQueueAutoWithdrawal(userId: string) {
     fee_percent: feePercent,
     amount_after_fee: amountAfterFee,
     status: autoApprove ? "approved" : "pending",
-    method: "pending_selection",
+    method: profile?.default_withdrawal_method || "pending_selection",
+    destination: profile?.default_withdrawal_destination || "Not set — creator must update",
   });
 }
