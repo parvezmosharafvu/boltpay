@@ -61,7 +61,12 @@ body{ font-family:'Space Grotesk',sans-serif; background:var(--bg); color:var(--
 </div>
 
 <script>
-const slug = window.location.pathname.split('/u/')[1]?.replace(/\/$/, '');
+const RESERVED = ['login.html','register.html','dashboard.html','admin.html','index.html','404.html','config.js','u.html','invoice-boltpay-v2.html','dashboard-theme2-ledger.html','dashboard-theme3-aurora.html','dashboard-theme4-calm.html','_redirects'];
+const slug = window.location.pathname.replace(/^\/|\/$/g, '');
+
+if (!slug || RESERVED.includes(slug)){
+  window.location.href = '/404.html';
+}
 
 window.addEventListener('DOMContentLoaded', async () => {
   if (!slug){ window.location.href = '/404.html'; return; }
