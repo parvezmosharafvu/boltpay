@@ -1,3 +1,187 @@
+!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Boltpay — Pay</title>
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;600;700;800&family=JetBrains+Mono:wght@600&display=swap" rel="stylesheet">
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script src="config.js"></script>
+<style>
+:root{
+  --bg:#141022; --panel:#1D1830; --panel-hi:#241C3B; --line:rgba(245,243,255,0.08);
+  --text:#F5F3FF; --text-dim:rgba(245,243,255,0.5); --text-faint:rgba(245,243,255,0.28);
+  --amber:#F5A623; --violet:#7C5CFF; --alert:#FF5C7A;
+}
+*{ margin:0; padding:0; box-sizing:border-box; -webkit-tap-highlight-color:transparent; }
+body{ font-family:'Space Grotesk',sans-serif; background:var(--bg); color:var(--text);
+  min-height:100vh; display:flex; align-items:center; justify-content:center; padding:20px;
+  background-image: radial-gradient(circle at 15% 0%, rgba(124,92,255,0.10), transparent 45%),
+                     radial-gradient(circle at 85% 10%, rgba(245,166,35,0.08), transparent 40%); }
+.mono{ font-family:'JetBrains Mono',monospace; }
+
+/* ===== Payment card (shown when slug matches) ===== */
+.card{ background:var(--panel); border:1px solid var(--line); border-radius:20px; padding:32px 26px; width:100%; max-width:380px; text-align:center; display:none; }
+.mark{ width:52px; height:52px; border-radius:14px; background:linear-gradient(155deg,var(--amber),#d98a12);
+  display:flex; align-items:center; justify-content:center; margin:0 auto 18px; box-shadow:0 0 20px rgba(245,166,35,0.3); }
+.creator-name{ font-size:19px; font-weight:700; margin-bottom:4px; }
+.creator-sub{ font-size:12px; color:var(--text-dim); margin-bottom:26px; }
+
+.amount-row{ display:flex; align-items:center; justify-content:center; gap:4px; margin-bottom:20px; }
+.currency{ font-size:28px; font-weight:700; color:var(--text-faint); }
+.amount-input{ background:transparent; border:none; color:var(--text); font-family:'JetBrains Mono';
+  font-size:40px; font-weight:700; width:180px; text-align:center; outline:none; }
+.amount-hint{ font-size:11px; color:var(--text-faint); margin-bottom:22px; }
+
+.btn-pay{ width:100%; background:var(--amber); color:#1A1206; border:none; padding:15px; border-radius:12px;
+  font-weight:700; font-size:15px; cursor:pointer; font-family:'Space Grotesk'; }
+.btn-pay:disabled{ opacity:0.55; cursor:not-allowed; }
+
+.status-msg{ font-size:12px; margin-top:14px; display:none; line-height:1.5; }
+.status-msg.err{ color:var(--alert); }
+.status-msg.loading{ color:var(--text-dim); }
+
+/* ===== Real not-found card (shown when slug does NOT match) ===== */
+.wrap{ max-width:360px; text-align:center; display:none; }
+.code{ font-family:'JetBrains Mono'; font-size:13px; color:var(--amber); font-weight:600; letter-spacing:1px; margin-bottom:8px; }
+h1{ font-size:22px; font-weight:800; margin-bottom:10px; letter-spacing:-0.4px; }
+p{ font-size:14px; color:var(--text-dim); line-height:1.6; margin-bottom:26px; }
+.btn{ display:inline-block; background:var(--amber); color:#1A1206; text-decoration:none; padding:12px 22px;
+  border-radius:10px; font-weight:700; font-size:14px; }
+
+/* ===== Loading state (shown first, briefly) ===== */
+.loading-wrap{ display:flex; flex-direction:column; align-items:center; gap:14px; }
+.spinner{ width:32px; height:32px; border-radius:50%; border:3px solid var(--line); border-top-color:var(--amber);
+  animation:spin 0.8s linear infinite; }
+@keyframes spin{ to{ transform:rotate(360deg); } }
+</style>
+</head>
+<body>
+
+<div class="loading-wrap" id="loadingState">
+  <div class="spinner"></div>
+</div>
+
+<div class="card" id="paymentCard">
+  <div class="mark"><svg viewBox="0 0 24 24" width="22" height="22" fill="none"><path d="M13 2L4 14h6l-1 8 9-12h-6l1-8z" fill="#1A1206"/></svg></div>
+  <div class="creator-name" id="creatorName">Loading…</div>
+  <div class="creator-sub">Pay via Lightning Network — fast and secure</div>
+
+  <div class="amount-row">
+    <span class="currency">$</span>
+    <input type="number" class="amount-input mono" id="amountInput" placeholder="0" inputmode="decimal">
+  </div>
+  <div class="amount-hint">Minimum $1, maximum $5,000</div>
+
+  <button class="btn-pay" id="payBtn" onclick="startPayment()">Continue to pay</button>
+  <div class="status-msg" id="statusMsg"></div>
+</div>
+
+<div class="wrap" id="notFoundCard">
+  <div class="mark" style="margin:0 auto 24px;"><svg viewBox="0 0 24 24" width="22" height="22" fill="none"><path d="M13 2L4 14h6l-1 8 9-12h-6l1-8z" fill="#1A1206"/></svg></div>
+  <div class="code">404</div>
+  <h1>This link doesn't lead anywhere</h1>
+  <p>The page you're looking for doesn't exist, or the payment link may have been deactivated by its creator.</p>
+  <a href="/" class="btn">Back to Boltpay</a>
+</div>
+
+<script>
+const RESERVED = ['login.html','register.html','dashboard.html','admin.html','index.html','404.html',
+  'config.js','u.html','invoice-boltpay-v2.html','dashboard-theme1-voltmeter.html',
+  'dashboard-theme2-ledger.html','dashboard-theme3-aurora.html','dashboard-theme4-calm.html',
+  '_redirects','assets','login','register','dashboard','admin','index','config','u',
+  'invoice-boltpay-v2','dashboard-theme1-voltmeter','dashboard-theme2-ledger',
+  'dashboard-theme3-aurora','dashboard-theme4-calm'];
+
+const slug = window.location.pathname.replace(/^\/|\/$/g, '');
+
+function showNotFound(){
+  document.getElementById('loadingState').style.display = 'none';
+  document.getElementById('paymentCard').style.display = 'none';
+  document.getElementById('notFoundCard').style.display = 'block';
+}
+
+function showPaymentCard(){
+  document.getElementById('loadingState').style.display = 'none';
+  document.getElementById('notFoundCard').style.display = 'none';
+  document.getElementById('paymentCard').style.display = 'block';
+}
+
+window.addEventListener('DOMContentLoaded', async () => {
+  if (!slug || RESERVED.includes(slug) || slug.includes('.') || slug.includes('/')){
+    showNotFound();
+    return;
+  }
+
+  try {
+    const { data, error } = await window.supabaseClient.rpc('get_link_preview', { p_slug: slug });
+    const row = Array.isArray(data) ? data[0] : data;
+
+    if (error || !row || row.is_active === false){
+      showNotFound();
+      return;
+    }
+
+    document.getElementById('creatorName').textContent = row.display_name ? `Pay ${row.display_name}` : 'Boltpay';
+    showPaymentCard();
+  } catch (e){
+    showNotFound();
+  }
+});
+
+async function startPayment(){
+  const amount = parseFloat(document.getElementById('amountInput').value);
+  const statusEl = document.getElementById('statusMsg');
+  const btn = document.getElementById('payBtn');
+
+  statusEl.style.display = 'none';
+
+  if (!amount || amount < 1 || amount > 5000){
+    statusEl.textContent = 'Enter an amount between $1 and $5,000.';
+    statusEl.className = 'status-msg err';
+    statusEl.style.display = 'block';
+    return;
+  }
+
+  btn.disabled = true;
+  btn.textContent = 'Creating invoice…';
+  statusEl.textContent = 'Setting up your Lightning invoice — this takes a few seconds.';
+  statusEl.className = 'status-msg loading';
+  statusEl.style.display = 'block';
+
+  try {
+    const res = await fetch(`${window.SUPABASE_URL}/functions/v1/create-invoice`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ slug, amount }),
+    });
+    const result = await res.json();
+
+    if (!res.ok){
+      statusEl.textContent = result.error || 'Something went wrong. Please try again.';
+      statusEl.className = 'status-msg err';
+      btn.disabled = false;
+      btn.textContent = 'Continue to pay';
+      return;
+    }
+
+    sessionStorage.setItem('invoiceSession', JSON.stringify({
+      paymentId: result.paymentId,
+      payCode: result.payCode,
+      payUrl: result.payUrl,
+      returnUrl: window.location.pathname,
+    }));
+    window.location.href = '/invoice-boltpay-v2.html';
+  } catch (e){
+    statusEl.textContent = 'Network error — please check your connection and try again.';
+    statusEl.className = 'status-msg err';
+    btn.disabled = false;
+    btn.textContent = 'Continue to pay';
+  }
+}
+</script>
+</body>
+</html>
 <!DOCTYPE html>
 <html lang="en">
 <head>
