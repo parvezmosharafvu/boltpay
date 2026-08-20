@@ -73,6 +73,11 @@ body{ font-family:'Space Grotesk',sans-serif; background:var(--bg); color:var(--
 .live-dot{ display:inline-block; width:7px; height:7px; border-radius:50%; background:var(--ok); margin-right:6px; animation:pulseLive 1.4s infinite; }
 @keyframes pulseLive{ 0%,100%{ opacity:0.4; } 50%{ opacity:1; } }
 
+.w-row{ display:flex; gap:10px; }
+.w-input{ background:var(--panel-hi); border:1px solid var(--line); color:var(--text); padding:11px 13px;
+  border-radius:10px; font-family:'Space Grotesk'; font-size:13px; outline:none; flex:1; }
+.w-input:focus{ border-color:var(--amber); }
+
 .wd-row{ background:var(--panel-hi); border:1px solid var(--line); border-radius:14px; padding:14px; margin-bottom:10px; }
 .wd-top{ display:flex; justify-content:space-between; align-items:flex-start; gap:10px; flex-wrap:wrap; }
 .wd-amt{ font-size:19px; font-weight:700; font-family:'JetBrains Mono'; }
@@ -83,7 +88,6 @@ body{ font-family:'Space Grotesk',sans-serif; background:var(--bg); color:var(--
 .act-approve{ background:var(--ok); color:#0A1F16; }
 .act-reject{ background:rgba(255,92,122,0.15); color:var(--alert); border:1px solid rgba(255,92,122,0.3); }
 .act-paid{ background:var(--violet); color:#fff; }
-.act-neutral{ background:var(--panel); color:var(--text-dim); border:1px solid var(--line); }
 .act-btn:disabled{ opacity:0.5; cursor:not-allowed; }
 
 .badge{ display:inline-flex; align-items:center; gap:5px; padding:4px 9px; border-radius:999px; font-size:10px; font-weight:700; text-transform:uppercase; letter-spacing:.3px; }
@@ -120,6 +124,9 @@ input:checked + .slider:before{ background:var(--ok); transform:translate(20px,-
 .pay-amt{ font-size:18px; font-weight:700; font-family:'JetBrains Mono'; }
 .pay-meta{ font-size:11px; color:var(--text-faint); margin-top:3px; font-family:'JetBrains Mono'; }
 .pay-actions{ display:flex; gap:6px; margin-top:10px; flex-wrap:wrap; }
+.ledger-id{ font-size:10px; color:var(--text-faint); font-family:'JetBrains Mono'; margin-top:5px; word-break:break-all; line-height:1.6; }
+.ledger-id b{ color:var(--text-dim); font-weight:700; }
+.copy-mini{ background:none; border:none; color:var(--violet); cursor:pointer; font-size:10px; font-weight:700; padding:0; margin-left:6px; font-family:'Space Grotesk'; }
 
 /* Live payments */
 .live-row{ background:var(--panel-hi); border:1px solid rgba(245,166,35,0.25); border-radius:14px; padding:14px; margin-bottom:10px; }
@@ -235,8 +242,11 @@ input:checked + .slider:before{ background:var(--ok); transform:translate(20px,-
     <div id="tab-payments" style="display:none;">
       <div class="panel">
         <div class="panel-head">
-          <div class="panel-title">All payments (latest 100)</div>
+          <div class="panel-title">All payments (ledger)</div>
           <span class="badge-count" id="paymentsCount">0</span>
+        </div>
+        <div class="w-row" style="margin-bottom:12px;">
+          <input type="text" class="w-input" id="paymentSearch" placeholder="Search by invoice ID, Lightning address, email, or slug..." oninput="debounceSearch()">
         </div>
         <div id="allPaymentsList"><div class="empty-state">No payments yet</div></div>
       </div>
@@ -287,6 +297,8 @@ input:checked + .slider:before{ background:var(--ok); transform:translate(20px,-
 const BTCPAY_URL = 'https://btcpay805858.lndyn.com';
 
 let currentRange = 'today';
+let currentSearchTerm = '';
+let paymentSearchTimeout = null;
 let pendingWithdrawals = [];
 let allWithdrawals = [];
 let allLinks = [];
@@ -400,8 +412,19 @@ async function loadLinks(){
   renderLinks();
 }
 
+function debounceSearch(){
+  clearTimeout(paymentSearchTimeout);
+  paymentSearchTimeout = setTimeout(() => {
+    currentSearchTerm = document.getElementById('paymentSearch').value.trim();
+    loadAllPayments();
+  }, 350);
+}
+
 async function loadAllPayments(){
-  const { data, error } = await window.supabaseClient.rpc('admin_list_payments', { p_limit: 100 });
+  const { data, error } = await window.supabaseClient.rpc('admin_list_payments', {
+    p_limit: 100,
+    p_search: currentSearchTerm || null,
+  });
   if (error){ showToast('Failed to load payments: ' + error.message, 'err'); return; }
   allPaymentsAdmin = data || [];
   document.getElementById('paymentsCount').textContent = allPaymentsAdmin.length;
@@ -512,7 +535,10 @@ async function toggleLink(linkId, newState, btnEl){
 
 function renderAllPayments(){
   const c = document.getElementById('allPaymentsList');
-  if (!allPaymentsAdmin.length){ c.innerHTML = '<div class="empty-state">No payments yet</div>'; return; }
+  if (!allPaymentsAdmin.length){
+    c.innerHTML = `<div class="empty-state">${currentSearchTerm ? 'No matching payments found' : 'No payments yet'}</div>`;
+    return;
+  }
   c.innerHTML = allPaymentsAdmin.map(p => {
     const who = p.creator_name || p.creator_email;
     let actions = '';
@@ -521,18 +547,26 @@ function renderAllPayments(){
         <button class="act-btn act-approve" onclick="markPayment('${p.id}','settled',this)">Mark settled</button>
         <button class="act-btn act-reject" onclick="markPayment('${p.id}','expired',this)">Mark expired</button>`;
     }
+    const shortLn = p.lightning_invoice ? p.lightning_invoice.slice(0, 20) + '...' + p.lightning_invoice.slice(-8) : null;
     return `
       <div class="pay-row">
         <div class="pay-top">
           <div>
             <div class="pay-amt">$${parseFloat(p.amount_requested).toFixed(2)}</div>
             <div class="pay-meta">${who} · ${p.link_slug || '—'} · ${p.method.toUpperCase()} · ${fmtDate(p.created_at)}</div>
+            <div class="ledger-id"><b>Invoice ID:</b> ${p.btcpay_invoice_id || '—'}</div>
+            ${p.lightning_invoice ? `<div class="ledger-id"><b>Lightning:</b> ${shortLn}<button class="copy-mini" onclick="copyFull('${p.lightning_invoice}')">copy full</button></div>` : ''}
           </div>
           <span class="badge ${p.status}"><span class="badge-dot"></span>${p.status}</span>
         </div>
         ${actions ? `<div class="pay-actions">${actions}</div>` : ''}
       </div>`;
   }).join('');
+}
+
+function copyFull(text){
+  navigator.clipboard.writeText(text);
+  showToast('Copied full Lightning address', 'ok');
 }
 
 async function markPayment(paymentId, status, btnEl){
