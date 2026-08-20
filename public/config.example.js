@@ -4,7 +4,7 @@
 // functions in supabase/migrations/. Never put the service role key
 // or any BTCPay secret in this file.
 
-window.SUPABASE_URL = 'SUPABASE_URL;
-const SUPABASE_ANON_KEY = 'SUPABASE_ANON_KEY;
+window.SUPABASE_URL = 'https://YOUR-PROJECT.supabase.co';
+const SUPABASE_ANON_KEY = 'YOUR-ANON-KEY';
 
 window.supabaseClient = window.supabase.createClient(window.SUPABASE_URL, SUPABASE_ANON_KEY);
