@@ -10,11 +10,8 @@ const BTCPAY_URL = Deno.env.get("BTCPAY_URL")!;
 const BTCPAY_API_KEY = Deno.env.get("BTCPAY_API_KEY")!;
 const BTCPAY_STORE_ID = Deno.env.get("BTCPAY_STORE_ID")!;
 
-// service-role client — bypasses RLS entirely, so every route using this
-// MUST do its own authorization check in code. RLS gives no protection here.
 const supabaseAdmin = createClient(SUPABASE_URL, SERVICE_ROLE_KEY);
 
-// ---- Verify BTCPay HMAC-SHA256 signature ----
 async function verifySignature(rawBody: string, signatureHeader: string | null): Promise<boolean> {
   if (!signatureHeader) return false;
   const sigParts = signatureHeader.split("=");
@@ -41,7 +38,6 @@ async function verifySignature(rawBody: string, signatureHeader: string | null):
   return diff === 0;
 }
 
-// ---- Verify the caller is a logged-in admin (for /process-withdrawal only) ----
 async function verifyAdminCaller(req: Request): Promise<{ ok: boolean; userId?: string }> {
   const authHeader = req.headers.get("Authorization");
   if (!authHeader) return { ok: false };
@@ -89,7 +85,6 @@ serve(async (req) => {
         return new Response("Withdrawal not found", { status: 404 });
       }
 
-      // ---- Reject ----
       if (action === "reject") {
         if (withdrawal.status === "paid") {
           return new Response("Already paid — cannot reject", { status: 409 });
@@ -103,7 +98,6 @@ serve(async (req) => {
         });
       }
 
-      // ---- Manual mark paid (bKash / Nagad — admin already sent funds by hand) ----
       if (action === "mark_paid_manual") {
         if (withdrawal.status !== "approved") {
           return new Response("Only approved withdrawals can be marked paid manually", { status: 409 });
@@ -121,7 +115,6 @@ serve(async (req) => {
         });
       }
 
-      // ---- Approve & pay (Binance / on-chain-Lightning payout via BTCPay) ----
       if (action === "approve") {
         if (withdrawal.status !== "pending" && withdrawal.status !== "approved") {
           return new Response("Withdrawal already processed", { status: 409 });
@@ -136,7 +129,7 @@ serve(async (req) => {
           body: JSON.stringify({
             destination: withdrawal.destination,
             amount: withdrawal.amount_after_fee,
-            paymentMethod: "BTC-LightningNetwork",
+            paymentMethod: "BTC-LN",
           }),
         });
 
@@ -235,8 +228,19 @@ serve(async (req) => {
   return new Response("OK", { status: 200 });
 });
 
-// ---- Auto-withdrawal logic (threshold-based hybrid) ----
+// ---- Auto-withdrawal logic (threshold-based hybrid, with global on/off) ----
 async function maybeQueueAutoWithdrawal(userId: string) {
+  const { data: enabledRow } = await supabaseAdmin
+    .from("app_settings")
+    .select("value")
+    .eq("key", "auto_withdraw_enabled")
+    .single();
+
+  if (enabledRow?.value === false) {
+    console.log("Auto-withdraw is globally disabled — skipping");
+    return;
+  }
+
   const { data: settingsRow } = await supabaseAdmin
     .from("app_settings")
     .select("value")
