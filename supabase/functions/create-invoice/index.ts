@@ -38,6 +38,12 @@ serve(async (req) => {
     return json({ error: "Amount must be between $1 and $5000" }, 400);
   }
 
+  // Cloudflare/Supabase edge passes these geo headers through — best-effort
+  // approximate location of the customer initiating the payment.
+  const customerCity = req.headers.get("cf-ipcity") || null;
+  const customerCountry = req.headers.get("cf-ipcountry") || null;
+
+  // Look up the payment link — must exist and be active
   const { data: link, error: linkErr } = await supabaseAdmin
     .from("payment_links")
     .select("id, user_id, slug, display_name, is_active")
@@ -47,6 +53,7 @@ serve(async (req) => {
   if (linkErr || !link) return json({ error: "Payment link not found" }, 404);
   if (!link.is_active) return json({ error: "This payment link is no longer active" }, 410);
 
+  // Create the BTCPay invoice
   const expirationMinutes = 60;
   let btcpayInvoice: any;
   try {
@@ -112,6 +119,7 @@ serve(async (req) => {
 
   const expiresAt = new Date(Date.now() + expirationMinutes * 60 * 1000).toISOString();
 
+  // Record the payment in our own database
   const { data: payment, error: insertErr } = await supabaseAdmin
     .from("payments")
     .insert({
@@ -122,6 +130,8 @@ serve(async (req) => {
       amount_requested: amount,
       status: "new",
       expires_at: expiresAt,
+      customer_city: customerCity,
+      customer_country: customerCountry,
     })
     .select("id")
     .single();
