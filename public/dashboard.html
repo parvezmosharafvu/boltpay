@@ -183,16 +183,16 @@ body{
 
   <div class="panel">
     <div class="panel-head">
-    <div class="panel-title">Your payment links</div>
-    <button class="btn-copy" style="width:auto; padding:0 12px; font-size:12px; font-weight:700;" onclick="toggleLinkForm()">+ New link</button>
+      <div class="panel-title">Your payment links</div>
+      <button class="btn-copy" style="width:auto; padding:0 12px; font-size:12px; font-weight:700;" onclick="toggleLinkForm()">+ New link</button>
     </div>
     <div id="newLinkForm" style="display:none; margin-bottom:14px;">
-    <div class="w-row">
-    <input type="text" class="w-input" id="newSlug" placeholder="your-link-name (letters, numbers, hyphens)">
-    <input type="text" class="w-input" id="newDisplayName" placeholder="Display name (optional)">
-    </div>
-    <button class="btn-primary" onclick="createPaymentLink()" style="width:100%;">Create link</button>
-    <div class="hint" id="linkFormMsg" style="display:none;"></div>
+      <div class="w-row">
+        <input type="text" class="w-input" id="newSlug" placeholder="your-link-name (letters, numbers, hyphens)">
+        <input type="text" class="w-input" id="newDisplayName" placeholder="Display name (optional)">
+      </div>
+      <button class="btn-primary" onclick="createPaymentLink()" style="width:100%;">Create link</button>
+      <div class="hint" id="linkFormMsg" style="display:none;"></div>
     </div>
     <div class="link-scroll" id="linksScroll"></div>
   </div>
@@ -240,6 +240,10 @@ let allPayments = [];
 let allWithdrawals = [];
 let allLinks = [];
 
+const RESERVED_SLUGS = ['login','register','dashboard','admin','index','404','config','u',
+  'invoice-boltpay-v2','dashboard-theme1-voltmeter','dashboard-theme2-ledger',
+  'dashboard-theme3-aurora','dashboard-theme4-calm'];
+
 async function init(){
   const { data: { user } } = await window.supabaseClient.auth.getUser();
   if (!user){ window.location.href = 'login.html'; return; }
@@ -267,6 +271,67 @@ async function fetchLinks(){
       </div>
       <button class="btn-copy" onclick="copyToClipboard('https://pay.parvez.website/${l.slug}')">⧉</button>
     </div>`).join('');
+}
+
+function toggleLinkForm(){
+  const form = document.getElementById('newLinkForm');
+  form.style.display = form.style.display === 'none' ? 'block' : 'none';
+}
+
+function slugify(text){
+  return text.toLowerCase().trim()
+    .replace(/[^a-z0-9\s-]/g, '')
+    .replace(/[\s-]+/g, '-')
+    .replace(/^-+|-+$/g, '');
+}
+
+async function createPaymentLink(){
+  const rawSlug = document.getElementById('newSlug').value;
+  const displayName = document.getElementById('newDisplayName').value.trim();
+  const msgEl = document.getElementById('linkFormMsg');
+  const slug = slugify(rawSlug);
+
+  msgEl.style.display = 'none';
+
+  if (!slug || slug.length < 3){
+    msgEl.textContent = 'Enter a link name (at least 3 characters).';
+    msgEl.style.color = 'var(--alert)';
+    msgEl.style.display = 'block';
+    return;
+  }
+
+  if (RESERVED_SLUGS.includes(slug)){
+    msgEl.textContent = 'That name is reserved — please choose a different one.';
+    msgEl.style.color = 'var(--alert)';
+    msgEl.style.display = 'block';
+    return;
+  }
+
+  const { error } = await window.supabaseClient.from('payment_links').insert({
+    user_id: currentUser.id,
+    slug: slug,
+    display_name: displayName || null,
+    is_active: true,
+  });
+
+  if (error){
+    if (error.code === '23505'){
+      msgEl.textContent = 'That link name is already taken — try another.';
+    } else {
+      msgEl.textContent = 'Error: ' + error.message;
+    }
+    msgEl.style.color = 'var(--alert)';
+    msgEl.style.display = 'block';
+    return;
+  }
+
+  msgEl.textContent = 'Link created!';
+  msgEl.style.color = 'var(--ok)';
+  msgEl.style.display = 'block';
+  document.getElementById('newSlug').value = '';
+  document.getElementById('newDisplayName').value = '';
+  await fetchLinks();
+  setTimeout(() => { document.getElementById('newLinkForm').style.display = 'none'; }, 1200);
 }
 
 async function fetchPayments(){
@@ -299,7 +364,6 @@ function computeStats(){
   document.getElementById('statWithdrawn').textContent = '$' + withdrawn.toFixed(2);
   document.getElementById('statWdCount').textContent = wdPending + ' pending requests';
 
-  // signature meter: fill proportional to available vs earned (capped)
   const pct = earned > 0 ? Math.min(1, available / earned) : 0;
   const circumference = 163;
   document.getElementById('meterArc').setAttribute('stroke-dashoffset', String(circumference * (1 - pct)));
@@ -348,8 +412,6 @@ async function submitWithdrawal(){
   if (!note) return alert('Please enter your account details');
   if (amt > available) return alert('Insufficient balance');
 
-  // fee comes from profiles table, fetched server-side by a trigger/RPC in production —
-  // here we just submit the request; amount_after_fee should be computed server-side, not trusted from client
   const { error } = await window.supabaseClient.rpc('request_withdrawal', {
     p_amount: amt, p_method: method, p_destination: note
   });
@@ -375,60 +437,6 @@ function copyToClipboard(text){ navigator.clipboard.writeText(text); alert('Link
 async function logoutUser(){ await window.supabaseClient.auth.signOut(); window.location.href = 'login.html'; }
 
 init();
-
-function toggleLinkForm(){
-  const form = document.getElementById('newLinkForm');
-  form.style.display = form.style.display === 'none' ? 'block' : 'none';
-}
-
-function slugify(text){
-  return text.toLowerCase().trim()
-    .replace(/[^a-z0-9\s-]/g, '')
-    .replace(/[\s-]+/g, '-')
-    .replace(/^-+|-+$/g, '');
-}
-
-async function createPaymentLink(){
-  const rawSlug = document.getElementById('newSlug').value;
-  const displayName = document.getElementById('newDisplayName').value.trim();
-  const msgEl = document.getElementById('linkFormMsg');
-  const slug = slugify(rawSlug);
-
-  msgEl.style.display = 'none';
-
-  if (!slug || slug.length < 3){
-    msgEl.textContent = 'Enter a link name (at least 3 characters).';
-    msgEl.style.color = 'var(--alert)';
-    msgEl.style.display = 'block';
-    return;
-  }
-
-  const { error } = await window.supabaseClient.from('payment_links').insert({
-    user_id: currentUser.id,
-    slug: slug,
-    display_name: displayName || null,
-    is_active: true,
-  });
-
-  if (error){
-    if (error.code === '23505'){
-      msgEl.textContent = 'That link name is already taken — try another.';
-    } else {
-      msgEl.textContent = 'Error: ' + error.message;
-    }
-    msgEl.style.color = 'var(--alert)';
-    msgEl.style.display = 'block';
-    return;
-  }
-
-  msgEl.textContent = 'Link created!';
-  msgEl.style.color = 'var(--ok)';
-  msgEl.style.display = 'block';
-  document.getElementById('newSlug').value = '';
-  document.getElementById('newDisplayName').value = '';
-  await fetchLinks();
-  setTimeout(() => { document.getElementById('newLinkForm').style.display = 'none'; }, 1200);
-}
 </script>
 </body>
 </html>
