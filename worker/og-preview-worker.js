@@ -1,38 +1,27 @@
 /**
  * Boltpay — OG Preview Worker
  *
- * Purpose: when a payment link like pay.parvez.website/u/emily is shared on
- * WhatsApp/Telegram/Facebook, their crawler bots request the URL to build
- * a link preview. Bots don't run JavaScript, so a plain SPA/static page
- * would show no title/image. This worker intercepts ONLY /u/:slug requests,
- * detects whether the requester is a known crawler (by User-Agent), and:
- *   - crawler  -> returns a small HTML doc with proper <meta property="og:*">
- *                 tags (no redirect, no cloaking — same underlying content,
- *                 just server-rendered for bots that can't execute JS)
- *   - human    -> passes the request through untouched to the real app
- *
- * This is standard SSR-for-crawlers practice (the same thing Next.js/Remix
- * do server-side for every visitor). It is NOT domain rotation or ban
- * evasion — there is exactly one public domain, and humans and bots both
- * ultimately reach the same real page.
+ * Payment links are now root-level (pay.parvez.website/emily), not /u/emily.
+ * This worker's route is set to match ALL paths on the zone, so it must
+ * quickly pass through anything that isn't a bare single-segment slug —
+ * static files, known app pages, and anything with a file extension.
  */
 
 const SUPABASE_URL = "https://ohwzmxwsphsfzudmlins.supabase.co";
-const SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im9od3pteHdzcGhzZnp1ZG1saW5zIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODYwMzE0MTksImV4cCI6MjEwMTYwNzQxOX0.frTl7qnDx7SK2IBMQxFCkKGe5u4XAQweRxPhQ-2r8rU"; // same anon key used client-side
+const SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im9od3pteHdzcGhzZnp1ZG1saW5zIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODYwMzE0MTksImV4cCI6MjEwMTYwNzQxOX0.frTl7qnDx7SK2IBMQxFCkKGe5u4XAQweRxPhQ-2r8rU";
 const SITE_NAME = "Boltpay";
 const DEFAULT_OG_IMAGE = "https://pay.parvez.website/assets/og-default.png";
 
-// Known crawler user-agent substrings (case-insensitive match)
+// Same reserved list as dashboard.html / u.html — keep these in sync.
+const RESERVED = new Set([
+  "", "login", "register", "dashboard", "admin", "index", "404", "config",
+  "u", "invoice-boltpay-v2", "dashboard-theme1-voltmeter",
+  "dashboard-theme2-ledger", "dashboard-theme3-aurora", "dashboard-theme4-calm",
+]);
+
 const CRAWLER_PATTERNS = [
-  "whatsapp",
-  "facebookexternalhit",
-  "telegrambot",
-  "twitterbot",
-  "linkedinbot",
-  "discordbot",
-  "slackbot",
-  "skypeuripreview",
-  "viber",
+  "whatsapp", "facebookexternalhit", "telegrambot", "twitterbot",
+  "linkedinbot", "discordbot", "slackbot", "skypeuripreview", "viber",
 ];
 
 function isCrawler(userAgent) {
@@ -51,7 +40,6 @@ function escapeHtml(str) {
 }
 
 async function fetchLinkPreviewData(slug) {
-  // Public RPC — returns only display-safe fields (see get_link_preview SQL below)
   const res = await fetch(`${SUPABASE_URL}/rest/v1/rpc/get_link_preview`, {
     method: "POST",
     headers: {
@@ -71,7 +59,7 @@ function renderOgHtml(slug, data) {
     ? `Pay ${escapeHtml(data.display_name)} — ${SITE_NAME}`
     : `${SITE_NAME} — Lightning payment`;
   const description = `Send a secure Lightning payment via ${SITE_NAME}. Fast, low-fee, no account required to pay.`;
-  const url = `https://pay.parvez.website/u/${encodeURIComponent(slug)}`;
+  const url = `https://pay.parvez.website/${encodeURIComponent(slug)}`;
 
   return `<!DOCTYPE html>
 <html lang="en">
@@ -99,24 +87,28 @@ function renderOgHtml(slug, data) {
 export default {
   async fetch(request, env, ctx) {
     const url = new URL(request.url);
+    const path = url.pathname.replace(/^\/|\/$/g, "");
 
-    // Only intercept payment-link paths — everything else passes straight through.
-    const match = url.pathname.match(/^\/u\/([a-zA-Z0-9-_]+)\/?$/);
-    if (!match) {
-      return fetch(request); // pass through to origin unchanged
-    }
-
-    const userAgent = request.headers.get("User-Agent") || "";
-
-    if (!isCrawler(userAgent)) {
-      // Real visitor — serve the actual app page, no special handling.
+    // Fast pass-through for anything that isn't a bare single-segment slug:
+    // static files (has a dot, e.g. config.js, og-default.png), multi-segment
+    // paths, or a known reserved app page. No Supabase call, no delay.
+    const looksLikeSlug = path.length > 0 && !path.includes("/") && !path.includes(".");
+    if (!looksLikeSlug || RESERVED.has(path)) {
       return fetch(request);
     }
 
-    // Crawler — serve pre-rendered OG tags.
-    const slug = match[1];
-    const data = await fetchLinkPreviewData(slug);
-    const html = renderOgHtml(slug, data);
+    const userAgent = request.headers.get("User-Agent") || "";
+    if (!isCrawler(userAgent)) {
+      // Real visitor — let Pages/_redirects serve the actual app page.
+      return fetch(request);
+    }
+
+    // Crawler requesting a real slug — serve pre-rendered OG tags.
+    const data = await fetchLinkPreviewData(path);
+    if (!data || data.is_active === false) {
+      return fetch(request); // let it fall through to the real 404 page
+    }
+    const html = renderOgHtml(path, data);
 
     return new Response(html, {
       headers: { "Content-Type": "text/html; charset=UTF-8" },
