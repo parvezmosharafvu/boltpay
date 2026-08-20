@@ -1,5 +1,5 @@
 {
-  "generated_at": "2026-08-20T06:33:13.251Z",
+  "generated_at": "2026-08-20T11:05:00.947Z",
   "payments": [
     {
       "id": "b6fb3019-9590-4f6a-86db-52b47aa47084",
@@ -15,7 +15,8 @@
       "created_at": "2026-08-19T20:26:42.697037+00:00",
       "withdrawal_id": null,
       "customer_city": null,
-      "customer_country": null
+      "customer_country": null,
+      "lightning_invoice": null
     },
     {
       "id": "19f1710b-9828-451e-94ad-dad0de2ca210",
@@ -31,7 +32,8 @@
       "created_at": "2026-08-19T21:18:21.575295+00:00",
       "withdrawal_id": null,
       "customer_city": null,
-      "customer_country": null
+      "customer_country": null,
+      "lightning_invoice": null
     }
   ],
   "withdrawals": [],
