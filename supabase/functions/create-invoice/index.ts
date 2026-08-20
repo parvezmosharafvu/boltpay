@@ -132,6 +132,7 @@ serve(async (req) => {
       expires_at: expiresAt,
       customer_city: customerCity,
       customer_country: customerCountry,
+      lightning_invoice: payCode || null,
     })
     .select("id")
     .single();
