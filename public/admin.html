@@ -68,7 +68,10 @@ body{ font-family:'Space Grotesk',sans-serif; background:var(--bg); color:var(--
 .panel{ background:var(--panel); border:1px solid var(--line); border-radius:18px; padding:18px; margin-bottom:16px; }
 .panel-head{ display:flex; justify-content:space-between; align-items:center; margin-bottom:14px; }
 .panel-title{ font-size:14px; font-weight:700; }
+.panel-sub{ font-size:11px; color:var(--text-faint); margin-top:2px; }
 .badge-count{ background:rgba(245,166,35,0.15); color:var(--amber); font-size:11px; font-weight:700; padding:3px 9px; border-radius:999px; }
+.live-dot{ display:inline-block; width:7px; height:7px; border-radius:50%; background:var(--ok); margin-right:6px; animation:pulseLive 1.4s infinite; }
+@keyframes pulseLive{ 0%,100%{ opacity:0.4; } 50%{ opacity:1; } }
 
 .wd-row{ background:var(--panel-hi); border:1px solid var(--line); border-radius:14px; padding:14px; margin-bottom:10px; }
 .wd-top{ display:flex; justify-content:space-between; align-items:flex-start; gap:10px; flex-wrap:wrap; }
@@ -76,14 +79,16 @@ body{ font-family:'Space Grotesk',sans-serif; background:var(--bg); color:var(--
 .wd-meta{ font-size:11px; color:var(--text-faint); margin-top:3px; font-family:'JetBrains Mono'; }
 .wd-dest{ font-size:12px; color:var(--text-dim); margin-top:6px; }
 .wd-actions{ display:flex; gap:8px; margin-top:12px; flex-wrap:wrap; }
-.act-btn{ border:none; padding:9px 14px; border-radius:9px; font-size:12px; font-weight:700; cursor:pointer; font-family:'Space Grotesk'; }
+.act-btn{ border:none; padding:9px 14px; border-radius:9px; font-size:12px; font-weight:700; cursor:pointer; font-family:'Space Grotesk'; text-decoration:none; display:inline-block; }
 .act-approve{ background:var(--ok); color:#0A1F16; }
 .act-reject{ background:rgba(255,92,122,0.15); color:var(--alert); border:1px solid rgba(255,92,122,0.3); }
 .act-paid{ background:var(--violet); color:#fff; }
+.act-neutral{ background:var(--panel); color:var(--text-dim); border:1px solid var(--line); }
 .act-btn:disabled{ opacity:0.5; cursor:not-allowed; }
 
 .badge{ display:inline-flex; align-items:center; gap:5px; padding:4px 9px; border-radius:999px; font-size:10px; font-weight:700; text-transform:uppercase; letter-spacing:.3px; }
 .badge.pending{ background:rgba(245,166,35,0.12); color:var(--amber); }
+.badge.new{ background:rgba(124,92,255,0.15); color:var(--violet); }
 .badge.approved{ background:rgba(124,92,255,0.15); color:var(--violet); }
 .badge.paid, .badge.settled, .badge.active{ background:rgba(92,224,160,0.12); color:var(--ok); }
 .badge.rejected, .badge.expired, .badge.invalid, .badge.inactive{ background:rgba(255,92,122,0.12); color:var(--alert); }
@@ -115,6 +120,28 @@ input:checked + .slider:before{ background:var(--ok); transform:translate(20px,-
 .pay-amt{ font-size:18px; font-weight:700; font-family:'JetBrains Mono'; }
 .pay-meta{ font-size:11px; color:var(--text-faint); margin-top:3px; font-family:'JetBrains Mono'; }
 .pay-actions{ display:flex; gap:6px; margin-top:10px; flex-wrap:wrap; }
+
+/* Live payments */
+.live-row{ background:var(--panel-hi); border:1px solid rgba(245,166,35,0.25); border-radius:14px; padding:14px; margin-bottom:10px; }
+.live-top{ display:flex; justify-content:space-between; align-items:flex-start; gap:10px; }
+.live-amt{ font-size:20px; font-weight:700; font-family:'JetBrains Mono'; }
+.live-who{ font-size:12px; color:var(--text-dim); margin-top:2px; }
+.live-slug{ font-size:11px; color:var(--text-faint); font-family:'JetBrains Mono'; margin-top:2px; }
+.live-timer{ font-family:'JetBrains Mono'; font-size:16px; font-weight:700; color:var(--amber); text-align:right; }
+.live-timer.urgent{ color:var(--alert); }
+.live-timer-label{ font-size:9px; color:var(--text-faint); text-transform:uppercase; letter-spacing:0.6px; text-align:right; }
+.live-details{ display:flex; gap:14px; margin-top:10px; flex-wrap:wrap; font-size:12px; color:var(--text-dim); }
+.live-details span{ display:flex; align-items:center; gap:5px; }
+.live-details a{ color:var(--violet); text-decoration:none; font-weight:600; }
+
+/* Earnings */
+.earn-row{ display:flex; align-items:center; gap:12px; padding:10px 0; border-bottom:1px solid var(--line); }
+.earn-row:last-child{ border-bottom:none; }
+.earn-date{ font-size:12px; font-family:'JetBrains Mono'; color:var(--text-dim); width:76px; flex-shrink:0; }
+.earn-bar-wrap{ flex:1; background:var(--panel-hi); border-radius:6px; overflow:hidden; height:22px; position:relative; }
+.earn-bar{ height:100%; background:linear-gradient(90deg,var(--violet),var(--amber)); border-radius:6px; }
+.earn-amt{ font-size:12px; font-family:'JetBrains Mono'; font-weight:700; width:80px; text-align:right; flex-shrink:0; }
+.sync-note{ font-size:11px; color:var(--text-faint); display:flex; align-items:center; gap:6px; margin-bottom:14px; }
 
 .toast{ position:fixed; bottom:20px; left:50%; transform:translateX(-50%); background:var(--panel-hi);
   border:1px solid var(--line); padding:12px 20px; border-radius:12px; font-size:13px; font-weight:600; z-index:999; display:none; }
@@ -163,8 +190,10 @@ input:checked + .slider:before{ background:var(--ok); transform:translate(20px,-
 
     <div class="tabs">
       <button class="tab-btn active" onclick="switchTab('pending', this)">Withdrawals</button>
+      <button class="tab-btn" onclick="switchTab('live', this)"><span class="live-dot"></span>Live payments</button>
       <button class="tab-btn" onclick="switchTab('links', this)">Payment links</button>
       <button class="tab-btn" onclick="switchTab('payments', this)">All payments</button>
+      <button class="tab-btn" onclick="switchTab('earnings', this)">Earnings</button>
       <button class="tab-btn" onclick="switchTab('settings', this)">Settings</button>
     </div>
 
@@ -179,6 +208,17 @@ input:checked + .slider:before{ background:var(--ok); transform:translate(20px,-
       <div class="panel">
         <div class="panel-head"><div class="panel-title">Withdrawal history</div></div>
         <div id="historyList"><div class="empty-state">No withdrawal history</div></div>
+      </div>
+    </div>
+
+    <div id="tab-live" style="display:none;">
+      <div class="panel">
+        <div class="panel-head">
+          <div class="panel-title"><span class="live-dot"></span>Live payments — awaiting settlement</div>
+          <span class="badge-count" id="liveCount">0</span>
+        </div>
+        <div class="panel-sub" style="margin-bottom:12px;">Auto-refreshes every 15 seconds</div>
+        <div id="liveList"><div class="empty-state">No pending payments right now</div></div>
       </div>
     </div>
 
@@ -199,6 +239,14 @@ input:checked + .slider:before{ background:var(--ok); transform:translate(20px,-
           <span class="badge-count" id="paymentsCount">0</span>
         </div>
         <div id="allPaymentsList"><div class="empty-state">No payments yet</div></div>
+      </div>
+    </div>
+
+    <div id="tab-earnings" style="display:none;">
+      <div class="panel">
+        <div class="panel-head"><div class="panel-title">Daily earnings history</div></div>
+        <div class="sync-note"><span class="live-dot"></span>Auto-synced daily at 5:00 PM (Asia/Dhaka)</div>
+        <div id="earningsList"><div class="empty-state">No earnings history yet</div></div>
       </div>
     </div>
 
@@ -236,11 +284,16 @@ input:checked + .slider:before{ background:var(--ok); transform:translate(20px,-
 <div class="toast" id="toast"></div>
 
 <script>
+const BTCPAY_URL = 'https://btcpay805858.lndyn.com';
+
 let currentRange = 'today';
 let pendingWithdrawals = [];
 let allWithdrawals = [];
 let allLinks = [];
 let allPaymentsAdmin = [];
+let livePayments = [];
+let liveRefreshInterval = null;
+let liveTimerInterval = null;
 
 async function doLogin(){
   const email = document.getElementById('loginEmail').value.trim();
@@ -263,6 +316,7 @@ async function doLogin(){
   document.getElementById('loginScreen').style.display = 'none';
   document.getElementById('appShell').style.display = 'block';
   await refreshAll();
+  startLiveAutoRefresh();
 }
 
 async function doLogout(){
@@ -279,6 +333,7 @@ window.addEventListener('DOMContentLoaded', async () => {
       document.getElementById('loginScreen').style.display = 'none';
       document.getElementById('appShell').style.display = 'block';
       await refreshAll();
+      startLiveAutoRefresh();
     }
   }
 });
@@ -299,7 +354,14 @@ function rangeDates(){
 }
 
 async function refreshAll(){
-  await Promise.all([loadStats(), loadWithdrawals(), loadLinks(), loadAllPayments(), loadSettings()]);
+  await Promise.all([loadStats(), loadWithdrawals(), loadLinks(), loadAllPayments(), loadLivePayments(), loadEarnings(), loadSettings()]);
+}
+
+function startLiveAutoRefresh(){
+  if (liveRefreshInterval) clearInterval(liveRefreshInterval);
+  liveRefreshInterval = setInterval(loadLivePayments, 15000);
+  if (liveTimerInterval) clearInterval(liveTimerInterval);
+  liveTimerInterval = setInterval(tickLiveTimers, 1000);
 }
 
 async function loadStats(){
@@ -346,7 +408,26 @@ async function loadAllPayments(){
   renderAllPayments();
 }
 
+async function loadLivePayments(){
+  const { data, error } = await window.supabaseClient.rpc('admin_live_payments');
+  if (error){ console.error('live payments error', error); return; }
+  livePayments = data || [];
+  document.getElementById('liveCount').textContent = livePayments.length;
+  renderLivePayments();
+}
+
+async function loadEarnings(){
+  const { data, error } = await window.supabaseClient
+    .from('daily_stats')
+    .select('*')
+    .order('stat_date', { ascending: false })
+    .limit(30);
+  if (error){ showToast('Failed to load earnings: ' + error.message, 'err'); return; }
+  renderEarnings(data || []);
+}
+
 function fmtDate(str){ return new Date(str).toLocaleString([], { month:'short', day:'numeric', hour:'2-digit', minute:'2-digit' }); }
+function fmtDateOnly(str){ return new Date(str).toLocaleDateString([], { month:'short', day:'numeric' }); }
 
 function renderPending(){
   const c = document.getElementById('pendingList');
@@ -459,7 +540,66 @@ async function markPayment(paymentId, status, btnEl){
   const { error } = await window.supabaseClient.rpc('admin_mark_payment', { p_payment_id: paymentId, p_status: status });
   if (error){ showToast('Failed: ' + error.message, 'err'); btnEl.disabled = false; return; }
   showToast('Payment marked ' + status, 'ok');
-  await Promise.all([loadAllPayments(), loadStats()]);
+  await Promise.all([loadAllPayments(), loadStats(), loadLivePayments()]);
+}
+
+function renderLivePayments(){
+  const c = document.getElementById('liveList');
+  if (!livePayments.length){ c.innerHTML = '<div class="empty-state">No pending payments right now</div>'; return; }
+  c.innerHTML = livePayments.map(p => {
+    const who = p.creator_name || p.creator_email;
+    const location = [p.customer_city, p.customer_country].filter(Boolean).join(', ') || 'Unknown location';
+    const btcpayLink = p.btcpay_invoice_id ? `${BTCPAY_URL}/i/${p.btcpay_invoice_id}` : null;
+    return `
+      <div class="live-row" data-expires="${p.expires_at}">
+        <div class="live-top">
+          <div>
+            <div class="live-amt">$${parseFloat(p.amount_requested).toFixed(2)}</div>
+            <div class="live-who">${who}</div>
+            <div class="live-slug">${p.link_slug || '—'}</div>
+          </div>
+          <div>
+            <div class="live-timer mono" data-timer>--:--</div>
+            <div class="live-timer-label">remaining</div>
+          </div>
+        </div>
+        <div class="live-details">
+          <span>📍 ${location}</span>
+          <span class="badge ${p.status}"><span class="badge-dot"></span>${p.status}</span>
+          ${btcpayLink ? `<a href="${btcpayLink}" target="_blank">View on BTCPay →</a>` : ''}
+        </div>
+      </div>`;
+  }).join('');
+  tickLiveTimers();
+}
+
+function tickLiveTimers(){
+  document.querySelectorAll('.live-row').forEach(row => {
+    const expires = new Date(row.getAttribute('data-expires'));
+    const secondsLeft = Math.max(0, Math.floor((expires - new Date()) / 1000));
+    const m = Math.floor(secondsLeft / 60);
+    const s = secondsLeft % 60;
+    const timerEl = row.querySelector('[data-timer]');
+    if (timerEl){
+      timerEl.textContent = `${String(m).padStart(2,'0')}:${String(s).padStart(2,'0')}`;
+      timerEl.classList.toggle('urgent', secondsLeft < 300);
+    }
+  });
+}
+
+function renderEarnings(rows){
+  const c = document.getElementById('earningsList');
+  if (!rows.length){ c.innerHTML = '<div class="empty-state">No earnings history yet</div>'; return; }
+  const maxVal = Math.max(...rows.map(r => parseFloat(r.total_settled || 0)), 1);
+  c.innerHTML = rows.map(r => {
+    const pct = Math.max(4, (parseFloat(r.total_settled || 0) / maxVal) * 100);
+    return `
+      <div class="earn-row">
+        <div class="earn-date">${fmtDateOnly(r.stat_date)}</div>
+        <div class="earn-bar-wrap"><div class="earn-bar" style="width:${pct}%;"></div></div>
+        <div class="earn-amt">$${parseFloat(r.total_settled || 0).toFixed(2)}</div>
+      </div>`;
+  }).join('');
 }
 
 async function handleAction(withdrawalId, action, btnEl){
@@ -528,9 +668,13 @@ function switchTab(tab, btn){
   document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
   btn.classList.add('active');
   document.getElementById('tab-pending').style.display = tab === 'pending' ? 'block' : 'none';
+  document.getElementById('tab-live').style.display = tab === 'live' ? 'block' : 'none';
   document.getElementById('tab-links').style.display = tab === 'links' ? 'block' : 'none';
   document.getElementById('tab-payments').style.display = tab === 'payments' ? 'block' : 'none';
+  document.getElementById('tab-earnings').style.display = tab === 'earnings' ? 'block' : 'none';
   document.getElementById('tab-settings').style.display = tab === 'settings' ? 'block' : 'none';
+  if (tab === 'live') loadLivePayments();
+  if (tab === 'earnings') loadEarnings();
 }
 
 function showToast(msg, type){
