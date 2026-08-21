@@ -1,22 +1,29 @@
 /**
  * Boltpay — OG Preview Worker
  *
- * Payment links are now root-level (pay.parvez.website/emily), not /u/emily.
- * This worker's route is set to match ALL paths on the zone, so it must
- * quickly pass through anything that isn't a bare single-segment slug —
- * static files, known app pages, and anything with a file extension.
+ * Runs on every domain you attach it to. Nothing about the domain is
+ * hardcoded: the OG url is rebuilt from the incoming request, so the
+ * preview card always shows the domain the link was actually shared on.
+ *
+ * The only fixed URL is the fallback OG image, which is served from the
+ * GitHub repo (raw.githubusercontent.com) so it never depends on which
+ * domain is live.
  */
 
 const SUPABASE_URL = "https://ohwzmxwsphsfzudmlins.supabase.co";
 const SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im9od3pteHdzcGhzZnp1ZG1saW5zIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODYwMzE0MTksImV4cCI6MjEwMTYwNzQxOX0.frTl7qnDx7SK2IBMQxFCkKGe5u4XAQweRxPhQ-2r8rU";
 const SITE_NAME = "Boltpay";
-const DEFAULT_OG_IMAGE = "https://pay.parvez.website/assets/og-default.png";
 
-// Same reserved list as dashboard.html / u.html — keep these in sync.
+// Served from GitHub so it is domain-independent. Replace the branch/path
+// if you move the file. Commit an image at public/assets/og-default.png.
+const DEFAULT_OG_IMAGE =
+  "https://raw.githubusercontent.com/parvezmosharafvu/boltpay/main/public/assets/og-default.png";
+
 const RESERVED = new Set([
   "", "login", "register", "dashboard", "admin", "index", "404", "config",
-  "u", "invoice-boltpay-v2", "dashboard-theme1-voltmeter",
-  "dashboard-theme2-ledger", "dashboard-theme3-aurora", "dashboard-theme4-calm",
+  "favicon", "assets", "u", "invoice-boltpay-v2",
+  "dashboard-theme1-voltmeter", "dashboard-theme2-ledger",
+  "dashboard-theme3-aurora", "dashboard-theme4-calm",
 ]);
 
 const CRAWLER_PATTERNS = [
@@ -54,12 +61,12 @@ async function fetchLinkPreviewData(slug) {
   return Array.isArray(rows) ? rows[0] : rows;
 }
 
-function renderOgHtml(slug, data) {
+function renderOgHtml(origin, slug, data) {
   const title = data?.display_name
     ? `Pay ${escapeHtml(data.display_name)} — ${SITE_NAME}`
     : `${SITE_NAME} — Lightning payment`;
   const description = `Send a secure Lightning payment via ${SITE_NAME}. Fast, low-fee, no account required to pay.`;
-  const url = `https://pay.parvez.website/${encodeURIComponent(slug)}`;
+  const url = `${origin}/${encodeURIComponent(slug)}`;
 
   return `<!DOCTYPE html>
 <html lang="en">
@@ -85,32 +92,29 @@ function renderOgHtml(slug, data) {
 }
 
 export default {
-  async fetch(request, env, ctx) {
+  async fetch(request) {
     const url = new URL(request.url);
     const path = url.pathname.replace(/^\/|\/$/g, "");
 
-    // Fast pass-through for anything that isn't a bare single-segment slug:
-    // static files (has a dot, e.g. config.js, og-default.png), multi-segment
-    // paths, or a known reserved app page. No Supabase call, no delay.
-    const looksLikeSlug = path.length > 0 && !path.includes("/") && !path.includes(".");
+    // Fast pass-through: static files, multi-segment paths, reserved pages.
+    const looksLikeSlug =
+      path.length > 0 && !path.includes("/") && !path.includes(".");
     if (!looksLikeSlug || RESERVED.has(path)) {
       return fetch(request);
     }
 
-    const userAgent = request.headers.get("User-Agent") || "";
-    if (!isCrawler(userAgent)) {
-      // Real visitor — let Pages/_redirects serve the actual app page.
+    if (!isCrawler(request.headers.get("User-Agent") || "")) {
       return fetch(request);
     }
 
-    // Crawler requesting a real slug — serve pre-rendered OG tags.
     const data = await fetchLinkPreviewData(path);
     if (!data || data.is_active === false) {
-      return fetch(request); // let it fall through to the real 404 page
+      return fetch(request);
     }
-    const html = renderOgHtml(path, data);
 
-    return new Response(html, {
+    // url.origin is whatever domain the crawler actually requested —
+    // this is what makes the worker work on every domain unchanged.
+    return new Response(renderOgHtml(url.origin, path, data), {
       headers: { "Content-Type": "text/html; charset=UTF-8" },
     });
   },
