@@ -4,6 +4,7 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Boltpay — Lightning payments for creators</title>
+<link rel="icon" type="image/svg+xml" href="/favicon.svg">
 <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;600;700;800&family=JetBrains+Mono:wght@400;600&display=swap" rel="stylesheet">
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <script src="config.js"></script>
@@ -46,9 +47,20 @@ h1 span{ color:var(--amber); }
 .feature p{ font-size:13px; color:var(--text-dim); line-height:1.55; }
 
 .foot{ text-align:center; padding:20px 24px 40px; font-size:12px; color:var(--text-faint); }
+
+#redirectNotice{ display:none; position:fixed; inset:0; background:var(--bg); z-index:999;
+  align-items:center; justify-content:center; flex-direction:column; gap:16px; text-align:center; padding:20px; }
+.spinner{ width:32px; height:32px; border-radius:50%; border:3px solid var(--line); border-top-color:var(--amber);
+  animation:spin 0.8s linear infinite; }
+@keyframes spin{ to{ transform:rotate(360deg); } }
 </style>
 </head>
 <body>
+
+<div id="redirectNotice">
+  <div class="spinner"></div>
+  <div style="font-size:13px; color:var(--text-dim);">Taking you to Boltpay…</div>
+</div>
 
 <div class="nav">
   <div class="nav-left">
@@ -92,10 +104,43 @@ h1 span{ color:var(--amber); }
 <div class="foot">© Boltpay</div>
 
 <script>
+// Domains registered as purpose='payment' exist only to host payment slugs.
+// Their root should send visitors to the primary site domain, where login
+// and registration live. Domains marked 'site' or 'both' render normally.
+async function routeRootDomain(){
+  const host = window.location.host;
+  try {
+    const { data } = await window.supabaseClient
+      .from('site_domains')
+      .select('hostname, purpose, is_primary_site, is_active')
+      .eq('is_active', true);
+
+    if (!data || !data.length) return false;
+
+    const thisDomain = data.find(d => d.hostname.toLowerCase() === host.toLowerCase());
+    if (!thisDomain || thisDomain.purpose !== 'payment') return false;
+
+    const primary = data.find(d => d.is_primary_site)
+      || data.find(d => d.purpose === 'site' || d.purpose === 'both');
+    if (!primary || primary.hostname.toLowerCase() === host.toLowerCase()) return false;
+
+    document.getElementById('redirectNotice').style.display = 'flex';
+    window.location.replace(`https://${primary.hostname}/`);
+    return true;
+  } catch (e) {
+    console.error('domain routing check failed', e);
+    return false;
+  }
+}
+
 window.addEventListener('DOMContentLoaded', async () => {
+  const redirected = await routeRootDomain();
+  if (redirected) return;
+
   const { data: { session } } = await window.supabaseClient.auth.getSession();
   if (!session) return;
-  const { data: profile } = await window.supabaseClient.from('profiles').select('role').eq('id', session.user.id).single();
+  const { data: profile } = await window.supabaseClient
+    .from('profiles').select('role').eq('id', session.user.id).single();
   window.location.href = profile?.role === 'admin' ? 'admin.html' : 'dashboard.html';
 });
 </script>

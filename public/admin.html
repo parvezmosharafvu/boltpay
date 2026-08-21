@@ -188,6 +188,11 @@ input:checked + .slider:before{ background:var(--ok); transform:translate(20px,-
 .msg-bubble.creator{ background:var(--panel-hi); border:1px solid var(--line); }
 .msg-bubble .msg-from{ font-size:10px; font-weight:700; color:var(--violet); text-transform:uppercase; letter-spacing:0.4px; margin-bottom:3px; }
 .msg-time{ font-size:10px; color:var(--text-faint); margin-top:4px; }
+.msg-actions{ display:flex; gap:8px; margin-top:7px; }
+.msg-act{ background:none; border:none; color:var(--text-faint); cursor:pointer; font-size:11px; font-weight:600; padding:0; font-family:'Space Grotesk'; }
+.msg-act:hover{ color:var(--amber); }
+.msg-act.danger:hover{ color:var(--alert); }
+.msg-edit-input{ width:100%; background:rgba(0,0,0,0.2); border:1px solid var(--line); color:var(--text); padding:8px 10px; border-radius:8px; font-family:'Space Grotesk'; font-size:13px; outline:none; margin-bottom:6px; }
 .creator-option-unread{ font-weight:700; }
 </style>
 </head>
@@ -198,7 +203,7 @@ input:checked + .slider:before{ background:var(--ok); transform:translate(20px,-
     <div class="login-mark"><svg viewBox="0 0 24 24" width="20" height="20" fill="none"><path d="M13 2L4 14h6l-1 8 9-12h-6l1-8z" fill="#1A1206"/></svg></div>
     <div class="login-title">Boltpay Admin</div>
     <div class="login-sub">Restricted access — admin accounts only</div>
-    <div class="field"><label>Email</label><input type="email" id="loginEmail" placeholder="admin@boltpay.io"></div>
+    <div class="field"><label>Email</label><input type="email" id="loginEmail" placeholder="admin@example.com"></div>
     <div class="field"><label>Password</label><input type="password" id="loginPassword" placeholder="••••••••"></div>
     <button class="btn-primary" onclick="doLogin()">Secure login</button>
     <div class="login-error" id="loginError"></div>
@@ -238,6 +243,7 @@ input:checked + .slider:before{ background:var(--ok); transform:translate(20px,-
       <button class="tab-btn" data-tab="payments" onclick="switchTab('payments', this)">Payments</button>
       <button class="tab-btn" data-tab="messages" onclick="switchTab('messages', this)">Messages <span class="tab-badge" id="msgTabBadge">0</span></button>
       <button class="tab-btn" data-tab="earnings" onclick="switchTab('earnings', this)">Earnings</button>
+      <button class="tab-btn" data-tab="domains" onclick="switchTab('domains', this)">Domains</button>
       <button class="tab-btn" data-tab="settings" onclick="switchTab('settings', this)">Settings</button>
     </div>
 
@@ -295,6 +301,12 @@ input:checked + .slider:before{ background:var(--ok); transform:translate(20px,-
           <input type="number" step="0.1" class="w-input" id="detailFeeInput" placeholder="3.0">
           <button class="btn-primary" style="flex:0 0 auto;" onclick="saveDetailFee()">Save fee %</button>
         </div>
+        <div class="detail-section-title">Payment link limit for this creator</div>
+        <div class="w-row">
+          <input type="number" step="1" class="w-input" id="detailLimitInput" placeholder="5">
+          <button class="btn-primary" style="flex:0 0 auto;" onclick="saveDetailLimit()">Save limit</button>
+        </div>
+        <div class="hint" style="font-size:11px; color:var(--text-faint); margin-top:6px;">How many models/payment links this creator may create. Each link is automatically available on every active payment domain.</div>
         <div class="detail-section-title">Models & earnings per link</div>
         <div id="detailModels"><div class="empty-state">No models</div></div>
         <div class="detail-section-title">Withdrawal history</div>
@@ -332,7 +344,10 @@ input:checked + .slider:before{ background:var(--ok); transform:translate(20px,-
         <div class="hint" style="font-size:11px; color:var(--text-faint); margin-top:8px;">🔴 = unread messages from that creator. List refreshes automatically.</div>
       </div>
       <div class="panel">
-        <div class="panel-head"><div class="panel-title">Conversation</div></div>
+        <div class="panel-head">
+          <div class="panel-title">Conversation</div>
+          <button class="act-btn act-reject" onclick="clearThread()">Clear history</button>
+        </div>
         <div id="threadList" style="max-height:320px; overflow-y:auto; margin-bottom:12px;"><div class="empty-state">Select a creator above</div></div>
         <div class="w-row">
           <input type="text" class="w-input" id="adminMsgInput" placeholder="Type a message to this creator...">
@@ -346,6 +361,34 @@ input:checked + .slider:before{ background:var(--ok); transform:translate(20px,-
         <div class="panel-head"><div class="panel-title">Daily earnings history</div></div>
         <div class="sync-note"><span class="live-dot"></span>Auto-synced daily at 5:00 PM (Asia/Dhaka)</div>
         <div id="earningsList"><div class="empty-state">No earnings history yet</div></div>
+      </div>
+    </div>
+
+    <div id="tab-domains" style="display:none;">
+      <div class="panel">
+        <div class="panel-head"><div class="panel-title">Add a domain</div></div>
+        <div class="w-row" style="margin-bottom:10px;">
+          <input type="text" class="w-input" id="newDomainHost" placeholder="pay.example.com (no https://)">
+          <select class="w-input" id="newDomainPurpose" style="max-width:190px;">
+            <option value="payment">Payment links only</option>
+            <option value="site">Main site only</option>
+            <option value="both">Both</option>
+          </select>
+        </div>
+        <button class="btn-primary" style="max-width:200px;" onclick="addDomain()">Add domain</button>
+        <div class="hint" style="font-size:11px; color:var(--text-faint); margin-top:10px; line-height:1.6;">
+          <b style="color:var(--text-dim);">Payment links only</b> — hosts /slug pages; its root redirects to the primary site.<br>
+          <b style="color:var(--text-dim);">Main site only</b> — hosts login, registration, dashboards.<br>
+          <b style="color:var(--text-dim);">Both</b> — does everything.<br><br>
+          Adding it here only registers it in the app. You must also attach the domain in Cloudflare (Pages custom domain + Worker route) for it to actually resolve.
+        </div>
+      </div>
+      <div class="panel">
+        <div class="panel-head">
+          <div class="panel-title">Registered domains</div>
+          <span class="badge-count" id="domainsCount">0</span>
+        </div>
+        <div id="domainsList"><div class="empty-state">No domains registered</div></div>
       </div>
     </div>
 
@@ -420,6 +463,10 @@ function escapeAttr(str){
   return String(str).replace(/&/g,'&amp;').replace(/"/g,'&quot;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
 }
 
+function escapeHtml(str){
+  return String(str).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+}
+
 function formatLightningShort(ln, fallback){
   if (ln && ln.length > 25){
     return ln.slice(0, 12) + '...' + ln.slice(-9);
@@ -438,6 +485,7 @@ let livePayments = [];
 let allCustomers = [];
 let selectedCreatorId = null;
 let currentDetailCreatorId = null;
+let editingMessageId = null;
 let liveRefreshInterval = null;
 let liveTimerInterval = null;
 let creatorListRefreshInterval = null;
@@ -501,7 +549,7 @@ function rangeDates(){
 }
 
 async function refreshAll(){
-  await Promise.all([loadStats(), loadWithdrawals(), loadLinks(), loadAllPayments(), loadLivePayments(), loadEarnings(), loadSettings(), loadCustomers(), loadCreatorList()]);
+  await Promise.all([loadStats(), loadWithdrawals(), loadLinks(), loadAllPayments(), loadLivePayments(), loadEarnings(), loadSettings(), loadCustomers(), loadCreatorList(), loadDomains()]);
 }
 
 function startAutoRefresh(){
@@ -615,7 +663,7 @@ function renderCustomers(){
         </div>
         <div>
           <div class="cust-earned">$${parseFloat(cu.total_earned).toFixed(2)}</div>
-          <div class="cust-sub">${cu.link_count} model${cu.link_count === 1 ? '' : 's'} · ${cu.payment_count} payments</div>
+          <div class="cust-sub">${cu.link_count}/${cu.max_links ?? 5} models · ${cu.payment_count} payments</div>
         </div>
       </div>
     </div>`).join('');
@@ -637,6 +685,7 @@ async function openCustomerDetail(creatorId){
 
   const { data: profileRow } = await window.supabaseClient.from('profiles').select('withdrawal_fee_percent').eq('id', creatorId).single();
   document.getElementById('detailFeeInput').value = profileRow?.withdrawal_fee_percent ?? 3;
+  document.getElementById('detailLimitInput').value = cu.max_links ?? 5;
 
   const { data: models } = await window.supabaseClient
     .from('payment_links').select('id, slug, display_name').eq('user_id', creatorId);
@@ -923,6 +972,122 @@ async function handleAction(withdrawalId, action, btnEl){
   }
 }
 
+// ===== DOMAIN REGISTRY =====
+async function loadDomains(){
+  const { data, error } = await window.supabaseClient.rpc('admin_list_domains');
+  if (error){ console.error(error); return; }
+  const domains = data || [];
+  document.getElementById('domainsCount').textContent = domains.length;
+  const c = document.getElementById('domainsList');
+  if (!domains.length){ c.innerHTML = '<div class="empty-state">No domains registered</div>'; return; }
+
+  const purposeLabel = { payment: 'Payment links', site: 'Main site', both: 'Payment + site' };
+  c.innerHTML = domains.map(d => `
+    <div class="link-row">
+      <div class="link-top">
+        <div>
+          <div class="link-slug">${escapeHtml(d.hostname)}</div>
+          <div class="link-owner">${purposeLabel[d.purpose] || d.purpose}${d.is_primary_site ? ' · ⭐ primary site' : ''}</div>
+        </div>
+        <span class="badge ${d.is_active ? 'active' : 'inactive'}"><span class="badge-dot"></span>${d.is_active ? 'active' : 'disabled'}</span>
+      </div>
+      <div class="pay-actions">
+        <button class="act-btn ${d.is_active ? 'act-reject' : 'act-approve'}" onclick="toggleDomain('${d.id}', ${!d.is_active}, this)">
+          ${d.is_active ? 'Disable' : 'Enable'}
+        </button>
+        ${!d.is_primary_site ? `<button class="act-btn act-paid" onclick="makePrimary('${d.id}', this)">Make primary site</button>` : ''}
+        <button class="act-btn act-reject" onclick="deleteDomain('${d.id}', this)">Remove</button>
+      </div>
+    </div>`).join('');
+}
+
+async function addDomain(){
+  const hostname = document.getElementById('newDomainHost').value.trim()
+    .toLowerCase().replace(/^https?:\/\//, '').replace(/\/$/, '');
+  const purpose = document.getElementById('newDomainPurpose').value;
+  if (!hostname || !hostname.includes('.')){ showToast('Enter a valid hostname', 'err'); return; }
+
+  const { error } = await window.supabaseClient.from('site_domains')
+    .insert({ hostname, purpose, is_active: true });
+  if (error){
+    showToast(error.code === '23505' ? 'That domain is already registered' : 'Failed: ' + error.message, 'err');
+    return;
+  }
+  document.getElementById('newDomainHost').value = '';
+  showToast('Domain added — now attach it in Cloudflare', 'ok');
+  await loadDomains();
+}
+
+async function toggleDomain(id, newState, btnEl){
+  btnEl.disabled = true;
+  const { error } = await window.supabaseClient.from('site_domains').update({ is_active: newState }).eq('id', id);
+  if (error){ showToast('Failed: ' + error.message, 'err'); btnEl.disabled = false; return; }
+  showToast(newState ? 'Domain enabled' : 'Domain disabled', 'ok');
+  await loadDomains();
+}
+
+async function makePrimary(id, btnEl){
+  btnEl.disabled = true;
+  await window.supabaseClient.from('site_domains').update({ is_primary_site: false }).neq('id', id);
+  const { error } = await window.supabaseClient.from('site_domains').update({ is_primary_site: true }).eq('id', id);
+  if (error){ showToast('Failed: ' + error.message, 'err'); btnEl.disabled = false; return; }
+  showToast('Primary site domain updated', 'ok');
+  await loadDomains();
+}
+
+async function deleteDomain(id, btnEl){
+  if (!confirm('Remove this domain from the registry? Links will stop being shown for it.')) return;
+  btnEl.disabled = true;
+  const { error } = await window.supabaseClient.from('site_domains').delete().eq('id', id);
+  if (error){ showToast('Failed: ' + error.message, 'err'); btnEl.disabled = false; return; }
+  showToast('Domain removed', 'ok');
+  await loadDomains();
+}
+
+// ===== LINK LIMIT =====
+async function saveDetailLimit(){
+  const limit = parseInt(document.getElementById('detailLimitInput').value, 10);
+  if (isNaN(limit) || limit < 0 || limit > 100){ showToast('Enter a limit between 0-100', 'err'); return; }
+  const { error } = await window.supabaseClient.rpc('admin_set_link_limit', {
+    p_creator_id: currentDetailCreatorId, p_limit: limit
+  });
+  showToast(error ? 'Failed: ' + error.message : 'Link limit updated', error ? 'err' : 'ok');
+  if (!error) await loadCustomers();
+}
+
+// ===== MESSAGE EDIT / DELETE =====
+function startEdit(id){ editingMessageId = id; loadThread(); }
+function cancelEdit(){ editingMessageId = null; loadThread(); }
+
+async function saveMessageEdit(id){
+  const input = document.getElementById('editInput_' + id);
+  const text = input?.value.trim();
+  if (!text){ showToast('Message cannot be empty', 'err'); return; }
+  const { error } = await window.supabaseClient.from('support_messages')
+    .update({ message: text, edited_at: new Date().toISOString() }).eq('id', id);
+  if (error){ showToast('Failed: ' + error.message, 'err'); return; }
+  editingMessageId = null;
+  showToast('Message updated', 'ok');
+  await loadThread();
+}
+
+async function deleteMessage(id){
+  if (!confirm('Delete this message?')) return;
+  const { error } = await window.supabaseClient.from('support_messages').delete().eq('id', id);
+  if (error){ showToast('Failed: ' + error.message, 'err'); return; }
+  showToast('Message deleted', 'ok');
+  await loadThread();
+}
+
+async function clearThread(){
+  if (!selectedCreatorId){ showToast('Select a creator first', 'err'); return; }
+  if (!confirm('Clear this entire conversation? This cannot be undone.')) return;
+  const { error } = await window.supabaseClient.rpc('clear_message_thread', { p_user_id: selectedCreatorId });
+  if (error){ showToast('Failed: ' + error.message, 'err'); return; }
+  showToast('Conversation cleared', 'ok');
+  await loadThread();
+}
+
 async function loadCreatorList(){
   const { data, error } = await window.supabaseClient.rpc('admin_list_creators');
   if (error) return;
@@ -948,12 +1113,25 @@ async function loadThread(){
     .select('*').eq('user_id', selectedCreatorId).order('created_at', { ascending: true });
   const list = document.getElementById('threadList');
   if (!data || !data.length){ list.innerHTML = '<div class="empty-state">No messages yet</div>'; return; }
-  list.innerHTML = data.map(m => `
+  list.innerHTML = data.map(m => {
+    const editing = editingMessageId === m.id;
+    return `
     <div class="msg-bubble ${m.sender === 'admin' ? 'admin' : 'creator'}">
       <div class="msg-from">${m.sender === 'admin' ? 'You (admin)' : '💬 Customer message'}</div>
-      ${m.message}
-      <div class="msg-time">${fmtDate(m.created_at)}</div>
-    </div>`).join('');
+      ${editing
+        ? `<input class="msg-edit-input" id="editInput_${m.id}" value="${escapeAttr(m.message)}">
+           <div class="msg-actions">
+             <button class="msg-act" onclick="saveMessageEdit('${m.id}')">Save</button>
+             <button class="msg-act" onclick="cancelEdit()">Cancel</button>
+           </div>`
+        : `${escapeHtml(m.message)}
+           <div class="msg-time">${fmtDate(m.created_at)}${m.edited_at ? ' · edited' : ''}</div>
+           <div class="msg-actions">
+             <button class="msg-act" onclick="startEdit('${m.id}')">Edit</button>
+             <button class="msg-act danger" onclick="deleteMessage('${m.id}')">Delete</button>
+           </div>`}
+    </div>`;
+  }).join('');
   list.scrollTop = list.scrollHeight;
   await window.supabaseClient.from('support_messages').update({ read_by_admin: true })
     .eq('user_id', selectedCreatorId).eq('sender', 'creator');
@@ -1027,12 +1205,13 @@ async function saveThreshold(){
 function switchTab(tab, btn){
   document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
   btn.classList.add('active');
-  ['live','pending','customers','links','payments','messages','earnings','settings'].forEach(t => {
+  ['live','pending','customers','links','payments','messages','earnings','domains','settings'].forEach(t => {
     document.getElementById('tab-' + t).style.display = (t === tab) ? 'block' : 'none';
   });
   if (tab === 'live') loadLivePayments();
   if (tab === 'earnings') loadEarnings();
   if (tab === 'messages') loadCreatorList();
+  if (tab === 'domains') loadDomains();
   if (tab === 'customers') closeCustomerDetail();
 }
 

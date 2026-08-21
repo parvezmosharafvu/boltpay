@@ -8,24 +8,19 @@
 <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;600;700&family=JetBrains+Mono:wght@400;600;700&display=swap" rel="stylesheet">
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <script src="config.js"></script>
-
 <style>
 :root{
-  --bg:#141022; --panel:#1D1830; --panel-hi:#241C3B;
-  --line:rgba(245,243,255,0.08);
+  --bg:#141022; --panel:#1D1830; --panel-hi:#241C3B; --line:rgba(245,243,255,0.08);
   --text:#F5F3FF; --text-dim:rgba(245,243,255,0.45); --text-faint:rgba(245,243,255,0.28);
   --amber:#F5A623; --violet:#7C5CFF; --alert:#FF5C7A; --ok:#5CE0A0;
 }
 *{ margin:0; padding:0; box-sizing:border-box; -webkit-tap-highlight-color:transparent; }
-body{
-  font-family:'Space Grotesk',sans-serif; background:var(--bg); color:var(--text);
+body{ font-family:'Space Grotesk',sans-serif; background:var(--bg); color:var(--text);
   min-height:100vh; padding-bottom:48px;
   background-image: radial-gradient(circle at 15% 0%, rgba(124,92,255,0.10), transparent 45%),
-                     radial-gradient(circle at 85% 10%, rgba(245,166,35,0.08), transparent 40%);
-}
+                     radial-gradient(circle at 85% 10%, rgba(245,166,35,0.08), transparent 40%); }
 .mono{ font-family:'JetBrains Mono',monospace; }
 
-/* ===== HEADER ===== */
 .header{ display:flex; align-items:center; justify-content:space-between; padding:16px 20px;
   position:sticky; top:0; background:rgba(20,16,34,0.88); backdrop-filter:blur(12px);
   z-index:100; border-bottom:1px solid var(--line); }
@@ -36,13 +31,25 @@ body{
 .header-title{ font-size:15px; font-weight:700; letter-spacing:-0.2px; }
 .header-sub{ font-size:11px; color:var(--text-dim); font-weight:500; margin-top:1px; }
 .btn-logout{ background:var(--panel); border:1px solid var(--line); color:var(--text-dim);
-  padding:8px 16px; border-radius:9px; font-size:12px; font-weight:600; cursor:pointer;
-  font-family:'Space Grotesk'; transition:all .2s; }
+  padding:8px 16px; border-radius:9px; font-size:12px; font-weight:600; cursor:pointer; font-family:'Space Grotesk'; }
 .btn-logout:hover{ background:rgba(255,92,122,0.12); color:var(--alert); border-color:rgba(255,92,122,0.3); }
 
 .content{ padding:22px 18px; max-width:1080px; margin:0 auto; }
 
-/* ===== VOLTAGE METER (signature) ===== */
+/* ===== SECTION NAV ===== */
+.section-nav{ display:flex; gap:8px; margin-bottom:20px; overflow-x:auto; padding-bottom:4px; }
+.section-nav::-webkit-scrollbar{ height:0; display:none; }
+.nav-btn{ flex-shrink:0; background:var(--panel); border:1px solid var(--line); color:var(--text-dim);
+  padding:11px 18px; border-radius:12px; font-size:13px; font-weight:600; cursor:pointer;
+  font-family:'Space Grotesk'; transition:all .2s; display:flex; align-items:center; gap:7px; }
+.nav-btn.active{ background:rgba(245,166,35,0.10); border-color:rgba(245,166,35,0.35); color:var(--amber); }
+.nav-badge{ background:var(--alert); color:#fff; font-size:10px; font-weight:700; padding:1px 6px; border-radius:999px; display:none; }
+.nav-badge.show{ display:inline-block; }
+
+.section{ display:none; }
+.section.active{ display:block; }
+
+/* ===== METER ===== */
 .meter-card{ background:var(--panel); border:1px solid var(--line); border-radius:20px;
   padding:26px 22px; margin-bottom:18px; position:relative; overflow:hidden; }
 .meter-row{ display:flex; align-items:center; gap:22px; flex-wrap:wrap; }
@@ -62,61 +69,54 @@ body{
   border-radius:10px; padding:10px 13px; font-size:11px; color:var(--text-dim); line-height:1.5; }
 .meter-notice-box b{ color:var(--amber); display:block; margin-bottom:3px; font-size:10px; text-transform:uppercase; letter-spacing:0.5px; }
 
-/* ===== STAT GRID ===== */
 .stats-grid{ display:grid; grid-template-columns:repeat(2,1fr); gap:12px; margin-bottom:18px; }
 @media (min-width:760px){ .stats-grid{ grid-template-columns:repeat(4,1fr); gap:14px; } }
 .stat-card{ background:var(--panel); border:1px solid var(--line); border-radius:16px; padding:16px; }
 .stat-label{ font-size:10px; color:var(--text-faint); text-transform:uppercase; letter-spacing:1px; font-weight:700; margin-bottom:8px; }
 .stat-val{ font-size:21px; font-weight:700; letter-spacing:-0.5px; font-family:'JetBrains Mono'; }
-.stat-val.amber{ color:var(--amber); }
-.stat-val.violet{ color:var(--violet); }
-.stat-val.alert{ color:var(--alert); }
+.stat-val.amber{ color:var(--amber); } .stat-val.violet{ color:var(--violet); } .stat-val.alert{ color:var(--alert); }
 .stat-sub{ font-size:11px; color:var(--text-faint); margin-top:6px; }
 
-/* ===== TABS ===== */
-.tabs{ display:flex; gap:8px; margin-bottom:14px; }
-.tab-btn{ flex:1; background:var(--panel); border:1px solid var(--line); color:var(--text-dim);
-  padding:11px; border-radius:11px; font-size:13px; font-weight:600; cursor:pointer;
-  font-family:'Space Grotesk'; transition:all .2s; }
-.tab-btn.active{ background:rgba(245,166,35,0.10); border-color:rgba(245,166,35,0.35); color:var(--amber); }
-
-/* ===== PANELS ===== */
 .panel{ background:var(--panel); border:1px solid var(--line); border-radius:18px; padding:18px; margin-bottom:16px; }
 .panel-head{ display:flex; justify-content:space-between; align-items:center; margin-bottom:14px; flex-wrap:wrap; gap:8px; }
 .panel-title{ font-size:14px; font-weight:700; }
+.panel-sub{ font-size:11px; color:var(--text-faint); }
 
-/* ===== LINKS ===== */
-.link-scroll{ display:flex; gap:10px; overflow-x:auto; padding-bottom:6px; }
-.link-scroll::-webkit-scrollbar{ height:0; display:none; }
-.link-card{ background:var(--panel-hi); border:1px solid var(--line); padding:13px 14px; border-radius:13px;
-  min-width:230px; flex-shrink:0; display:flex; justify-content:space-between; align-items:center; gap:10px; }
-.link-name{ font-size:11px; font-weight:700; color:var(--amber); text-transform:uppercase; letter-spacing:0.4px; margin-bottom:3px; }
-.link-slug{ font-size:12px; font-family:'JetBrains Mono'; color:var(--text-dim); }
+/* ===== PAYMENT LINKS ===== */
+.model-card{ background:var(--panel-hi); border:1px solid var(--line); border-radius:14px; padding:15px; margin-bottom:11px; }
+.model-head{ display:flex; justify-content:space-between; align-items:center; gap:10px; margin-bottom:11px; }
+.model-name{ font-size:14px; font-weight:700; color:var(--amber); }
+.model-slug{ font-size:11px; color:var(--text-faint); font-family:'JetBrains Mono'; margin-top:2px; }
+.domain-row{ display:flex; align-items:center; justify-content:space-between; gap:8px;
+  background:rgba(255,255,255,0.03); border:1px solid var(--line); border-radius:9px; padding:9px 11px; margin-bottom:6px; }
+.domain-url{ font-size:12px; font-family:'JetBrains Mono'; color:var(--text-dim); word-break:break-all; }
 .btn-copy{ background:rgba(255,255,255,0.05); border:1px solid var(--line); color:var(--text); width:30px; height:30px;
   border-radius:8px; cursor:pointer; flex-shrink:0; }
-.link-domains{ font-size:10px; color:var(--text-faint); margin-top:6px; }
+.limit-bar{ font-size:11px; color:var(--text-faint); margin-bottom:12px; }
+.limit-bar b{ color:var(--amber); }
 
-/* ===== FORM ===== */
 .w-row{ display:flex; gap:10px; margin-bottom:10px; flex-wrap:wrap; }
 .w-input, .w-select{ background:var(--panel-hi); border:1px solid var(--line); color:var(--text);
   padding:12px 13px; border-radius:10px; font-family:'Space Grotesk'; font-size:13px; outline:none; flex:1; min-width:140px; }
 .w-input:focus, .w-select:focus{ border-color:var(--amber); }
 .btn-primary{ background:var(--amber); color:#1A1206; border:none; padding:12px 20px; border-radius:10px;
-  font-weight:700; font-size:13px; cursor:pointer; font-family:'Space Grotesk'; transition:.2s; white-space:nowrap; }
+  font-weight:700; font-size:13px; cursor:pointer; font-family:'Space Grotesk'; white-space:nowrap; }
 .btn-primary:active{ transform:scale(.97); }
+.btn-primary:disabled{ opacity:0.5; cursor:not-allowed; }
 .btn-secondary{ background:var(--panel-hi); color:var(--text-dim); border:1px solid var(--line); padding:12px 20px;
   border-radius:10px; font-weight:700; font-size:13px; cursor:pointer; font-family:'Space Grotesk'; }
+.btn-danger{ background:rgba(255,92,122,0.12); color:var(--alert); border:1px solid rgba(255,92,122,0.3);
+  padding:9px 14px; border-radius:9px; font-weight:700; font-size:12px; cursor:pointer; font-family:'Space Grotesk'; }
 .hint{ font-size:11px; color:var(--text-faint); margin-top:2px; }
 .saved-tag{ font-size:10px; color:var(--ok); font-weight:700; display:none; margin-top:6px; }
 .saved-tag.show{ display:block; }
 
 .btn-icon{ background:var(--panel-hi); border:1px solid var(--line); color:var(--text-dim); width:34px; height:34px;
   border-radius:9px; cursor:pointer; display:flex; align-items:center; justify-content:center; flex-shrink:0; font-size:15px; }
-.btn-icon:active{ transform:scale(.94); }
 .filter-select{ background:var(--panel-hi); border:1px solid var(--line); color:var(--text-dim);
   padding:8px 10px; border-radius:9px; font-family:'Space Grotesk'; font-size:12px; outline:none; }
 
-/* ===== TRANSACTION HISTORY ===== */
+/* ===== TRANSACTIONS ===== */
 .tx-row{ padding:14px; border-radius:13px; background:var(--panel-hi); border:1px solid var(--line); margin-bottom:9px; }
 .tx-top{ display:flex; justify-content:space-between; align-items:flex-start; gap:8px; flex-wrap:wrap; }
 .tx-id-row{ display:flex; align-items:center; gap:6px; margin-bottom:6px; }
@@ -138,19 +138,30 @@ body{
 .empty-state{ text-align:center; padding:34px 10px; color:var(--text-faint); font-size:13px; font-weight:500; }
 
 /* ===== MESSAGES ===== */
-.msg-bubble{ padding:10px 13px; border-radius:12px; margin-bottom:8px; font-size:13px; line-height:1.5; max-width:85%; }
+.msg-bubble{ padding:11px 14px; border-radius:12px; margin-bottom:9px; font-size:13px; line-height:1.5; max-width:88%; position:relative; }
 .msg-bubble.admin{ background:var(--panel-hi); border:1px solid var(--line); }
 .msg-bubble.creator{ background:rgba(245,166,35,0.12); border:1px solid rgba(245,166,35,0.3); margin-left:auto; }
-.msg-time{ font-size:10px; color:var(--text-faint); margin-top:4px; }
+.msg-from{ font-size:10px; font-weight:700; color:var(--violet); text-transform:uppercase; letter-spacing:0.4px; margin-bottom:4px; }
+.msg-time{ font-size:10px; color:var(--text-faint); margin-top:5px; }
+.msg-actions{ display:flex; gap:8px; margin-top:7px; }
+.msg-act{ background:none; border:none; color:var(--text-faint); cursor:pointer; font-size:11px; font-weight:600;
+  padding:0; font-family:'Space Grotesk'; }
+.msg-act:hover{ color:var(--amber); }
+.msg-act.danger:hover{ color:var(--alert); }
+.msg-edit-input{ width:100%; background:rgba(0,0,0,0.2); border:1px solid var(--line); color:var(--text);
+  padding:8px 10px; border-radius:8px; font-family:'Space Grotesk'; font-size:13px; outline:none; margin-bottom:6px; }
+
+.toast{ position:fixed; bottom:20px; left:50%; transform:translateX(-50%); background:var(--panel-hi);
+  border:1px solid var(--line); padding:12px 20px; border-radius:12px; font-size:13px; font-weight:600; z-index:999; display:none; }
+.toast.ok{ border-color:rgba(92,224,160,0.4); color:var(--ok); }
+.toast.err{ border-color:rgba(255,92,122,0.4); color:var(--alert); }
 </style>
 </head>
 <body>
 
 <div class="header">
   <div class="header-left">
-    <div class="bolt-mark">
-      <svg viewBox="0 0 24 24" fill="none"><path d="M13 2L4 14h6l-1 8 9-12h-6l1-8z" fill="#1A1206"/></svg>
-    </div>
+    <div class="bolt-mark"><svg viewBox="0 0 24 24" fill="none"><path d="M13 2L4 14h6l-1 8 9-12h-6l1-8z" fill="#1A1206"/></svg></div>
     <div>
       <div class="header-title">Boltpay</div>
       <div class="header-sub" id="userEmailDisplay">Loading…</div>
@@ -161,95 +172,93 @@ body{
 
 <div class="content">
 
-  <!-- Signature: voltage meter balance card -->
-  <div class="meter-card">
-    <div class="meter-row">
-      <div class="meter-arc-wrap">
-        <div class="meter-label-top">Charge level</div>
-        <svg viewBox="0 0 120 62" width="120" height="62">
-          <path d="M8 58 A52 52 0 0 1 112 58" stroke="rgba(245,243,255,0.08)" stroke-width="9" fill="none" stroke-linecap="round"/>
-          <path id="meterArc" d="M8 58 A52 52 0 0 1 112 58" stroke="url(#meterGrad)" stroke-width="9" fill="none"
-                stroke-linecap="round" stroke-dasharray="163" stroke-dashoffset="163"/>
-          <defs>
-            <linearGradient id="meterGrad" x1="0" y1="0" x2="1" y2="0">
+  <div class="section-nav">
+    <button class="nav-btn active" data-sec="overview" onclick="showSection('overview', this)">📊 Overview</button>
+    <button class="nav-btn" data-sec="links" onclick="showSection('links', this)">🔗 Payment links</button>
+    <button class="nav-btn" data-sec="income" onclick="showSection('income', this)">💰 Transactions</button>
+    <button class="nav-btn" data-sec="cashout" onclick="showSection('cashout', this)">🏦 Cash out</button>
+    <button class="nav-btn" data-sec="messages" onclick="showSection('messages', this)">💬 Messages <span class="nav-badge" id="msgBadge">0</span></button>
+  </div>
+
+  <!-- ============ OVERVIEW ============ -->
+  <div class="section active" id="sec-overview">
+    <div class="meter-card">
+      <div class="meter-row">
+        <div class="meter-arc-wrap">
+          <div class="meter-label-top">Charge level</div>
+          <svg viewBox="0 0 120 62" width="120" height="62">
+            <path d="M8 58 A52 52 0 0 1 112 58" stroke="rgba(245,243,255,0.08)" stroke-width="9" fill="none" stroke-linecap="round"/>
+            <path id="meterArc" d="M8 58 A52 52 0 0 1 112 58" stroke="url(#meterGrad)" stroke-width="9" fill="none"
+                  stroke-linecap="round" stroke-dasharray="163" stroke-dashoffset="163"/>
+            <defs><linearGradient id="meterGrad" x1="0" y1="0" x2="1" y2="0">
               <stop offset="0%" stop-color="#7C5CFF"/><stop offset="100%" stop-color="#F5A623"/>
-            </linearGradient>
-          </defs>
-        </svg>
-      </div>
-      <div class="meter-figures">
-        <div class="meter-label-top">Available balance</div>
-        <div class="meter-amount mono" id="statAvailable">$0.00</div>
-        <div class="meter-sub">Withdraw anytime — fee applied at request time</div>
-        <div class="meter-badges">
-          <div class="chip">Total earned&nbsp;<b id="statEarned">$0.00</b></div>
-          <div class="chip">Payments&nbsp;<b id="statEarnedCount">0</b></div>
+            </linearGradient></defs>
+          </svg>
+        </div>
+        <div class="meter-figures">
+          <div class="meter-label-top">Available balance</div>
+          <div class="meter-amount mono" id="statAvailable">$0.00</div>
+          <div class="meter-sub">Withdraw anytime — fee applied at request time</div>
+          <div class="meter-badges">
+            <div class="chip">Total earned&nbsp;<b id="statEarned">$0.00</b></div>
+            <div class="chip">Payments&nbsp;<b id="statEarnedCount">0</b></div>
+          </div>
         </div>
       </div>
-    </div>
-    <div class="meter-notice" id="platformNoticeWrap">
-      <div class="meter-notice-box"><b>📢 Notice</b><span id="noticeText"></span></div>
-    </div>
-  </div>
-
-  <div class="stats-grid">
-    <div class="stat-card">
-      <div class="stat-label">Pending payments</div>
-      <div class="stat-val amber" id="statPending">0</div>
-      <div class="stat-sub">Awaiting confirmation</div>
-    </div>
-    <div class="stat-card">
-      <div class="stat-label">Withdrawn total</div>
-      <div class="stat-val violet" id="statWithdrawn">$0.00</div>
-      <div class="stat-sub" id="statWdCount">0 pending requests</div>
-    </div>
-    <div class="stat-card">
-      <div class="stat-label">Active links</div>
-      <div class="stat-val" id="statLinks">0</div>
-      <div class="stat-sub">Payment slugs live</div>
-    </div>
-    <div class="stat-card">
-      <div class="stat-label">Withdrawal fee</div>
-      <div class="stat-val alert" id="statFee">—%</div>
-      <div class="stat-sub">Set by Boltpay admin</div>
-    </div>
-  </div>
-
-  <div class="panel">
-    <div class="panel-head">
-      <div class="panel-title">Your payment links</div>
-      <button class="btn-copy" style="width:auto; padding:0 12px; font-size:12px; font-weight:700;" onclick="toggleLinkForm()">+ New link</button>
-    </div>
-    <div id="newLinkForm" style="display:none; margin-bottom:14px;">
-      <div class="w-row">
-        <input type="text" class="w-input" id="newSlug" placeholder="your-link-name (letters, numbers, hyphens)">
-        <input type="text" class="w-input" id="newDisplayName" placeholder="Display name (optional)">
+      <div class="meter-notice" id="platformNoticeWrap">
+        <div class="meter-notice-box"><b>📢 Notice</b><span id="noticeText"></span></div>
       </div>
-      <button class="btn-primary" onclick="createPaymentLink()" style="width:100%;">Create link</button>
-      <div class="hint" id="linkFormMsg" style="display:none;"></div>
     </div>
-    <div class="link-scroll" id="linksScroll"></div>
-    <div class="hint" style="margin-top:10px;" id="domainHint"></div>
+
+    <div class="stats-grid">
+      <div class="stat-card">
+        <div class="stat-label">Pending payments</div>
+        <div class="stat-val amber" id="statPending">0</div>
+        <div class="stat-sub">Awaiting confirmation</div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-label">Withdrawn total</div>
+        <div class="stat-val violet" id="statWithdrawn">$0.00</div>
+        <div class="stat-sub" id="statWdCount">0 pending requests</div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-label">Active links</div>
+        <div class="stat-val" id="statLinks">0</div>
+        <div class="stat-sub" id="statLinkLimit">of 5 allowed</div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-label">Withdrawal fee</div>
+        <div class="stat-val alert" id="statFee">—%</div>
+        <div class="stat-sub">Set by Boltpay admin</div>
+      </div>
+    </div>
   </div>
 
-  <div class="panel">
-    <div class="panel-head">
-      <div class="panel-title">Messages from Boltpay</div>
-      <button class="btn-icon" onclick="loadMessages()" title="Refresh">⟳</button>
+  <!-- ============ PAYMENT LINKS ============ -->
+  <div class="section" id="sec-links">
+    <div class="panel">
+      <div class="panel-head">
+        <div>
+          <div class="panel-title">Your payment links</div>
+          <div class="panel-sub" id="domainCountHint"></div>
+        </div>
+        <button class="btn-primary" style="padding:9px 14px; font-size:12px;" onclick="toggleLinkForm()">+ New link</button>
+      </div>
+      <div class="limit-bar" id="limitBar"></div>
+      <div id="newLinkForm" style="display:none; margin-bottom:16px;">
+        <div class="w-row">
+          <input type="text" class="w-input" id="newSlug" placeholder="link-name (letters, numbers, hyphens)">
+          <input type="text" class="w-input" id="newDisplayName" placeholder="Display name (optional)">
+        </div>
+        <button class="btn-primary" onclick="createPaymentLink()" style="width:100%;">Create link</button>
+        <div class="hint" id="linkFormMsg" style="display:none;"></div>
+      </div>
+      <div id="linksList"><div class="empty-state">No payment links yet</div></div>
     </div>
-    <div id="messagesList" style="max-height:260px; overflow-y:auto; margin-bottom:12px;"><div class="empty-state">No messages yet</div></div>
-    <div class="w-row">
-      <input type="text" class="w-input" id="replyInput" placeholder="Send feedback or a question...">
-    </div>
-    <button class="btn-primary" onclick="sendReply()" style="width:100%;">Send</button>
   </div>
 
-  <div class="tabs">
-    <button class="tab-btn active" onclick="switchTab('income', this)">Income</button>
-    <button class="tab-btn" onclick="switchTab('cashout', this)">Cash out</button>
-  </div>
-
-  <div id="tab-income">
+  <!-- ============ TRANSACTIONS ============ -->
+  <div class="section" id="sec-income">
     <div class="panel">
       <div class="panel-head">
         <div class="panel-title">Transaction history</div>
@@ -278,7 +287,8 @@ body{
     </div>
   </div>
 
-  <div id="tab-cashout" style="display:none;">
+  <!-- ============ CASH OUT ============ -->
+  <div class="section" id="sec-cashout">
     <div class="panel">
       <div class="panel-head"><div class="panel-title">Your withdrawal wallet</div></div>
       <div class="w-row">
@@ -291,15 +301,15 @@ body{
       </div>
       <button class="btn-secondary" onclick="saveWalletDefaults()" style="width:100%;">💾 Save as my default wallet</button>
       <div class="saved-tag" id="walletSavedTag">✓ Saved — this will auto-fill next time</div>
-      <div class="hint" style="margin-top:8px;">Set this once. Payments settled by admin support review will send funds to this wallet automatically.</div>
+      <div class="hint" style="margin-top:8px;">Set this once. Auto-approved payouts go to this wallet.</div>
     </div>
     <div class="panel">
       <div class="panel-head"><div class="panel-title">Request a withdrawal</div></div>
       <div class="w-row">
         <input type="number" class="w-input mono" id="wdAmount" placeholder="Amount (USD)">
       </div>
-      <button class="btn-primary" onclick="submitWithdrawal()" style="width:100%;">Submit request (uses wallet above)</button>
-      <div class="hint">Requests above the auto-approve threshold need a one-time admin confirmation.</div>
+      <button class="btn-primary" onclick="submitWithdrawal()" style="width:100%;">Submit request</button>
+      <div class="hint">Requests above the auto-approve threshold need admin confirmation.</div>
     </div>
     <div class="panel">
       <div class="panel-head"><div class="panel-title">Withdrawal history</div></div>
@@ -307,23 +317,53 @@ body{
     </div>
   </div>
 
+  <!-- ============ MESSAGES ============ -->
+  <div class="section" id="sec-messages">
+    <div class="panel">
+      <div class="panel-head">
+        <div class="panel-title">Messages with Boltpay</div>
+        <div style="display:flex; gap:8px;">
+          <button class="btn-icon" onclick="loadMessages()" title="Refresh">⟳</button>
+          <button class="btn-danger" onclick="clearMyThread()">Clear history</button>
+        </div>
+      </div>
+      <div id="messagesList" style="max-height:400px; overflow-y:auto; margin-bottom:14px;"><div class="empty-state">No messages yet</div></div>
+      <div class="w-row">
+        <input type="text" class="w-input" id="replyInput" placeholder="Send feedback or a question...">
+      </div>
+      <button class="btn-primary" onclick="sendReply()" style="width:100%;">Send</button>
+    </div>
+  </div>
+
 </div>
 
+<div class="toast" id="toast"></div>
+
 <script>
+document.addEventListener('click', function(e){
+  const btn = e.target.closest('[data-copy]');
+  if (!btn) return;
+  const val = btn.getAttribute('data-copy');
+  if (val){ navigator.clipboard.writeText(val); showToast('Copied', 'ok'); }
+});
+
+function escapeAttr(str){
+  return String(str).replace(/&/g,'&amp;').replace(/"/g,'&quot;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+}
+function escapeHtml(str){
+  return String(str).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+}
+
 let currentUser = null;
 let allPayments = [];
 let allWithdrawals = [];
 let allLinks = [];
+let paymentDomains = [];
+let maxLinks = 5;
 let paymentTickInterval = null;
+let editingMessageId = null;
 
-// Domain-agnostic by design: whatever domain this dashboard is opened on
-// is the domain used to build and display payment links. If you point
-// several domains at the same Cloudflare Pages project, each creator
-// simply sees links on whichever domain they're currently using — all
-// of them resolve to the exact same slug/model on the same backend.
-const CURRENT_DOMAIN = window.location.host;
-
-const RESERVED_SLUGS = ['login','register','dashboard','admin','index','404','config','u',
+const RESERVED_SLUGS = ['login','register','dashboard','admin','index','404','config','u','favicon','assets',
   'invoice-boltpay-v2','dashboard-theme1-voltmeter','dashboard-theme2-ledger',
   'dashboard-theme3-aurora','dashboard-theme4-calm'];
 
@@ -332,17 +372,34 @@ async function init(){
   if (!user){ window.location.href = 'login.html'; return; }
   currentUser = user;
   document.getElementById('userEmailDisplay').textContent = user.email;
-  document.getElementById('domainHint').textContent = `Links shown for ${CURRENT_DOMAIN} — the same slug works identically on any domain pointed at Boltpay.`;
+  await loadDomains();
   await Promise.all([fetchProfile(), fetchLinks(), fetchPayments(), fetchWithdrawals(), loadPlatformNotice(), loadMessages()]);
   if (paymentTickInterval) clearInterval(paymentTickInterval);
   paymentTickInterval = setInterval(tickPaymentTimers, 1000);
 }
 
+// Every domain registered for payments gets a link row for each model,
+// so the same slug is shareable on all of them.
+async function loadDomains(){
+  const { data } = await window.supabaseClient
+    .from('site_domains')
+    .select('hostname, purpose, is_active, sort_order')
+    .eq('is_active', true)
+    .order('sort_order');
+  paymentDomains = (data || []).filter(d => d.purpose === 'payment' || d.purpose === 'both');
+  if (!paymentDomains.length){
+    paymentDomains = [{ hostname: window.location.host }];
+  }
+  document.getElementById('domainCountHint').textContent =
+    `${paymentDomains.length} domain${paymentDomains.length === 1 ? '' : 's'} available — every link works on all of them`;
+}
+
 async function fetchProfile(){
   const { data } = await window.supabaseClient.from('profiles')
-    .select('withdrawal_fee_percent, default_withdrawal_method, default_withdrawal_destination')
+    .select('withdrawal_fee_percent, max_payment_links, default_withdrawal_method, default_withdrawal_destination')
     .eq('id', currentUser.id).single();
   document.getElementById('statFee').textContent = (data?.withdrawal_fee_percent ?? 3) + '%';
+  maxLinks = data?.max_payment_links ?? 5;
   if (data?.default_withdrawal_method){ document.getElementById('wdMethod').value = data.default_withdrawal_method; }
   if (data?.default_withdrawal_destination){ document.getElementById('wdNote').value = data.default_withdrawal_destination; }
 }
@@ -356,63 +413,39 @@ async function loadPlatformNotice(){
   }
 }
 
-async function loadMessages(){
-  const { data } = await window.supabaseClient.from('support_messages')
-    .select('*').eq('user_id', currentUser.id).order('created_at', { ascending: true });
-  const list = document.getElementById('messagesList');
-  if (!data || !data.length){ list.innerHTML = '<div class="empty-state">No messages yet</div>'; return; }
-  list.innerHTML = data.map(m => `
-    <div class="msg-bubble ${m.sender}">
-      ${m.message}
-      <div class="msg-time">${m.sender === 'admin' ? 'Boltpay Team' : 'You'} · ${fmtDate(m.created_at)}</div>
-    </div>`).join('');
-  list.scrollTop = list.scrollHeight;
-  await window.supabaseClient.from('support_messages').update({ read_by_creator: true })
-    .eq('user_id', currentUser.id).eq('sender', 'admin');
-}
-
-async function sendReply(){
-  const text = document.getElementById('replyInput').value.trim();
-  if (!text) return;
-  const { error } = await window.supabaseClient.from('support_messages').insert({
-    user_id: currentUser.id, sender: 'creator', message: text,
-  });
-  if (error){ alert('Failed: ' + error.message); return; }
-  document.getElementById('replyInput').value = '';
-  await loadMessages();
-}
-
-async function saveWalletDefaults(){
-  const method = document.getElementById('wdMethod').value;
-  const destination = document.getElementById('wdNote').value.trim();
-  const tag = document.getElementById('walletSavedTag');
-
-  if (!destination){ alert('Enter your account details first'); return; }
-
-  const { error } = await window.supabaseClient.from('profiles').update({
-    default_withdrawal_method: method,
-    default_withdrawal_destination: destination,
-  }).eq('id', currentUser.id);
-
-  if (error){ alert('Failed to save: ' + error.message); return; }
-  tag.classList.add('show');
-  setTimeout(() => tag.classList.remove('show'), 2500);
-}
-
 async function fetchLinks(){
-  const { data } = await window.supabaseClient.from('payment_links').select('*').eq('user_id', currentUser.id);
+  const { data } = await window.supabaseClient.from('payment_links').select('*').eq('user_id', currentUser.id).order('created_at');
   allLinks = data || [];
-  document.getElementById('statLinks').textContent = allLinks.filter(l => l.is_active).length;
-  const scroll = document.getElementById('linksScroll');
-  if (!allLinks.length){ scroll.innerHTML = '<div class="empty-state" style="min-width:100%;">No payment links yet</div>'; return; }
-  scroll.innerHTML = allLinks.map(l => `
-    <div class="link-card">
-      <div>
-        <div class="link-name">${l.display_name || l.slug}</div>
-        <div class="link-slug">${CURRENT_DOMAIN}/${l.slug}</div>
-      </div>
-      <button class="btn-copy" onclick="copyToClipboard('https://${CURRENT_DOMAIN}/${l.slug}')">⧉</button>
-    </div>`).join('');
+  const activeCount = allLinks.filter(l => l.is_active).length;
+  document.getElementById('statLinks').textContent = activeCount;
+  document.getElementById('statLinkLimit').textContent = `of ${maxLinks} allowed`;
+  document.getElementById('limitBar').innerHTML =
+    `You've used <b>${allLinks.length}</b> of <b>${maxLinks}</b> payment links.`;
+
+  const list = document.getElementById('linksList');
+  if (!allLinks.length){ list.innerHTML = '<div class="empty-state">No payment links yet</div>'; return; }
+
+  list.innerHTML = allLinks.map(l => {
+    const domainRows = paymentDomains.map(d => {
+      const full = `https://${d.hostname}/${l.slug}`;
+      return `
+        <div class="domain-row">
+          <span class="domain-url">${escapeHtml(d.hostname)}/${escapeHtml(l.slug)}</span>
+          <button class="btn-copy" data-copy="${escapeAttr(full)}">⧉</button>
+        </div>`;
+    }).join('');
+    return `
+      <div class="model-card">
+        <div class="model-head">
+          <div>
+            <div class="model-name">🌎 ${escapeHtml(l.display_name || l.slug)}</div>
+            <div class="model-slug">/${escapeHtml(l.slug)}</div>
+          </div>
+          <span class="badge ${l.is_active ? 'settled' : 'expired'}"><span class="badge-dot"></span>${l.is_active ? 'active' : 'disabled'}</span>
+        </div>
+        ${domainRows}
+      </div>`;
+  }).join('');
 }
 
 function toggleLinkForm(){
@@ -422,9 +455,7 @@ function toggleLinkForm(){
 
 function slugify(text){
   return text.toLowerCase().trim()
-    .replace(/[^a-z0-9\s-]/g, '')
-    .replace(/[\s-]+/g, '-')
-    .replace(/^-+|-+$/g, '');
+    .replace(/[^a-z0-9\s-]/g, '').replace(/[\s-]+/g, '-').replace(/^-+|-+$/g, '');
 }
 
 async function createPaymentLink(){
@@ -432,64 +463,64 @@ async function createPaymentLink(){
   const displayName = document.getElementById('newDisplayName').value.trim();
   const msgEl = document.getElementById('linkFormMsg');
   const slug = slugify(rawSlug);
-
   msgEl.style.display = 'none';
 
   if (!slug || slug.length < 3){
     msgEl.textContent = 'Enter a link name (at least 3 characters).';
-    msgEl.style.color = 'var(--alert)';
-    msgEl.style.display = 'block';
-    return;
+    msgEl.style.color = 'var(--alert)'; msgEl.style.display = 'block'; return;
   }
-
   if (RESERVED_SLUGS.includes(slug)){
-    msgEl.textContent = 'That name is reserved — please choose a different one.';
-    msgEl.style.color = 'var(--alert)';
-    msgEl.style.display = 'block';
-    return;
+    msgEl.textContent = 'That name is reserved — choose a different one.';
+    msgEl.style.color = 'var(--alert)'; msgEl.style.display = 'block'; return;
   }
 
   const { error } = await window.supabaseClient.from('payment_links').insert({
-    user_id: currentUser.id,
-    slug: slug,
-    display_name: displayName || null,
-    is_active: true,
+    user_id: currentUser.id, slug, display_name: displayName || null, is_active: true,
   });
 
   if (error){
     if (error.code === '23505'){
       msgEl.textContent = 'That link name is already taken — try another.';
     } else {
-      msgEl.textContent = 'Error: ' + error.message;
+      msgEl.textContent = error.message;
     }
-    msgEl.style.color = 'var(--alert)';
-    msgEl.style.display = 'block';
-    return;
+    msgEl.style.color = 'var(--alert)'; msgEl.style.display = 'block'; return;
   }
 
   msgEl.textContent = 'Link created!';
-  msgEl.style.color = 'var(--ok)';
-  msgEl.style.display = 'block';
+  msgEl.style.color = 'var(--ok)'; msgEl.style.display = 'block';
   document.getElementById('newSlug').value = '';
   document.getElementById('newDisplayName').value = '';
   await fetchLinks();
   setTimeout(() => { document.getElementById('newLinkForm').style.display = 'none'; }, 1200);
 }
 
+async function saveWalletDefaults(){
+  const method = document.getElementById('wdMethod').value;
+  const destination = document.getElementById('wdNote').value.trim();
+  if (!destination){ showToast('Enter your account details first', 'err'); return; }
+  const { error } = await window.supabaseClient.from('profiles').update({
+    default_withdrawal_method: method, default_withdrawal_destination: destination,
+  }).eq('id', currentUser.id);
+  if (error){ showToast('Failed: ' + error.message, 'err'); return; }
+  const tag = document.getElementById('walletSavedTag');
+  tag.classList.add('show');
+  setTimeout(() => tag.classList.remove('show'), 2500);
+}
+
 async function fetchPayments(){
   const { data, error } = await window.supabaseClient
-    .from('payments')
-    .select('*, payment_links(display_name, slug)')
-    .eq('user_id', currentUser.id)
-    .order('created_at', { ascending:false });
-  if (error){ console.error('fetchPayments error', error); return; }
+    .from('payments').select('*, payment_links(display_name, slug)')
+    .eq('user_id', currentUser.id).order('created_at', { ascending:false });
+  if (error){ console.error(error); return; }
   allPayments = data || [];
   computeStats();
   renderPayments();
 }
 
 async function fetchWithdrawals(){
-  const { data } = await window.supabaseClient.from('withdrawals').select('*').eq('user_id', currentUser.id).order('requested_at', { ascending:false });
+  const { data } = await window.supabaseClient.from('withdrawals').select('*')
+    .eq('user_id', currentUser.id).order('requested_at', { ascending:false });
   allWithdrawals = data || [];
   computeStats();
   renderWithdrawals();
@@ -500,8 +531,8 @@ function computeStats(){
   const earned = settled.reduce((s,p) => s + parseFloat(p.amount_settled || 0), 0);
   const pendingCount = allPayments.filter(p => p.status === 'new' || p.status === 'pending').length;
   const withdrawn = allWithdrawals.filter(w => w.status === 'paid').reduce((s,w) => s + parseFloat(w.amount_after_fee || 0), 0);
-  const withdrawnOrQueued = allWithdrawals.filter(w => w.status !== 'rejected').reduce((s,w) => s + parseFloat(w.amount_requested || 0), 0);
-  const available = Math.max(0, earned - withdrawnOrQueued);
+  const queued = allWithdrawals.filter(w => w.status !== 'rejected').reduce((s,w) => s + parseFloat(w.amount_requested || 0), 0);
+  const available = Math.max(0, earned - queued);
   const wdPending = allWithdrawals.filter(w => w.status === 'pending').length;
 
   document.getElementById('statEarned').textContent = '$' + earned.toFixed(2);
@@ -512,16 +543,14 @@ function computeStats(){
   document.getElementById('statWdCount').textContent = wdPending + ' pending requests';
 
   const pct = earned > 0 ? Math.min(1, available / earned) : 0;
-  const circumference = 163;
-  document.getElementById('meterArc').setAttribute('stroke-dashoffset', String(circumference * (1 - pct)));
+  document.getElementById('meterArc').setAttribute('stroke-dashoffset', String(163 * (1 - pct)));
 }
 
 function fmtDate(str){ return new Date(str).toLocaleString([], { month:'short', day:'numeric', hour:'2-digit', minute:'2-digit' }); }
 
 function withinTimeFilter(createdAt, filter){
   if (!filter) return true;
-  const created = new Date(createdAt);
-  const now = new Date();
+  const created = new Date(createdAt); const now = new Date();
   if (filter === 'today') return created.toDateString() === now.toDateString();
   if (filter === '7d'){ const s = new Date(now); s.setDate(s.getDate()-7); return created >= s; }
   if (filter === '30d'){ const s = new Date(now); s.setDate(s.getDate()-30); return created >= s; }
@@ -534,7 +563,7 @@ function renderPayments(){
   const statusFilter = document.getElementById('txStatusFilter')?.value || '';
   const timeFilter = document.getElementById('txTimeFilter')?.value || '';
 
-  let filtered = allPayments.filter(p => {
+  const filtered = allPayments.filter(p => {
     if (statusFilter && p.status !== statusFilter) return false;
     if (!withinTimeFilter(p.created_at, timeFilter)) return false;
     if (search){
@@ -553,15 +582,16 @@ function renderPayments(){
   container.innerHTML = filtered.map(p => {
     const modelName = p.payment_links?.display_name || p.payment_links?.slug || '—';
     const location = [p.customer_city, p.customer_country].filter(Boolean).join(', ') || 'Unknown location';
-    const shortLn = p.lightning_invoice ? p.lightning_invoice.slice(0, 13) + '...' + p.lightning_invoice.slice(-9) : (p.btcpay_invoice_id || '—');
-    const fullCopyVal = p.lightning_invoice || p.btcpay_invoice_id || '';
+    const ln = p.lightning_invoice || '';
+    const shortLn = ln.length > 25 ? ln.slice(0,12) + '...' + ln.slice(-9) : (ln || p.btcpay_invoice_id || '—');
+    const fullVal = ln || p.btcpay_invoice_id || '';
     const isPending = p.status === 'new' || p.status === 'pending';
 
     return `
       <div class="tx-row" ${isPending ? `data-expires="${p.expires_at}"` : ''}>
         <div class="tx-id-row">
-          <span class="tx-id">🔗 ${shortLn}</span>
-          ${fullCopyVal ? `<button class="copy-mini" onclick="copyToClipboard('${fullCopyVal}')" title="Copy full">⧉</button>` : ''}
+          <span class="tx-id">🔗 ${escapeHtml(shortLn)}</span>
+          ${fullVal ? `<button class="copy-mini" data-copy="${escapeAttr(fullVal)}" title="Copy full">⧉</button>` : ''}
         </div>
         <div class="tx-meta-row">${(p.method||'lightning').toUpperCase()} · ${fmtDate(p.created_at)}</div>
         <div class="tx-top">
@@ -569,8 +599,8 @@ function renderPayments(){
           <span class="badge ${p.status}"><span class="badge-dot"></span>${p.status}</span>
         </div>
         <div class="tx-details">
-          <span>🌎 ${modelName}</span>
-          <span>📍 ${location}</span>
+          <span>🌎 ${escapeHtml(modelName)}</span>
+          <span>📍 ${escapeHtml(location)}</span>
           ${isPending ? `<span class="tx-timer mono" data-timer>--:--</span>` : ''}
           ${p.status === 'settled' ? `<span class="tx-checked">✓ SETTLED</span>` : ''}
         </div>
@@ -584,20 +614,19 @@ function tickPaymentTimers(){
   document.querySelectorAll('.tx-row[data-expires]').forEach(row => {
     const expires = new Date(row.getAttribute('data-expires'));
     const secondsLeft = Math.max(0, Math.floor((expires - new Date()) / 1000));
-    const m = Math.floor(secondsLeft / 60);
-    const s = secondsLeft % 60;
-    const timerEl = row.querySelector('[data-timer]');
-    if (timerEl){
-      timerEl.textContent = `${String(m).padStart(2,'0')}:${String(s).padStart(2,'0')}`;
-      timerEl.classList.toggle('urgent', secondsLeft < 300);
+    const m = Math.floor(secondsLeft / 60), s = secondsLeft % 60;
+    const el = row.querySelector('[data-timer]');
+    if (el){
+      el.textContent = `${String(m).padStart(2,'0')}:${String(s).padStart(2,'0')}`;
+      el.classList.toggle('urgent', secondsLeft < 300);
     }
   });
 }
 
 function renderWithdrawals(){
-  const container = document.getElementById('withdrawalsList');
-  if (!allWithdrawals.length){ container.innerHTML = '<div class="empty-state">No withdrawal history</div>'; return; }
-  container.innerHTML = allWithdrawals.map(w => `
+  const c = document.getElementById('withdrawalsList');
+  if (!allWithdrawals.length){ c.innerHTML = '<div class="empty-state">No withdrawal history</div>'; return; }
+  c.innerHTML = allWithdrawals.map(w => `
     <div class="tx-row">
       <div class="tx-top">
         <div>
@@ -613,33 +642,119 @@ async function submitWithdrawal(){
   const amt = parseFloat(document.getElementById('wdAmount').value);
   const method = document.getElementById('wdMethod').value;
   const note = document.getElementById('wdNote').value.trim();
-  const availableText = document.getElementById('statAvailable').textContent.replace('$','');
-  const available = parseFloat(availableText);
+  const available = parseFloat(document.getElementById('statAvailable').textContent.replace('$',''));
 
-  if (!amt || amt < 5) return alert('Minimum withdrawal is $5');
-  if (!note) return alert('Please set your wallet details above first');
-  if (amt > available) return alert('Insufficient balance');
+  if (!amt || amt < 5) return showToast('Minimum withdrawal is $5', 'err');
+  if (!note) return showToast('Set your wallet details first', 'err');
+  if (amt > available) return showToast('Insufficient balance', 'err');
 
   const { error } = await window.supabaseClient.rpc('request_withdrawal', {
     p_amount: amt, p_method: method, p_destination: note
   });
-
-  if (error) alert('Error: ' + error.message);
+  if (error) showToast('Error: ' + error.message, 'err');
   else {
-    alert('Withdrawal request submitted');
+    showToast('Withdrawal request submitted', 'ok');
     document.getElementById('wdAmount').value = '';
     fetchWithdrawals();
   }
 }
 
-function switchTab(tab, btn){
-  document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
-  btn.classList.add('active');
-  document.getElementById('tab-income').style.display = tab === 'income' ? 'block' : 'none';
-  document.getElementById('tab-cashout').style.display = tab === 'cashout' ? 'block' : 'none';
+// ===== MESSAGES =====
+async function loadMessages(){
+  const { data } = await window.supabaseClient.from('support_messages')
+    .select('*').eq('user_id', currentUser.id).order('created_at', { ascending: true });
+  const list = document.getElementById('messagesList');
+
+  const unread = (data || []).filter(m => m.sender === 'admin' && !m.read_by_creator).length;
+  const badge = document.getElementById('msgBadge');
+  badge.textContent = unread;
+  badge.classList.toggle('show', unread > 0);
+
+  if (!data || !data.length){ list.innerHTML = '<div class="empty-state">No messages yet</div>'; return; }
+
+  list.innerHTML = data.map(m => {
+    const isMine = m.sender === 'creator';
+    const editing = editingMessageId === m.id;
+    return `
+      <div class="msg-bubble ${m.sender}">
+        <div class="msg-from">${m.sender === 'admin' ? 'Boltpay Team' : 'You'}</div>
+        ${editing
+          ? `<input class="msg-edit-input" id="editInput_${m.id}" value="${escapeAttr(m.message)}">
+             <div class="msg-actions">
+               <button class="msg-act" onclick="saveMessageEdit('${m.id}')">Save</button>
+               <button class="msg-act" onclick="cancelEdit()">Cancel</button>
+             </div>`
+          : `${escapeHtml(m.message)}
+             <div class="msg-time">${fmtDate(m.created_at)}${m.edited_at ? ' · edited' : ''}</div>
+             ${isMine ? `<div class="msg-actions">
+                <button class="msg-act" onclick="startEdit('${m.id}')">Edit</button>
+                <button class="msg-act danger" onclick="deleteMessage('${m.id}')">Delete</button>
+             </div>` : ''}`}
+      </div>`;
+  }).join('');
+  list.scrollTop = list.scrollHeight;
+
+  await window.supabaseClient.from('support_messages').update({ read_by_creator: true })
+    .eq('user_id', currentUser.id).eq('sender', 'admin');
 }
 
-function copyToClipboard(text){ navigator.clipboard.writeText(text); }
+function startEdit(id){ editingMessageId = id; loadMessages(); }
+function cancelEdit(){ editingMessageId = null; loadMessages(); }
+
+async function saveMessageEdit(id){
+  const input = document.getElementById('editInput_' + id);
+  const text = input?.value.trim();
+  if (!text){ showToast('Message cannot be empty', 'err'); return; }
+  const { error } = await window.supabaseClient.from('support_messages')
+    .update({ message: text, edited_at: new Date().toISOString() }).eq('id', id);
+  if (error){ showToast('Failed: ' + error.message, 'err'); return; }
+  editingMessageId = null;
+  showToast('Message updated', 'ok');
+  await loadMessages();
+}
+
+async function deleteMessage(id){
+  if (!confirm('Delete this message?')) return;
+  const { error } = await window.supabaseClient.from('support_messages').delete().eq('id', id);
+  if (error){ showToast('Failed: ' + error.message, 'err'); return; }
+  showToast('Message deleted', 'ok');
+  await loadMessages();
+}
+
+async function clearMyThread(){
+  if (!confirm('Clear the entire message history? This cannot be undone.')) return;
+  const { error } = await window.supabaseClient.rpc('clear_message_thread', { p_user_id: currentUser.id });
+  if (error){ showToast('Failed: ' + error.message, 'err'); return; }
+  showToast('History cleared', 'ok');
+  await loadMessages();
+}
+
+async function sendReply(){
+  const text = document.getElementById('replyInput').value.trim();
+  if (!text) return;
+  const { error } = await window.supabaseClient.from('support_messages').insert({
+    user_id: currentUser.id, sender: 'creator', message: text,
+  });
+  if (error){ showToast('Failed: ' + error.message, 'err'); return; }
+  document.getElementById('replyInput').value = '';
+  await loadMessages();
+}
+
+function showSection(sec, btn){
+  document.querySelectorAll('.nav-btn').forEach(b => b.classList.remove('active'));
+  btn.classList.add('active');
+  document.querySelectorAll('.section').forEach(s => s.classList.remove('active'));
+  document.getElementById('sec-' + sec).classList.add('active');
+  if (sec === 'messages') loadMessages();
+}
+
+function showToast(msg, type){
+  const t = document.getElementById('toast');
+  t.textContent = msg;
+  t.className = 'toast ' + type;
+  t.style.display = 'block';
+  setTimeout(() => { t.style.display = 'none'; }, 3000);
+}
 
 async function logoutUser(){ await window.supabaseClient.auth.signOut(); window.location.href = 'login.html'; }
 
