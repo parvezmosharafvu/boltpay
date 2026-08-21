@@ -63,8 +63,10 @@ body{ font-family:'Space Grotesk',sans-serif; background:var(--bg); color:var(--
 
 .tabs{ display:flex; gap:8px; margin-bottom:14px; overflow-x:auto; }
 .tab-btn{ flex-shrink:0; background:var(--panel); border:1px solid var(--line); color:var(--text-dim); padding:10px 16px;
-  border-radius:11px; font-size:13px; font-weight:600; cursor:pointer; font-family:'Space Grotesk'; }
+  border-radius:11px; font-size:13px; font-weight:600; cursor:pointer; font-family:'Space Grotesk'; display:flex; align-items:center; gap:6px; }
 .tab-btn.active{ background:rgba(245,166,35,0.1); border-color:rgba(245,166,35,0.35); color:var(--amber); }
+.tab-badge{ background:var(--alert); color:#fff; font-size:10px; font-weight:700; padding:1px 6px; border-radius:999px; display:none; }
+.tab-badge.show{ display:inline-block; }
 
 .panel{ background:var(--panel); border:1px solid var(--line); border-radius:18px; padding:18px; margin-bottom:16px; }
 .panel-head{ display:flex; justify-content:space-between; align-items:center; margin-bottom:14px; flex-wrap:wrap; gap:8px; }
@@ -184,7 +186,9 @@ input:checked + .slider:before{ background:var(--ok); transform:translate(20px,-
 .msg-bubble{ padding:10px 13px; border-radius:12px; margin-bottom:8px; font-size:13px; line-height:1.5; max-width:85%; }
 .msg-bubble.admin{ background:rgba(245,166,35,0.12); border:1px solid rgba(245,166,35,0.3); margin-left:auto; }
 .msg-bubble.creator{ background:var(--panel-hi); border:1px solid var(--line); }
+.msg-bubble .msg-from{ font-size:10px; font-weight:700; color:var(--violet); text-transform:uppercase; letter-spacing:0.4px; margin-bottom:3px; }
 .msg-time{ font-size:10px; color:var(--text-faint); margin-top:4px; }
+.creator-option-unread{ font-weight:700; }
 </style>
 </head>
 <body>
@@ -227,17 +231,28 @@ input:checked + .slider:before{ background:var(--ok); transform:translate(20px,-
     </div>
 
     <div class="tabs">
-      <button class="tab-btn active" onclick="switchTab('pending', this)">Withdrawals</button>
-      <button class="tab-btn" onclick="switchTab('live', this)"><span class="live-dot"></span>Live</button>
-      <button class="tab-btn" onclick="switchTab('customers', this)">Customers</button>
-      <button class="tab-btn" onclick="switchTab('links', this)">Links</button>
-      <button class="tab-btn" onclick="switchTab('payments', this)">Payments</button>
-      <button class="tab-btn" onclick="switchTab('messages', this)">Messages</button>
-      <button class="tab-btn" onclick="switchTab('earnings', this)">Earnings</button>
-      <button class="tab-btn" onclick="switchTab('settings', this)">Settings</button>
+      <button class="tab-btn active" data-tab="live" onclick="switchTab('live', this)"><span class="live-dot"></span>Live</button>
+      <button class="tab-btn" data-tab="pending" onclick="switchTab('pending', this)">Withdrawals</button>
+      <button class="tab-btn" data-tab="customers" onclick="switchTab('customers', this)">Customers</button>
+      <button class="tab-btn" data-tab="links" onclick="switchTab('links', this)">Links</button>
+      <button class="tab-btn" data-tab="payments" onclick="switchTab('payments', this)">Payments</button>
+      <button class="tab-btn" data-tab="messages" onclick="switchTab('messages', this)">Messages <span class="tab-badge" id="msgTabBadge">0</span></button>
+      <button class="tab-btn" data-tab="earnings" onclick="switchTab('earnings', this)">Earnings</button>
+      <button class="tab-btn" data-tab="settings" onclick="switchTab('settings', this)">Settings</button>
     </div>
 
-    <div id="tab-pending">
+    <div id="tab-live">
+      <div class="panel">
+        <div class="panel-head">
+          <div class="panel-title"><span class="live-dot"></span>Live payments — awaiting settlement</div>
+          <span class="badge-count" id="liveCount">0</span>
+        </div>
+        <div class="panel-sub" style="margin-bottom:12px;">Auto-refreshes every 15 seconds</div>
+        <div id="liveList"><div class="empty-state">No pending payments right now</div></div>
+      </div>
+    </div>
+
+    <div id="tab-pending" style="display:none;">
       <div class="panel">
         <div class="panel-head">
           <div class="panel-title">Awaiting action</div>
@@ -248,17 +263,6 @@ input:checked + .slider:before{ background:var(--ok); transform:translate(20px,-
       <div class="panel">
         <div class="panel-head"><div class="panel-title">Withdrawal history</div></div>
         <div id="historyList"><div class="empty-state">No withdrawal history</div></div>
-      </div>
-    </div>
-
-    <div id="tab-live" style="display:none;">
-      <div class="panel">
-        <div class="panel-head">
-          <div class="panel-title"><span class="live-dot"></span>Live payments — awaiting settlement</div>
-          <span class="badge-count" id="liveCount">0</span>
-        </div>
-        <div class="panel-sub" style="margin-bottom:12px;">Auto-refreshes every 15 seconds</div>
-        <div id="liveList"><div class="empty-state">No pending payments right now</div></div>
       </div>
     </div>
 
@@ -285,6 +289,11 @@ input:checked + .slider:before{ background:var(--ok); transform:translate(20px,-
           <div class="detail-stat"><div class="detail-stat-val" id="detailEarned">$0</div><div class="detail-stat-label">Total earned</div></div>
           <div class="detail-stat"><div class="detail-stat-val" id="detailWithdrawn">$0</div><div class="detail-stat-label">Total withdrawn</div></div>
           <div class="detail-stat"><div class="detail-stat-val" id="detailLinks">0</div><div class="detail-stat-label">Models</div></div>
+        </div>
+        <div class="detail-section-title">Withdrawal fee for this creator</div>
+        <div class="w-row">
+          <input type="number" step="0.1" class="w-input" id="detailFeeInput" placeholder="3.0">
+          <button class="btn-primary" style="flex:0 0 auto;" onclick="saveDetailFee()">Save fee %</button>
         </div>
         <div class="detail-section-title">Models & earnings per link</div>
         <div id="detailModels"><div class="empty-state">No models</div></div>
@@ -320,6 +329,7 @@ input:checked + .slider:before{ background:var(--ok); transform:translate(20px,-
       <div class="panel">
         <div class="panel-head"><div class="panel-title">Select creator</div></div>
         <select class="w-input" id="creatorSelect" onchange="loadThread()" style="width:100%;"></select>
+        <div class="hint" style="font-size:11px; color:var(--text-faint); margin-top:8px;">🔴 = unread messages from that creator. List refreshes automatically.</div>
       </div>
       <div class="panel">
         <div class="panel-head"><div class="panel-title">Conversation</div></div>
@@ -355,12 +365,12 @@ input:checked + .slider:before{ background:var(--ok); transform:translate(20px,-
         <button class="btn-primary" style="max-width:200px;" onclick="saveNotice()">Save notice</button>
       </div>
       <div class="panel">
-        <div class="panel-head"><div class="panel-title">Site domain</div></div>
+        <div class="panel-head"><div class="panel-title">Default fee for new creators</div></div>
         <div class="w-row" style="margin-bottom:12px;">
-          <input type="text" class="w-input" id="siteDomainInput" placeholder="pay.parvez.website">
+          <input type="number" step="0.1" class="w-input" id="defaultFeeInput" placeholder="3.0">
         </div>
-        <div class="hint" style="font-size:11px; color:var(--text-faint); margin-bottom:10px;">Changing this updates how payment links are displayed across creator dashboards. DNS and Cloudflare routing must still be configured separately for a new domain to actually work.</div>
-        <button class="btn-primary" style="max-width:200px;" onclick="saveSiteDomain()">Save domain</button>
+        <button class="btn-primary" style="max-width:200px;" onclick="saveDefaultFee()">Save default fee</button>
+        <div class="hint" style="font-size:11px; color:var(--text-faint); margin-top:8px;">Applies to accounts created from now on. Existing creators keep their current fee — edit those individually from Customers.</div>
       </div>
       <div class="panel">
         <div class="panel-head"><div class="panel-title">Auto-withdrawal</div></div>
@@ -392,7 +402,30 @@ input:checked + .slider:before{ background:var(--ok); transform:translate(20px,-
 <div class="toast" id="toast"></div>
 
 <script>
-window.__copyRegistry = {};
+// ---- Robust copy for Lightning addresses: event delegation on data-copy
+// attributes. Avoids embedding raw address strings inside onclick="..."
+// JS-string contexts entirely, so nothing can ever break the click handler
+// regardless of what characters end up in the address.
+document.addEventListener('click', function(e){
+  const btn = e.target.closest('[data-copy]');
+  if (!btn) return;
+  const val = btn.getAttribute('data-copy');
+  if (val){
+    navigator.clipboard.writeText(val);
+    showToast('Copied full address', 'ok');
+  }
+});
+
+function escapeAttr(str){
+  return String(str).replace(/&/g,'&amp;').replace(/"/g,'&quot;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+}
+
+function formatLightningShort(ln, fallback){
+  if (ln && ln.length > 25){
+    return ln.slice(0, 12) + '...' + ln.slice(-9);
+  }
+  return ln || fallback || '—';
+}
 
 let currentRange = 'today';
 let currentSearchTerm = '';
@@ -404,8 +437,10 @@ let allPaymentsAdmin = [];
 let livePayments = [];
 let allCustomers = [];
 let selectedCreatorId = null;
+let currentDetailCreatorId = null;
 let liveRefreshInterval = null;
 let liveTimerInterval = null;
+let creatorListRefreshInterval = null;
 
 async function doLogin(){
   const email = document.getElementById('loginEmail').value.trim();
@@ -428,7 +463,7 @@ async function doLogin(){
   document.getElementById('loginScreen').style.display = 'none';
   document.getElementById('appShell').style.display = 'block';
   await refreshAll();
-  startLiveAutoRefresh();
+  startAutoRefresh();
 }
 
 async function doLogout(){
@@ -445,7 +480,7 @@ window.addEventListener('DOMContentLoaded', async () => {
       document.getElementById('loginScreen').style.display = 'none';
       document.getElementById('appShell').style.display = 'block';
       await refreshAll();
-      startLiveAutoRefresh();
+      startAutoRefresh();
     }
   }
 });
@@ -469,18 +504,13 @@ async function refreshAll(){
   await Promise.all([loadStats(), loadWithdrawals(), loadLinks(), loadAllPayments(), loadLivePayments(), loadEarnings(), loadSettings(), loadCustomers(), loadCreatorList()]);
 }
 
-function startLiveAutoRefresh(){
+function startAutoRefresh(){
   if (liveRefreshInterval) clearInterval(liveRefreshInterval);
   liveRefreshInterval = setInterval(loadLivePayments, 15000);
   if (liveTimerInterval) clearInterval(liveTimerInterval);
   liveTimerInterval = setInterval(tickLiveTimers, 1000);
-}
-
-function copyFromRegistry(key){
-  const val = window.__copyRegistry[key];
-  if (!val) return;
-  navigator.clipboard.writeText(val);
-  showToast('Copied full address', 'ok');
+  if (creatorListRefreshInterval) clearInterval(creatorListRefreshInterval);
+  creatorListRefreshInterval = setInterval(loadCreatorList, 20000);
 }
 
 async function loadStats(){
@@ -594,6 +624,7 @@ function renderCustomers(){
 async function openCustomerDetail(creatorId){
   const cu = allCustomers.find(c => c.id === creatorId);
   if (!cu) return;
+  currentDetailCreatorId = creatorId;
 
   document.getElementById('customerListView').style.display = 'none';
   document.getElementById('customerDetailView').classList.add('show');
@@ -603,6 +634,9 @@ async function openCustomerDetail(creatorId){
   document.getElementById('detailEarned').textContent = '$' + parseFloat(cu.total_earned).toFixed(2);
   document.getElementById('detailWithdrawn').textContent = '$' + parseFloat(cu.total_withdrawn).toFixed(2);
   document.getElementById('detailLinks').textContent = cu.link_count;
+
+  const { data: profileRow } = await window.supabaseClient.from('profiles').select('withdrawal_fee_percent').eq('id', creatorId).single();
+  document.getElementById('detailFeeInput').value = profileRow?.withdrawal_fee_percent ?? 3;
 
   const { data: models } = await window.supabaseClient
     .from('payment_links').select('id, slug, display_name').eq('user_id', creatorId);
@@ -639,6 +673,16 @@ async function openCustomerDetail(creatorId){
           </div>
         </div>`).join('')
     : '<div class="empty-state">No withdrawals</div>';
+}
+
+async function saveDetailFee(){
+  const fee = parseFloat(document.getElementById('detailFeeInput').value);
+  if (isNaN(fee) || fee < 0 || fee > 50){ showToast('Enter a fee between 0-50', 'err'); return; }
+  const { error } = await window.supabaseClient.rpc('admin_update_creator_fee', {
+    p_creator_id: currentDetailCreatorId, p_fee_percent: fee
+  });
+  showToast(error ? 'Failed: ' + error.message : 'Fee updated', error ? 'err' : 'ok');
+  if (!error) await loadCustomers();
 }
 
 function closeCustomerDetail(){
@@ -742,10 +786,8 @@ function renderAllPayments(){
         <button class="act-btn act-approve" onclick="markPayment('${p.id}','settled',this)">Approve</button>
         <button class="act-btn act-reject" onclick="markPayment('${p.id}','expired',this)">Mark expired</button>`;
     }
-    const ln = p.lightning_invoice || '';
-    const shortLn = ln ? ln.slice(0, 13) + '...' + ln.slice(-9) : (p.btcpay_invoice_id || '—');
-    const copyKey = 'pay_' + p.id;
-    window.__copyRegistry[copyKey] = ln || p.btcpay_invoice_id || '';
+    const fullAddr = p.lightning_invoice || p.btcpay_invoice_id || '';
+    const shortLn = formatLightningShort(p.lightning_invoice, p.btcpay_invoice_id);
 
     return `
       <div class="pay-row">
@@ -754,7 +796,7 @@ function renderAllPayments(){
             <div class="pay-amt">$${parseFloat(p.amount_requested).toFixed(2)}</div>
             <div class="pay-email">${p.creator_email}</div>
             <div class="pay-meta">🌎 ${p.link_slug || '—'} · ${p.method.toUpperCase()} · ${fmtDate(p.created_at)}</div>
-            <div class="ledger-id"><b>Address:</b> ${shortLn}${(ln || p.btcpay_invoice_id) ? `<button class="copy-mini" onclick="copyFromRegistry('${copyKey}')">copy full</button>` : ''}</div>
+            <div class="ledger-id"><b>Address:</b> ${shortLn}${fullAddr ? `<button class="copy-mini" data-copy="${escapeAttr(fullAddr)}">copy full</button>` : ''}</div>
           </div>
           <span class="badge ${p.status}"><span class="badge-dot"></span>${p.status}</span>
         </div>
@@ -796,10 +838,8 @@ function renderLivePayments(){
   if (!livePayments.length){ c.innerHTML = '<div class="empty-state">No pending payments right now</div>'; return; }
   c.innerHTML = livePayments.map(p => {
     const location = [p.customer_city, p.customer_country].filter(Boolean).join(', ') || 'Unknown location';
-    const ln = p.lightning_invoice || '';
-    const shortLn = ln ? ln.slice(0, 13) + '...' + ln.slice(-9) : (p.btcpay_invoice_id || '—');
-    const copyKey = 'live_' + p.id;
-    window.__copyRegistry[copyKey] = ln || p.btcpay_invoice_id || '';
+    const fullAddr = p.lightning_invoice || p.btcpay_invoice_id || '';
+    const shortLn = formatLightningShort(p.lightning_invoice, p.btcpay_invoice_id);
 
     return `
       <div class="live-row" data-expires="${p.expires_at}">
@@ -814,7 +854,7 @@ function renderLivePayments(){
             <div class="live-timer-label">remaining</div>
           </div>
         </div>
-        <div class="ledger-id" style="margin-top:8px;"><b>Address:</b> ${shortLn}${(ln || p.btcpay_invoice_id) ? `<button class="copy-mini" onclick="copyFromRegistry('${copyKey}')">copy full</button>` : ''}</div>
+        <div class="ledger-id" style="margin-top:8px;"><b>Address:</b> ${shortLn}${fullAddr ? `<button class="copy-mini" data-copy="${escapeAttr(fullAddr)}">copy full</button>` : ''}</div>
         <div class="live-details">
           <span>📍 ${location}</span>
           <span class="badge ${p.status}"><span class="badge-dot"></span>${p.status}</span>
@@ -886,10 +926,19 @@ async function handleAction(withdrawalId, action, btnEl){
 async function loadCreatorList(){
   const { data, error } = await window.supabaseClient.rpc('admin_list_creators');
   if (error) return;
+  const list = (data || []).slice().sort((a, b) => (b.unread_count || 0) - (a.unread_count || 0));
+
+  const totalUnread = list.reduce((s, c) => s + (c.unread_count || 0), 0);
+  const badge = document.getElementById('msgTabBadge');
+  badge.textContent = totalUnread;
+  badge.classList.toggle('show', totalUnread > 0);
+
   const sel = document.getElementById('creatorSelect');
-  sel.innerHTML = '<option value="">— Choose a creator —</option>' + (data || []).map(c =>
-    `<option value="${c.id}">${c.display_name || c.email}${c.unread_count > 0 ? ' 🔴 ' + c.unread_count : ''}</option>`
+  const prevSelected = sel.value;
+  sel.innerHTML = '<option value="">— Choose a creator —</option>' + list.map(c =>
+    `<option value="${c.id}" ${c.unread_count > 0 ? 'class="creator-option-unread"' : ''}>${c.unread_count > 0 ? '🔴 ' : ''}${c.display_name || c.email}${c.unread_count > 0 ? ' (' + c.unread_count + ' new)' : ''}</option>`
   ).join('');
+  if (prevSelected) sel.value = prevSelected;
 }
 
 async function loadThread(){
@@ -900,9 +949,10 @@ async function loadThread(){
   const list = document.getElementById('threadList');
   if (!data || !data.length){ list.innerHTML = '<div class="empty-state">No messages yet</div>'; return; }
   list.innerHTML = data.map(m => `
-    <div class="msg-bubble ${m.sender}">
+    <div class="msg-bubble ${m.sender === 'admin' ? 'admin' : 'creator'}">
+      <div class="msg-from">${m.sender === 'admin' ? 'You (admin)' : '💬 Customer message'}</div>
       ${m.message}
-      <div class="msg-time">${m.sender === 'admin' ? 'You (admin)' : 'Creator'} · ${fmtDate(m.created_at)}</div>
+      <div class="msg-time">${fmtDate(m.created_at)}</div>
     </div>`).join('');
   list.scrollTop = list.scrollHeight;
   await window.supabaseClient.from('support_messages').update({ read_by_admin: true })
@@ -927,13 +977,13 @@ async function loadSettings(){
   const threshold = data?.find(s => s.key === 'auto_withdraw_threshold')?.value;
   const enabled = data?.find(s => s.key === 'auto_withdraw_enabled')?.value;
   const notice = data?.find(s => s.key === 'platform_notice')?.value;
-  const domain = data?.find(s => s.key === 'site_domain')?.value;
+  const defaultFee = data?.find(s => s.key === 'default_withdrawal_fee_percent')?.value;
   if (rates){ document.getElementById('buyRate').value = rates.buy_rate; document.getElementById('sellRate').value = rates.sell_rate; }
   if (threshold){ document.getElementById('autoThreshold').value = threshold.amount; }
   document.getElementById('autoWithdrawToggle').checked = enabled !== false;
   document.getElementById('noticeInput').value = notice?.text || '';
   document.getElementById('noticeActiveToggle').checked = notice?.active || false;
-  document.getElementById('siteDomainInput').value = domain?.domain || '';
+  if (defaultFee){ document.getElementById('defaultFeeInput').value = defaultFee.percent; }
 }
 
 async function saveNotice(){
@@ -944,12 +994,12 @@ async function saveNotice(){
   showToast(error ? 'Failed: ' + error.message : 'Notice saved', error ? 'err' : 'ok');
 }
 
-async function saveSiteDomain(){
-  const domain = document.getElementById('siteDomainInput').value.trim();
-  if (!domain){ showToast('Enter a domain', 'err'); return; }
+async function saveDefaultFee(){
+  const percent = parseFloat(document.getElementById('defaultFeeInput').value);
+  if (isNaN(percent) || percent < 0 || percent > 50){ showToast('Enter a fee between 0-50', 'err'); return; }
   const { error } = await window.supabaseClient.from('app_settings')
-    .upsert({ key: 'site_domain', value: { domain }, updated_at: new Date().toISOString() });
-  showToast(error ? 'Failed: ' + error.message : 'Domain saved — dashboards will pick it up on next load', error ? 'err' : 'ok');
+    .upsert({ key: 'default_withdrawal_fee_percent', value: { percent }, updated_at: new Date().toISOString() });
+  showToast(error ? 'Failed: ' + error.message : 'Default fee saved', error ? 'err' : 'ok');
 }
 
 async function saveAutoWithdrawToggle(){
@@ -977,16 +1027,12 @@ async function saveThreshold(){
 function switchTab(tab, btn){
   document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
   btn.classList.add('active');
-  document.getElementById('tab-pending').style.display = tab === 'pending' ? 'block' : 'none';
-  document.getElementById('tab-live').style.display = tab === 'live' ? 'block' : 'none';
-  document.getElementById('tab-customers').style.display = tab === 'customers' ? 'block' : 'none';
-  document.getElementById('tab-links').style.display = tab === 'links' ? 'block' : 'none';
-  document.getElementById('tab-payments').style.display = tab === 'payments' ? 'block' : 'none';
-  document.getElementById('tab-messages').style.display = tab === 'messages' ? 'block' : 'none';
-  document.getElementById('tab-earnings').style.display = tab === 'earnings' ? 'block' : 'none';
-  document.getElementById('tab-settings').style.display = tab === 'settings' ? 'block' : 'none';
+  ['live','pending','customers','links','payments','messages','earnings','settings'].forEach(t => {
+    document.getElementById('tab-' + t).style.display = (t === tab) ? 'block' : 'none';
+  });
   if (tab === 'live') loadLivePayments();
   if (tab === 'earnings') loadEarnings();
+  if (tab === 'messages') loadCreatorList();
   if (tab === 'customers') closeCustomerDetail();
 }
 
