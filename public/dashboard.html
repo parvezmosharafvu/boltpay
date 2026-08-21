@@ -94,6 +94,7 @@ body{
 .link-slug{ font-size:12px; font-family:'JetBrains Mono'; color:var(--text-dim); }
 .btn-copy{ background:rgba(255,255,255,0.05); border:1px solid var(--line); color:var(--text); width:30px; height:30px;
   border-radius:8px; cursor:pointer; flex-shrink:0; }
+.link-domains{ font-size:10px; color:var(--text-faint); margin-top:6px; }
 
 /* ===== FORM ===== */
 .w-row{ display:flex; gap:10px; margin-bottom:10px; flex-wrap:wrap; }
@@ -210,7 +211,7 @@ body{
     <div class="stat-card">
       <div class="stat-label">Withdrawal fee</div>
       <div class="stat-val alert" id="statFee">—%</div>
-      <div class="stat-sub">Deducted automatically</div>
+      <div class="stat-sub">Set by Boltpay admin</div>
     </div>
   </div>
 
@@ -228,6 +229,7 @@ body{
       <div class="hint" id="linkFormMsg" style="display:none;"></div>
     </div>
     <div class="link-scroll" id="linksScroll"></div>
+    <div class="hint" style="margin-top:10px;" id="domainHint"></div>
   </div>
 
   <div class="panel">
@@ -314,6 +316,13 @@ let allWithdrawals = [];
 let allLinks = [];
 let paymentTickInterval = null;
 
+// Domain-agnostic by design: whatever domain this dashboard is opened on
+// is the domain used to build and display payment links. If you point
+// several domains at the same Cloudflare Pages project, each creator
+// simply sees links on whichever domain they're currently using — all
+// of them resolve to the exact same slug/model on the same backend.
+const CURRENT_DOMAIN = window.location.host;
+
 const RESERVED_SLUGS = ['login','register','dashboard','admin','index','404','config','u',
   'invoice-boltpay-v2','dashboard-theme1-voltmeter','dashboard-theme2-ledger',
   'dashboard-theme3-aurora','dashboard-theme4-calm'];
@@ -323,6 +332,7 @@ async function init(){
   if (!user){ window.location.href = 'login.html'; return; }
   currentUser = user;
   document.getElementById('userEmailDisplay').textContent = user.email;
+  document.getElementById('domainHint').textContent = `Links shown for ${CURRENT_DOMAIN} — the same slug works identically on any domain pointed at Boltpay.`;
   await Promise.all([fetchProfile(), fetchLinks(), fetchPayments(), fetchWithdrawals(), loadPlatformNotice(), loadMessages()]);
   if (paymentTickInterval) clearInterval(paymentTickInterval);
   paymentTickInterval = setInterval(tickPaymentTimers, 1000);
@@ -399,9 +409,9 @@ async function fetchLinks(){
     <div class="link-card">
       <div>
         <div class="link-name">${l.display_name || l.slug}</div>
-        <div class="link-slug">pay.parvez.website/${l.slug}</div>
+        <div class="link-slug">${CURRENT_DOMAIN}/${l.slug}</div>
       </div>
-      <button class="btn-copy" onclick="copyToClipboard('https://pay.parvez.website/${l.slug}')">⧉</button>
+      <button class="btn-copy" onclick="copyToClipboard('https://${CURRENT_DOMAIN}/${l.slug}')">⧉</button>
     </div>`).join('');
 }
 
@@ -543,7 +553,7 @@ function renderPayments(){
   container.innerHTML = filtered.map(p => {
     const modelName = p.payment_links?.display_name || p.payment_links?.slug || '—';
     const location = [p.customer_city, p.customer_country].filter(Boolean).join(', ') || 'Unknown location';
-    const shortLn = p.lightning_invoice ? p.lightning_invoice.slice(0, 12) + '...' + p.lightning_invoice.slice(-8) : (p.btcpay_invoice_id || '—');
+    const shortLn = p.lightning_invoice ? p.lightning_invoice.slice(0, 13) + '...' + p.lightning_invoice.slice(-9) : (p.btcpay_invoice_id || '—');
     const fullCopyVal = p.lightning_invoice || p.btcpay_invoice_id || '';
     const isPending = p.status === 'new' || p.status === 'pending';
 
@@ -559,7 +569,7 @@ function renderPayments(){
           <span class="badge ${p.status}"><span class="badge-dot"></span>${p.status}</span>
         </div>
         <div class="tx-details">
-          <span>🌍 ${modelName}</span>
+          <span>🌎 ${modelName}</span>
           <span>📍 ${location}</span>
           ${isPending ? `<span class="tx-timer mono" data-timer>--:--</span>` : ''}
           ${p.status === 'settled' ? `<span class="tx-checked">✓ SETTLED</span>` : ''}
