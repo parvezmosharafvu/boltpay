@@ -4,6 +4,7 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Boltpay — Admin</title>
+<link rel="icon" type="image/svg+xml" href="/favicon.svg">
 <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;600;700&family=JetBrains+Mono:wght@400;600;700&display=swap" rel="stylesheet">
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <script src="config.js"></script>
@@ -66,16 +67,16 @@ body{ font-family:'Space Grotesk',sans-serif; background:var(--bg); color:var(--
 .tab-btn.active{ background:rgba(245,166,35,0.1); border-color:rgba(245,166,35,0.35); color:var(--amber); }
 
 .panel{ background:var(--panel); border:1px solid var(--line); border-radius:18px; padding:18px; margin-bottom:16px; }
-.panel-head{ display:flex; justify-content:space-between; align-items:center; margin-bottom:14px; }
+.panel-head{ display:flex; justify-content:space-between; align-items:center; margin-bottom:14px; flex-wrap:wrap; gap:8px; }
 .panel-title{ font-size:14px; font-weight:700; }
 .panel-sub{ font-size:11px; color:var(--text-faint); margin-top:2px; }
 .badge-count{ background:rgba(245,166,35,0.15); color:var(--amber); font-size:11px; font-weight:700; padding:3px 9px; border-radius:999px; }
 .live-dot{ display:inline-block; width:7px; height:7px; border-radius:50%; background:var(--ok); margin-right:6px; animation:pulseLive 1.4s infinite; }
 @keyframes pulseLive{ 0%,100%{ opacity:0.4; } 50%{ opacity:1; } }
 
-.w-row{ display:flex; gap:10px; }
+.w-row{ display:flex; gap:10px; flex-wrap:wrap; }
 .w-input{ background:var(--panel-hi); border:1px solid var(--line); color:var(--text); padding:11px 13px;
-  border-radius:10px; font-family:'Space Grotesk'; font-size:13px; outline:none; flex:1; }
+  border-radius:10px; font-family:'Space Grotesk'; font-size:13px; outline:none; flex:1; min-width:140px; }
 .w-input:focus{ border-color:var(--amber); }
 
 .wd-row{ background:var(--panel-hi); border:1px solid var(--line); border-radius:14px; padding:14px; margin-bottom:10px; }
@@ -84,7 +85,7 @@ body{ font-family:'Space Grotesk',sans-serif; background:var(--bg); color:var(--
 .wd-meta{ font-size:11px; color:var(--text-faint); margin-top:3px; font-family:'JetBrains Mono'; }
 .wd-dest{ font-size:12px; color:var(--text-dim); margin-top:6px; }
 .wd-actions{ display:flex; gap:8px; margin-top:12px; flex-wrap:wrap; }
-.act-btn{ border:none; padding:9px 14px; border-radius:9px; font-size:12px; font-weight:700; cursor:pointer; font-family:'Space Grotesk'; text-decoration:none; display:inline-block; }
+.act-btn{ border:none; padding:9px 14px; border-radius:9px; font-size:12px; font-weight:700; cursor:pointer; font-family:'Space Grotesk'; }
 .act-approve{ background:var(--ok); color:#0A1F16; }
 .act-reject{ background:rgba(255,92,122,0.15); color:var(--alert); border:1px solid rgba(255,92,122,0.3); }
 .act-paid{ background:var(--violet); color:#fff; }
@@ -122,6 +123,7 @@ input:checked + .slider:before{ background:var(--ok); transform:translate(20px,-
 .pay-row{ background:var(--panel-hi); border:1px solid var(--line); border-radius:14px; padding:14px; margin-bottom:9px; }
 .pay-top{ display:flex; justify-content:space-between; align-items:flex-start; gap:8px; }
 .pay-amt{ font-size:18px; font-weight:700; font-family:'JetBrains Mono'; }
+.pay-email{ font-size:12px; color:var(--text); font-weight:600; margin-top:2px; }
 .pay-meta{ font-size:11px; color:var(--text-faint); margin-top:3px; font-family:'JetBrains Mono'; }
 .pay-actions{ display:flex; gap:6px; margin-top:10px; flex-wrap:wrap; }
 .ledger-id{ font-size:10px; color:var(--text-faint); font-family:'JetBrains Mono'; margin-top:5px; word-break:break-all; line-height:1.6; }
@@ -132,14 +134,13 @@ input:checked + .slider:before{ background:var(--ok); transform:translate(20px,-
 .live-row{ background:var(--panel-hi); border:1px solid rgba(245,166,35,0.25); border-radius:14px; padding:14px; margin-bottom:10px; }
 .live-top{ display:flex; justify-content:space-between; align-items:flex-start; gap:10px; }
 .live-amt{ font-size:20px; font-weight:700; font-family:'JetBrains Mono'; }
-.live-who{ font-size:12px; color:var(--text-dim); margin-top:2px; }
+.live-who{ font-size:12px; color:var(--text); font-weight:600; margin-top:2px; }
 .live-slug{ font-size:11px; color:var(--text-faint); font-family:'JetBrains Mono'; margin-top:2px; }
 .live-timer{ font-family:'JetBrains Mono'; font-size:16px; font-weight:700; color:var(--amber); text-align:right; }
 .live-timer.urgent{ color:var(--alert); }
 .live-timer-label{ font-size:9px; color:var(--text-faint); text-transform:uppercase; letter-spacing:0.6px; text-align:right; }
 .live-details{ display:flex; gap:14px; margin-top:10px; flex-wrap:wrap; font-size:12px; color:var(--text-dim); }
 .live-details span{ display:flex; align-items:center; gap:5px; }
-.live-details a{ color:var(--violet); text-decoration:none; font-weight:600; }
 
 /* Earnings */
 .earn-row{ display:flex; align-items:center; gap:12px; padding:10px 0; border-bottom:1px solid var(--line); }
@@ -150,10 +151,40 @@ input:checked + .slider:before{ background:var(--ok); transform:translate(20px,-
 .earn-amt{ font-size:12px; font-family:'JetBrains Mono'; font-weight:700; width:80px; text-align:right; flex-shrink:0; }
 .sync-note{ font-size:11px; color:var(--text-faint); display:flex; align-items:center; gap:6px; margin-bottom:14px; }
 
+/* Customers */
+.cust-row{ background:var(--panel-hi); border:1px solid var(--line); border-radius:14px; padding:14px; margin-bottom:9px; cursor:pointer; transition:border-color .15s; }
+.cust-row:active{ border-color:rgba(245,166,35,0.4); }
+.cust-top{ display:flex; align-items:center; gap:12px; }
+.cust-rank{ font-family:'JetBrains Mono'; font-size:13px; font-weight:700; color:var(--text-faint); width:28px; flex-shrink:0; }
+.cust-info{ flex:1; min-width:0; }
+.cust-name{ font-size:14px; font-weight:700; }
+.cust-email{ font-size:11px; color:var(--text-faint); }
+.cust-earned{ font-family:'JetBrains Mono'; font-weight:700; color:var(--ok); font-size:15px; text-align:right; }
+.cust-sub{ font-size:10px; color:var(--text-faint); text-align:right; margin-top:2px; }
+
+.detail-panel{ display:none; }
+.detail-panel.show{ display:block; }
+.detail-back{ background:none; border:none; color:var(--violet); font-size:12px; font-weight:700; cursor:pointer; margin-bottom:12px; padding:0; }
+.detail-header{ display:flex; justify-content:space-between; align-items:center; margin-bottom:16px; flex-wrap:wrap; gap:10px; }
+.detail-name{ font-size:18px; font-weight:700; }
+.detail-email{ font-size:12px; color:var(--text-faint); }
+.detail-stats{ display:grid; grid-template-columns:repeat(3,1fr); gap:10px; margin-bottom:16px; }
+.detail-stat{ background:var(--panel-hi); border:1px solid var(--line); border-radius:12px; padding:12px; text-align:center; }
+.detail-stat-val{ font-family:'JetBrains Mono'; font-weight:700; font-size:16px; }
+.detail-stat-label{ font-size:9px; color:var(--text-faint); text-transform:uppercase; letter-spacing:0.5px; margin-top:4px; }
+.detail-section-title{ font-size:12px; font-weight:700; color:var(--text-dim); text-transform:uppercase; letter-spacing:0.5px; margin:16px 0 10px; }
+.model-row{ display:flex; justify-content:space-between; align-items:center; background:var(--panel-hi); border:1px solid var(--line);
+  border-radius:10px; padding:10px 13px; margin-bottom:8px; font-size:12px; }
+
 .toast{ position:fixed; bottom:20px; left:50%; transform:translateX(-50%); background:var(--panel-hi);
   border:1px solid var(--line); padding:12px 20px; border-radius:12px; font-size:13px; font-weight:600; z-index:999; display:none; }
 .toast.ok{ border-color:rgba(92,224,160,0.4); color:var(--ok); }
 .toast.err{ border-color:rgba(255,92,122,0.4); color:var(--alert); }
+
+.msg-bubble{ padding:10px 13px; border-radius:12px; margin-bottom:8px; font-size:13px; line-height:1.5; max-width:85%; }
+.msg-bubble.admin{ background:rgba(245,166,35,0.12); border:1px solid rgba(245,166,35,0.3); margin-left:auto; }
+.msg-bubble.creator{ background:var(--panel-hi); border:1px solid var(--line); }
+.msg-time{ font-size:10px; color:var(--text-faint); margin-top:4px; }
 </style>
 </head>
 <body>
@@ -197,9 +228,11 @@ input:checked + .slider:before{ background:var(--ok); transform:translate(20px,-
 
     <div class="tabs">
       <button class="tab-btn active" onclick="switchTab('pending', this)">Withdrawals</button>
-      <button class="tab-btn" onclick="switchTab('live', this)"><span class="live-dot"></span>Live payments</button>
-      <button class="tab-btn" onclick="switchTab('links', this)">Payment links</button>
-      <button class="tab-btn" onclick="switchTab('payments', this)">All payments</button>
+      <button class="tab-btn" onclick="switchTab('live', this)"><span class="live-dot"></span>Live</button>
+      <button class="tab-btn" onclick="switchTab('customers', this)">Customers</button>
+      <button class="tab-btn" onclick="switchTab('links', this)">Links</button>
+      <button class="tab-btn" onclick="switchTab('payments', this)">Payments</button>
+      <button class="tab-btn" onclick="switchTab('messages', this)">Messages</button>
       <button class="tab-btn" onclick="switchTab('earnings', this)">Earnings</button>
       <button class="tab-btn" onclick="switchTab('settings', this)">Settings</button>
     </div>
@@ -229,6 +262,37 @@ input:checked + .slider:before{ background:var(--ok); transform:translate(20px,-
       </div>
     </div>
 
+    <div id="tab-customers" style="display:none;">
+      <div class="panel" id="customerListView">
+        <div class="panel-head">
+          <div class="panel-title">Customers — sorted by earnings</div>
+          <span class="badge-count" id="customersCount">0</span>
+        </div>
+        <div class="w-row" style="margin-bottom:12px;">
+          <input type="text" class="w-input" id="customerSearch" placeholder="Search by email, name, or model slug..." oninput="renderCustomers()">
+        </div>
+        <div id="customersList"><div class="empty-state">No customers yet</div></div>
+      </div>
+      <div class="panel detail-panel" id="customerDetailView">
+        <button class="detail-back" onclick="closeCustomerDetail()">← Back to customer list</button>
+        <div class="detail-header">
+          <div>
+            <div class="detail-name" id="detailName">—</div>
+            <div class="detail-email" id="detailEmail">—</div>
+          </div>
+        </div>
+        <div class="detail-stats">
+          <div class="detail-stat"><div class="detail-stat-val" id="detailEarned">$0</div><div class="detail-stat-label">Total earned</div></div>
+          <div class="detail-stat"><div class="detail-stat-val" id="detailWithdrawn">$0</div><div class="detail-stat-label">Total withdrawn</div></div>
+          <div class="detail-stat"><div class="detail-stat-val" id="detailLinks">0</div><div class="detail-stat-label">Models</div></div>
+        </div>
+        <div class="detail-section-title">Models & earnings per link</div>
+        <div id="detailModels"><div class="empty-state">No models</div></div>
+        <div class="detail-section-title">Withdrawal history</div>
+        <div id="detailWithdrawals"><div class="empty-state">No withdrawals</div></div>
+      </div>
+    </div>
+
     <div id="tab-links" style="display:none;">
       <div class="panel">
         <div class="panel-head">
@@ -252,6 +316,21 @@ input:checked + .slider:before{ background:var(--ok); transform:translate(20px,-
       </div>
     </div>
 
+    <div id="tab-messages" style="display:none;">
+      <div class="panel">
+        <div class="panel-head"><div class="panel-title">Select creator</div></div>
+        <select class="w-input" id="creatorSelect" onchange="loadThread()" style="width:100%;"></select>
+      </div>
+      <div class="panel">
+        <div class="panel-head"><div class="panel-title">Conversation</div></div>
+        <div id="threadList" style="max-height:320px; overflow-y:auto; margin-bottom:12px;"><div class="empty-state">Select a creator above</div></div>
+        <div class="w-row">
+          <input type="text" class="w-input" id="adminMsgInput" placeholder="Type a message to this creator...">
+        </div>
+        <button class="btn-primary" onclick="sendAdminMessage()" style="width:100%; margin-top:10px;">Send message</button>
+      </div>
+    </div>
+
     <div id="tab-earnings" style="display:none;">
       <div class="panel">
         <div class="panel-head"><div class="panel-title">Daily earnings history</div></div>
@@ -262,16 +341,35 @@ input:checked + .slider:before{ background:var(--ok); transform:translate(20px,-
 
     <div id="tab-settings" style="display:none;">
       <div class="panel">
+        <div class="panel-head"><div class="panel-title">Platform notice</div></div>
+        <div class="w-row" style="margin-bottom:12px;">
+          <input type="text" class="w-input" id="noticeInput" placeholder="Message shown on every creator's dashboard...">
+        </div>
+        <div class="toggle-row">
+          <div>
+            <div class="toggle-label">Show notice on dashboards</div>
+            <div class="toggle-sub">Appears in the balance card on every creator's dashboard.</div>
+          </div>
+          <label class="switch"><input type="checkbox" id="noticeActiveToggle"><span class="slider"></span></label>
+        </div>
+        <button class="btn-primary" style="max-width:200px;" onclick="saveNotice()">Save notice</button>
+      </div>
+      <div class="panel">
+        <div class="panel-head"><div class="panel-title">Site domain</div></div>
+        <div class="w-row" style="margin-bottom:12px;">
+          <input type="text" class="w-input" id="siteDomainInput" placeholder="pay.parvez.website">
+        </div>
+        <div class="hint" style="font-size:11px; color:var(--text-faint); margin-bottom:10px;">Changing this updates how payment links are displayed across creator dashboards. DNS and Cloudflare routing must still be configured separately for a new domain to actually work.</div>
+        <button class="btn-primary" style="max-width:200px;" onclick="saveSiteDomain()">Save domain</button>
+      </div>
+      <div class="panel">
         <div class="panel-head"><div class="panel-title">Auto-withdrawal</div></div>
         <div class="toggle-row">
           <div>
             <div class="toggle-label">Enable automatic withdrawals</div>
             <div class="toggle-sub">When off, settled payments never auto-queue a withdrawal — creators must request manually.</div>
           </div>
-          <label class="switch">
-            <input type="checkbox" id="autoWithdrawToggle" onchange="saveAutoWithdrawToggle()">
-            <span class="slider"></span>
-          </label>
+          <label class="switch"><input type="checkbox" id="autoWithdrawToggle" onchange="saveAutoWithdrawToggle()"><span class="slider"></span></label>
         </div>
         <div class="settings-row" style="margin-top:10px;">
           <div class="field"><label>Auto-approve under (USD)</label><input type="number" step="1" id="autoThreshold"></div>
@@ -294,7 +392,7 @@ input:checked + .slider:before{ background:var(--ok); transform:translate(20px,-
 <div class="toast" id="toast"></div>
 
 <script>
-const BTCPAY_URL = 'https://btcpay805858.lndyn.com';
+window.__copyRegistry = {};
 
 let currentRange = 'today';
 let currentSearchTerm = '';
@@ -304,6 +402,8 @@ let allWithdrawals = [];
 let allLinks = [];
 let allPaymentsAdmin = [];
 let livePayments = [];
+let allCustomers = [];
+let selectedCreatorId = null;
 let liveRefreshInterval = null;
 let liveTimerInterval = null;
 
@@ -366,7 +466,7 @@ function rangeDates(){
 }
 
 async function refreshAll(){
-  await Promise.all([loadStats(), loadWithdrawals(), loadLinks(), loadAllPayments(), loadLivePayments(), loadEarnings(), loadSettings()]);
+  await Promise.all([loadStats(), loadWithdrawals(), loadLinks(), loadAllPayments(), loadLivePayments(), loadEarnings(), loadSettings(), loadCustomers(), loadCreatorList()]);
 }
 
 function startLiveAutoRefresh(){
@@ -374,6 +474,13 @@ function startLiveAutoRefresh(){
   liveRefreshInterval = setInterval(loadLivePayments, 15000);
   if (liveTimerInterval) clearInterval(liveTimerInterval);
   liveTimerInterval = setInterval(tickLiveTimers, 1000);
+}
+
+function copyFromRegistry(key){
+  const val = window.__copyRegistry[key];
+  if (!val) return;
+  navigator.clipboard.writeText(val);
+  showToast('Copied full address', 'ok');
 }
 
 async function loadStats(){
@@ -449,8 +556,97 @@ async function loadEarnings(){
   renderEarnings(data || []);
 }
 
+async function loadCustomers(){
+  const { data, error } = await window.supabaseClient.rpc('admin_customer_directory');
+  if (error){ showToast('Failed to load customers: ' + error.message, 'err'); return; }
+  allCustomers = data || [];
+  document.getElementById('customersCount').textContent = allCustomers.length;
+  renderCustomers();
+}
+
+function renderCustomers(){
+  const c = document.getElementById('customersList');
+  const search = (document.getElementById('customerSearch')?.value || '').trim().toLowerCase();
+  let filtered = allCustomers;
+  if (search){
+    filtered = allCustomers.filter(cu =>
+      (cu.email || '').toLowerCase().includes(search) ||
+      (cu.display_name || '').toLowerCase().includes(search)
+    );
+  }
+  if (!filtered.length){ c.innerHTML = `<div class="empty-state">${allCustomers.length ? 'No matching customers' : 'No customers yet'}</div>`; return; }
+  c.innerHTML = filtered.map(cu => `
+    <div class="cust-row" onclick="openCustomerDetail('${cu.id}')">
+      <div class="cust-top">
+        <div class="cust-rank">#${cu.rn}</div>
+        <div class="cust-info">
+          <div class="cust-name">${cu.display_name || cu.email}</div>
+          <div class="cust-email">${cu.email}</div>
+        </div>
+        <div>
+          <div class="cust-earned">$${parseFloat(cu.total_earned).toFixed(2)}</div>
+          <div class="cust-sub">${cu.link_count} model${cu.link_count === 1 ? '' : 's'} · ${cu.payment_count} payments</div>
+        </div>
+      </div>
+    </div>`).join('');
+}
+
+async function openCustomerDetail(creatorId){
+  const cu = allCustomers.find(c => c.id === creatorId);
+  if (!cu) return;
+
+  document.getElementById('customerListView').style.display = 'none';
+  document.getElementById('customerDetailView').classList.add('show');
+
+  document.getElementById('detailName').textContent = cu.display_name || cu.email;
+  document.getElementById('detailEmail').textContent = cu.email;
+  document.getElementById('detailEarned').textContent = '$' + parseFloat(cu.total_earned).toFixed(2);
+  document.getElementById('detailWithdrawn').textContent = '$' + parseFloat(cu.total_withdrawn).toFixed(2);
+  document.getElementById('detailLinks').textContent = cu.link_count;
+
+  const { data: models } = await window.supabaseClient
+    .from('payment_links').select('id, slug, display_name').eq('user_id', creatorId);
+
+  const modelsWithEarnings = await Promise.all((models || []).map(async (m) => {
+    const { data: pays } = await window.supabaseClient
+      .from('payments').select('amount_settled').eq('payment_link_id', m.id).eq('status', 'settled');
+    const total = (pays || []).reduce((s,p) => s + parseFloat(p.amount_settled || 0), 0);
+    return { ...m, total };
+  }));
+
+  const modelsEl = document.getElementById('detailModels');
+  modelsEl.innerHTML = modelsWithEarnings.length
+    ? modelsWithEarnings.map(m => `
+        <div class="model-row">
+          <span>🌎 ${m.display_name || m.slug}</span>
+          <span class="mono" style="font-weight:700; color:var(--ok);">$${m.total.toFixed(2)}</span>
+        </div>`).join('')
+    : '<div class="empty-state">No models</div>';
+
+  const { data: wds } = await window.supabaseClient
+    .from('withdrawals').select('*').eq('user_id', creatorId).order('requested_at', { ascending: false });
+
+  const wdEl = document.getElementById('detailWithdrawals');
+  wdEl.innerHTML = (wds && wds.length)
+    ? wds.map(w => `
+        <div class="wd-row">
+          <div class="wd-top">
+            <div>
+              <div class="wd-amt">$${parseFloat(w.amount_after_fee).toFixed(2)}</div>
+              <div class="wd-meta">${w.method.toUpperCase()} · ${fmtDate(w.requested_at)}</div>
+            </div>
+            <span class="badge ${w.status}"><span class="badge-dot"></span>${w.status}</span>
+          </div>
+        </div>`).join('')
+    : '<div class="empty-state">No withdrawals</div>';
+}
+
+function closeCustomerDetail(){
+  document.getElementById('customerDetailView').classList.remove('show');
+  document.getElementById('customerListView').style.display = 'block';
+}
+
 function fmtDate(str){ return new Date(str).toLocaleString([], { month:'short', day:'numeric', hour:'2-digit', minute:'2-digit' }); }
-function fmtDateOnly(str){ return new Date(str).toLocaleDateString([], { month:'short', day:'numeric' }); }
 
 function renderPending(){
   const c = document.getElementById('pendingList');
@@ -511,8 +707,8 @@ function renderLinks(){
     <div class="link-row">
       <div class="link-top">
         <div>
-          <div class="link-slug">${l.slug}</div>
-          <div class="link-owner">${l.owner_name || l.owner_email}</div>
+          <div class="link-slug">🌎 ${l.slug}</div>
+          <div class="link-owner">${l.owner_email}</div>
           <div class="link-stats">$${parseFloat(l.total_earned).toFixed(2)} earned · ${l.payment_count} payments</div>
         </div>
         <span class="badge ${l.is_active ? 'active' : 'inactive'}"><span class="badge-dot"></span>${l.is_active ? 'active' : 'disabled'}</span>
@@ -540,22 +736,25 @@ function renderAllPayments(){
     return;
   }
   c.innerHTML = allPaymentsAdmin.map(p => {
-    const who = p.creator_name || p.creator_email;
     let actions = '';
     if (p.status === 'new' || p.status === 'pending'){
       actions = `
-        <button class="act-btn act-approve" onclick="markPayment('${p.id}','settled',this)">Mark settled</button>
+        <button class="act-btn act-approve" onclick="markPayment('${p.id}','settled',this)">Approve</button>
         <button class="act-btn act-reject" onclick="markPayment('${p.id}','expired',this)">Mark expired</button>`;
     }
-    const shortLn = p.lightning_invoice ? p.lightning_invoice.slice(0, 20) + '...' + p.lightning_invoice.slice(-8) : null;
+    const ln = p.lightning_invoice || '';
+    const shortLn = ln ? ln.slice(0, 13) + '...' + ln.slice(-9) : (p.btcpay_invoice_id || '—');
+    const copyKey = 'pay_' + p.id;
+    window.__copyRegistry[copyKey] = ln || p.btcpay_invoice_id || '';
+
     return `
       <div class="pay-row">
         <div class="pay-top">
           <div>
             <div class="pay-amt">$${parseFloat(p.amount_requested).toFixed(2)}</div>
-            <div class="pay-meta">${who} · ${p.link_slug || '—'} · ${p.method.toUpperCase()} · ${fmtDate(p.created_at)}</div>
-            <div class="ledger-id"><b>Invoice ID:</b> ${p.btcpay_invoice_id || '—'}</div>
-            ${p.lightning_invoice ? `<div class="ledger-id"><b>Lightning:</b> ${shortLn}<button class="copy-mini" onclick="copyFull('${p.lightning_invoice}')">copy full</button></div>` : ''}
+            <div class="pay-email">${p.creator_email}</div>
+            <div class="pay-meta">🌎 ${p.link_slug || '—'} · ${p.method.toUpperCase()} · ${fmtDate(p.created_at)}</div>
+            <div class="ledger-id"><b>Address:</b> ${shortLn}${(ln || p.btcpay_invoice_id) ? `<button class="copy-mini" onclick="copyFromRegistry('${copyKey}')">copy full</button>` : ''}</div>
           </div>
           <span class="badge ${p.status}"><span class="badge-dot"></span>${p.status}</span>
         </div>
@@ -564,13 +763,28 @@ function renderAllPayments(){
   }).join('');
 }
 
-function copyFull(text){
-  navigator.clipboard.writeText(text);
-  showToast('Copied full Lightning address', 'ok');
-}
-
 async function markPayment(paymentId, status, btnEl){
   btnEl.disabled = true;
+
+  if (status === 'settled'){
+    const { data: { session } } = await window.supabaseClient.auth.getSession();
+    try {
+      const res = await fetch(`${window.SUPABASE_URL}/functions/v1/btcpay-webhook/admin-mark-settled`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${session.access_token}` },
+        body: JSON.stringify({ paymentId }),
+      });
+      const result = await res.json();
+      if (!res.ok){ showToast('Failed: ' + (result.error || 'Unknown error'), 'err'); btnEl.disabled = false; return; }
+      showToast('Approved — auto-withdrawal queued if eligible', 'ok');
+      await Promise.all([loadAllPayments(), loadStats(), loadLivePayments(), loadWithdrawals(), loadCustomers()]);
+    } catch (e){
+      showToast('Network error: ' + e.message, 'err');
+      btnEl.disabled = false;
+    }
+    return;
+  }
+
   const { error } = await window.supabaseClient.rpc('admin_mark_payment', { p_payment_id: paymentId, p_status: status });
   if (error){ showToast('Failed: ' + error.message, 'err'); btnEl.disabled = false; return; }
   showToast('Payment marked ' + status, 'ok');
@@ -581,26 +795,29 @@ function renderLivePayments(){
   const c = document.getElementById('liveList');
   if (!livePayments.length){ c.innerHTML = '<div class="empty-state">No pending payments right now</div>'; return; }
   c.innerHTML = livePayments.map(p => {
-    const who = p.creator_name || p.creator_email;
     const location = [p.customer_city, p.customer_country].filter(Boolean).join(', ') || 'Unknown location';
-    const btcpayLink = p.btcpay_invoice_id ? `${BTCPAY_URL}/i/${p.btcpay_invoice_id}` : null;
+    const ln = p.lightning_invoice || '';
+    const shortLn = ln ? ln.slice(0, 13) + '...' + ln.slice(-9) : (p.btcpay_invoice_id || '—');
+    const copyKey = 'live_' + p.id;
+    window.__copyRegistry[copyKey] = ln || p.btcpay_invoice_id || '';
+
     return `
       <div class="live-row" data-expires="${p.expires_at}">
         <div class="live-top">
           <div>
             <div class="live-amt">$${parseFloat(p.amount_requested).toFixed(2)}</div>
-            <div class="live-who">${who}</div>
-            <div class="live-slug">${p.link_slug || '—'}</div>
+            <div class="live-who">${p.creator_email}</div>
+            <div class="live-slug">🌎 ${p.link_slug || '—'}</div>
           </div>
           <div>
             <div class="live-timer mono" data-timer>--:--</div>
             <div class="live-timer-label">remaining</div>
           </div>
         </div>
+        <div class="ledger-id" style="margin-top:8px;"><b>Address:</b> ${shortLn}${(ln || p.btcpay_invoice_id) ? `<button class="copy-mini" onclick="copyFromRegistry('${copyKey}')">copy full</button>` : ''}</div>
         <div class="live-details">
           <span>📍 ${location}</span>
           <span class="badge ${p.status}"><span class="badge-dot"></span>${p.status}</span>
-          ${btcpayLink ? `<a href="${btcpayLink}" target="_blank">View on BTCPay →</a>` : ''}
         </div>
       </div>`;
   }).join('');
@@ -629,7 +846,7 @@ function renderEarnings(rows){
     const pct = Math.max(4, (parseFloat(r.total_settled || 0) / maxVal) * 100);
     return `
       <div class="earn-row">
-        <div class="earn-date">${fmtDateOnly(r.stat_date)}</div>
+        <div class="earn-date">${new Date(r.stat_date).toLocaleDateString([], { month:'short', day:'numeric' })}</div>
         <div class="earn-bar-wrap"><div class="earn-bar" style="width:${pct}%;"></div></div>
         <div class="earn-amt">$${parseFloat(r.total_settled || 0).toFixed(2)}</div>
       </div>`;
@@ -666,14 +883,73 @@ async function handleAction(withdrawalId, action, btnEl){
   }
 }
 
+async function loadCreatorList(){
+  const { data, error } = await window.supabaseClient.rpc('admin_list_creators');
+  if (error) return;
+  const sel = document.getElementById('creatorSelect');
+  sel.innerHTML = '<option value="">— Choose a creator —</option>' + (data || []).map(c =>
+    `<option value="${c.id}">${c.display_name || c.email}${c.unread_count > 0 ? ' 🔴 ' + c.unread_count : ''}</option>`
+  ).join('');
+}
+
+async function loadThread(){
+  selectedCreatorId = document.getElementById('creatorSelect').value;
+  if (!selectedCreatorId){ document.getElementById('threadList').innerHTML = '<div class="empty-state">Select a creator above</div>'; return; }
+  const { data } = await window.supabaseClient.from('support_messages')
+    .select('*').eq('user_id', selectedCreatorId).order('created_at', { ascending: true });
+  const list = document.getElementById('threadList');
+  if (!data || !data.length){ list.innerHTML = '<div class="empty-state">No messages yet</div>'; return; }
+  list.innerHTML = data.map(m => `
+    <div class="msg-bubble ${m.sender}">
+      ${m.message}
+      <div class="msg-time">${m.sender === 'admin' ? 'You (admin)' : 'Creator'} · ${fmtDate(m.created_at)}</div>
+    </div>`).join('');
+  list.scrollTop = list.scrollHeight;
+  await window.supabaseClient.from('support_messages').update({ read_by_admin: true })
+    .eq('user_id', selectedCreatorId).eq('sender', 'creator');
+  await loadCreatorList();
+}
+
+async function sendAdminMessage(){
+  const text = document.getElementById('adminMsgInput').value.trim();
+  if (!text || !selectedCreatorId) return;
+  const { error } = await window.supabaseClient.from('support_messages').insert({
+    user_id: selectedCreatorId, sender: 'admin', message: text,
+  });
+  if (error){ showToast('Failed: ' + error.message, 'err'); return; }
+  document.getElementById('adminMsgInput').value = '';
+  await loadThread();
+}
+
 async function loadSettings(){
   const { data } = await window.supabaseClient.from('app_settings').select('key, value');
   const rates = data?.find(s => s.key === 'exchange_rates')?.value;
   const threshold = data?.find(s => s.key === 'auto_withdraw_threshold')?.value;
   const enabled = data?.find(s => s.key === 'auto_withdraw_enabled')?.value;
+  const notice = data?.find(s => s.key === 'platform_notice')?.value;
+  const domain = data?.find(s => s.key === 'site_domain')?.value;
   if (rates){ document.getElementById('buyRate').value = rates.buy_rate; document.getElementById('sellRate').value = rates.sell_rate; }
   if (threshold){ document.getElementById('autoThreshold').value = threshold.amount; }
   document.getElementById('autoWithdrawToggle').checked = enabled !== false;
+  document.getElementById('noticeInput').value = notice?.text || '';
+  document.getElementById('noticeActiveToggle').checked = notice?.active || false;
+  document.getElementById('siteDomainInput').value = domain?.domain || '';
+}
+
+async function saveNotice(){
+  const text = document.getElementById('noticeInput').value.trim();
+  const active = document.getElementById('noticeActiveToggle').checked;
+  const { error } = await window.supabaseClient.from('app_settings')
+    .upsert({ key: 'platform_notice', value: { text, active }, updated_at: new Date().toISOString() });
+  showToast(error ? 'Failed: ' + error.message : 'Notice saved', error ? 'err' : 'ok');
+}
+
+async function saveSiteDomain(){
+  const domain = document.getElementById('siteDomainInput').value.trim();
+  if (!domain){ showToast('Enter a domain', 'err'); return; }
+  const { error } = await window.supabaseClient.from('app_settings')
+    .upsert({ key: 'site_domain', value: { domain }, updated_at: new Date().toISOString() });
+  showToast(error ? 'Failed: ' + error.message : 'Domain saved — dashboards will pick it up on next load', error ? 'err' : 'ok');
 }
 
 async function saveAutoWithdrawToggle(){
@@ -703,12 +979,15 @@ function switchTab(tab, btn){
   btn.classList.add('active');
   document.getElementById('tab-pending').style.display = tab === 'pending' ? 'block' : 'none';
   document.getElementById('tab-live').style.display = tab === 'live' ? 'block' : 'none';
+  document.getElementById('tab-customers').style.display = tab === 'customers' ? 'block' : 'none';
   document.getElementById('tab-links').style.display = tab === 'links' ? 'block' : 'none';
   document.getElementById('tab-payments').style.display = tab === 'payments' ? 'block' : 'none';
+  document.getElementById('tab-messages').style.display = tab === 'messages' ? 'block' : 'none';
   document.getElementById('tab-earnings').style.display = tab === 'earnings' ? 'block' : 'none';
   document.getElementById('tab-settings').style.display = tab === 'settings' ? 'block' : 'none';
   if (tab === 'live') loadLivePayments();
   if (tab === 'earnings') loadEarnings();
+  if (tab === 'customers') closeCustomerDetail();
 }
 
 function showToast(msg, type){
