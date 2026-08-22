@@ -1,0 +1,153 @@
+{
+  "generated_at": "2026-08-22T11:05:01.082Z",
+  "payments": [
+    {
+      "id": "b6fb3019-9590-4f6a-86db-52b47aa47084",
+      "payment_link_id": "00adc325-626d-42a0-8982-91451e53f64c",
+      "user_id": "38fedbf8-0cbc-4e5c-889a-5a455eade683",
+      "btcpay_invoice_id": "XCRgDV8pnVzuCEvgjqhGrx",
+      "method": "lightning",
+      "amount_requested": 5,
+      "amount_settled": null,
+      "status": "expired",
+      "expires_at": "2026-08-19T21:26:42.667+00:00",
+      "settled_at": null,
+      "created_at": "2026-08-19T20:26:42.697037+00:00",
+      "withdrawal_id": null,
+      "customer_city": null,
+      "customer_country": null,
+      "lightning_invoice": null
+    },
+    {
+      "id": "19f1710b-9828-451e-94ad-dad0de2ca210",
+      "payment_link_id": "00adc325-626d-42a0-8982-91451e53f64c",
+      "user_id": "38fedbf8-0cbc-4e5c-889a-5a455eade683",
+      "btcpay_invoice_id": "QJcWdXDEXgfE56LyMw14w1",
+      "method": "lightning",
+      "amount_requested": 5,
+      "amount_settled": null,
+      "status": "expired",
+      "expires_at": "2026-08-19T22:18:21.544+00:00",
+      "settled_at": null,
+      "created_at": "2026-08-19T21:18:21.575295+00:00",
+      "withdrawal_id": null,
+      "customer_city": null,
+      "customer_country": null,
+      "lightning_invoice": null
+    },
+    {
+      "id": "07d2963d-348a-40e5-b6f9-0f2c76a0754c",
+      "payment_link_id": null,
+      "user_id": "83efe502-d8bd-4fc8-9278-3370364ecfd3",
+      "btcpay_invoice_id": "Nj2WbLinNUiEMvuq5HP4Hf",
+      "method": "lightning",
+      "amount_requested": 10,
+      "amount_settled": null,
+      "status": "expired",
+      "expires_at": "2026-08-20T16:26:45.477+00:00",
+      "settled_at": null,
+      "created_at": "2026-08-20T15:26:45.530377+00:00",
+      "withdrawal_id": null,
+      "customer_city": null,
+      "customer_country": null,
+      "lightning_invoice": null
+    },
+    {
+      "id": "918056f3-3770-440a-ad9c-2c3d361897fa",
+      "payment_link_id": null,
+      "user_id": "83efe502-d8bd-4fc8-9278-3370364ecfd3",
+      "btcpay_invoice_id": "aQ8vMyCEip7qLMfzjHDpM",
+      "method": "lightning",
+      "amount_requested": 10,
+      "amount_settled": null,
+      "status": "expired",
+      "expires_at": "2026-08-20T20:42:52.042+00:00",
+      "settled_at": null,
+      "created_at": "2026-08-20T19:42:52.090092+00:00",
+      "withdrawal_id": null,
+      "customer_city": null,
+      "customer_country": null,
+      "lightning_invoice": null
+    },
+    {
+      "id": "81bbb9a8-260a-4956-8aaf-f41b24901085",
+      "payment_link_id": null,
+      "user_id": "83efe502-d8bd-4fc8-9278-3370364ecfd3",
+      "btcpay_invoice_id": "LWfERRqBHAA2KWyAu2nfVZ",
+      "method": "lightning",
+      "amount_requested": 10,
+      "amount_settled": null,
+      "status": "expired",
+      "expires_at": "2026-08-21T14:34:03.833+00:00",
+      "settled_at": null,
+      "created_at": "2026-08-21T13:34:03.874873+00:00",
+      "withdrawal_id": null,
+      "customer_city": null,
+      "customer_country": null,
+      "lightning_invoice": null
+    }
+  ],
+  "withdrawals": [],
+  "payment_links": [
+    {
+      "id": "00adc325-626d-42a0-8982-91451e53f64c",
+      "user_id": "38fedbf8-0cbc-4e5c-889a-5a455eade683",
+      "slug": "testpay",
+      "display_name": "Test Creator",
+      "is_active": true,
+      "created_at": "2026-08-19T18:17:36.137357+00:00"
+    },
+    {
+      "id": "2f1867dd-e3e3-4fb9-963c-33629f3de836",
+      "user_id": "83efe502-d8bd-4fc8-9278-3370364ecfd3",
+      "slug": "testing",
+      "display_name": null,
+      "is_active": true,
+      "created_at": "2026-08-22T03:52:13.783996+00:00"
+    },
+    {
+      "id": "134da994-efb1-4d70-8409-346575531cc3",
+      "user_id": "83efe502-d8bd-4fc8-9278-3370364ecfd3",
+      "slug": "customers",
+      "display_name": null,
+      "is_active": true,
+      "created_at": "2026-08-22T04:05:47.792847+00:00"
+    }
+  ],
+  "profiles": [
+    {
+      "id": "38fedbf8-0cbc-4e5c-889a-5a455eade683",
+      "email": "taylorjamesbusiness0@gmail.com",
+      "display_name": "Taylor James",
+      "role": "admin",
+      "withdrawal_fee_percent": 3,
+      "created_at": "2026-08-19T14:51:12.433149+00:00"
+    },
+    {
+      "id": "83efe502-d8bd-4fc8-9278-3370364ecfd3",
+      "email": "customer@gmail.com",
+      "display_name": "customer",
+      "role": "creator",
+      "withdrawal_fee_percent": 0,
+      "created_at": "2026-08-19T23:15:14.13864+00:00"
+    }
+  ],
+  "daily_stats": [
+    {
+      "stat_date": "2026-08-18",
+      "total_settled": 0,
+      "total_admin_profit": 0,
+      "total_withdrawn": 0,
+      "payment_count": 0,
+      "computed_at": "2026-08-18T11:00:03.684+00:00"
+    },
+    {
+      "stat_date": "2026-08-19",
+      "total_settled": 0,
+      "total_admin_profit": 0,
+      "total_withdrawn": 0,
+      "payment_count": 0,
+      "computed_at": "2026-08-19T11:00:02.638+00:00"
+    }
+  ]
+}
