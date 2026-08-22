@@ -8,6 +8,7 @@
 <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;600;700;800&family=JetBrains+Mono:wght@400;600&display=swap" rel="stylesheet">
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <script src="config.js"></script>
+<script src="theme.js"></script>
 <style>
 :root{
   --bg:#141022; --panel:#1D1830; --panel-hi:#241C3B; --line:rgba(245,243,255,0.08);
@@ -15,9 +16,9 @@
   --amber:#F5A623; --violet:#7C5CFF;
 }
 *{ margin:0; padding:0; box-sizing:border-box; -webkit-tap-highlight-color:transparent; }
-body{ font-family:'Space Grotesk',sans-serif; background:var(--bg); color:var(--text); min-height:100vh;
-  background-image: radial-gradient(circle at 15% 0%, rgba(124,92,255,0.12), transparent 45%),
-                     radial-gradient(circle at 85% 15%, rgba(245,166,35,0.10), transparent 42%); }
+body{ font-family:var(--font-display,'Space Grotesk',sans-serif); background:var(--bg); color:var(--text); min-height:100vh;
+  background-image: radial-gradient(circle at 15% 0%, var(--glow-a, rgba(124,92,255,0.12)), transparent 45%),
+                     radial-gradient(circle at 85% 15%, var(--glow-b, rgba(245,166,35,0.10)), transparent 42%); }
 .mono{ font-family:'JetBrains Mono',monospace; }
 
 .nav{ display:flex; align-items:center; justify-content:space-between; padding:20px 24px; max-width:1000px; margin:0 auto; }
@@ -134,6 +135,7 @@ async function routeRootDomain(){
 }
 
 window.addEventListener('DOMContentLoaded', async () => {
+  await applyDomainTheme();
   const redirected = await routeRootDomain();
   if (redirected) return;
 

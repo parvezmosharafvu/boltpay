@@ -8,6 +8,7 @@
 <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;600;700&family=JetBrains+Mono:wght@400;600;700&display=swap" rel="stylesheet">
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <script src="config.js"></script>
+<script src="theme.js"></script>
 <style>
 :root{
   --bg:#141022; --panel:#1D1830; --panel-hi:#241C3B; --line:rgba(245,243,255,0.08);
@@ -15,10 +16,10 @@
   --amber:#F5A623; --violet:#7C5CFF; --alert:#FF5C7A; --ok:#5CE0A0;
 }
 *{ margin:0; padding:0; box-sizing:border-box; -webkit-tap-highlight-color:transparent; }
-body{ font-family:'Space Grotesk',sans-serif; background:var(--bg); color:var(--text);
+body{ font-family:var(--font-display,'Space Grotesk',sans-serif); background:var(--bg); color:var(--text);
   min-height:100vh; padding-bottom:48px;
-  background-image: radial-gradient(circle at 15% 0%, rgba(124,92,255,0.10), transparent 45%),
-                     radial-gradient(circle at 85% 10%, rgba(245,166,35,0.08), transparent 40%); }
+  background-image: radial-gradient(circle at 15% 0%, var(--glow-a, rgba(124,92,255,0.10)), transparent 45%),
+                     radial-gradient(circle at 85% 10%, var(--glow-b, rgba(245,166,35,0.08)), transparent 40%); }
 .mono{ font-family:'JetBrains Mono',monospace; }
 
 .header{ display:flex; align-items:center; justify-content:space-between; padding:16px 20px;
@@ -368,6 +369,7 @@ const RESERVED_SLUGS = ['login','register','dashboard','admin','index','404','co
   'dashboard-theme3-aurora','dashboard-theme4-calm'];
 
 async function init(){
+  await applyDomainTheme();
   const { data: { user } } = await window.supabaseClient.auth.getUser();
   if (!user){ window.location.href = 'login.html'; return; }
   currentUser = user;

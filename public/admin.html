@@ -369,10 +369,16 @@ input:checked + .slider:before{ background:var(--ok); transform:translate(20px,-
         <div class="panel-head"><div class="panel-title">Add a domain</div></div>
         <div class="w-row" style="margin-bottom:10px;">
           <input type="text" class="w-input" id="newDomainHost" placeholder="pay.example.com (no https://)">
-          <select class="w-input" id="newDomainPurpose" style="max-width:190px;">
+          <select class="w-input" id="newDomainPurpose" style="max-width:180px;">
             <option value="payment">Payment links only</option>
             <option value="site">Main site only</option>
             <option value="both">Both</option>
+          </select>
+          <select class="w-input" id="newDomainTheme" style="max-width:180px;">
+            <option value="voltmeter">Theme: Voltmeter</option>
+            <option value="ledger">Theme: Ledger</option>
+            <option value="aurora">Theme: Aurora</option>
+            <option value="calm">Theme: Calm</option>
           </select>
         </div>
         <button class="btn-primary" style="max-width:200px;" onclick="addDomain()">Add domain</button>
@@ -982,14 +988,23 @@ async function loadDomains(){
   if (!domains.length){ c.innerHTML = '<div class="empty-state">No domains registered</div>'; return; }
 
   const purposeLabel = { payment: 'Payment links', site: 'Main site', both: 'Payment + site' };
+  const themeLabel = { voltmeter: 'Voltmeter (dark indigo)', ledger: 'Ledger (light paper)',
+                       aurora: 'Aurora (magenta/cyan)', calm: 'Calm (soft neutral)' };
   c.innerHTML = domains.map(d => `
     <div class="link-row">
       <div class="link-top">
         <div>
           <div class="link-slug">${escapeHtml(d.hostname)}</div>
           <div class="link-owner">${purposeLabel[d.purpose] || d.purpose}${d.is_primary_site ? ' · ⭐ primary site' : ''}</div>
+          <div class="link-stats">Theme: ${themeLabel[d.theme] || d.theme || 'voltmeter'}</div>
         </div>
         <span class="badge ${d.is_active ? 'active' : 'inactive'}"><span class="badge-dot"></span>${d.is_active ? 'active' : 'disabled'}</span>
+      </div>
+      <div class="w-row" style="margin-top:10px;">
+        <select class="w-input" onchange="changeDomainTheme('${d.id}', this.value)" style="max-width:210px;">
+          ${['voltmeter','ledger','aurora','calm'].map(t =>
+            `<option value="${t}" ${(d.theme||'voltmeter') === t ? 'selected' : ''}>${themeLabel[t]}</option>`).join('')}
+        </select>
       </div>
       <div class="pay-actions">
         <button class="act-btn ${d.is_active ? 'act-reject' : 'act-approve'}" onclick="toggleDomain('${d.id}', ${!d.is_active}, this)">
@@ -1005,16 +1020,24 @@ async function addDomain(){
   const hostname = document.getElementById('newDomainHost').value.trim()
     .toLowerCase().replace(/^https?:\/\//, '').replace(/\/$/, '');
   const purpose = document.getElementById('newDomainPurpose').value;
+  const theme = document.getElementById('newDomainTheme').value;
   if (!hostname || !hostname.includes('.')){ showToast('Enter a valid hostname', 'err'); return; }
 
   const { error } = await window.supabaseClient.from('site_domains')
-    .insert({ hostname, purpose, is_active: true });
+    .insert({ hostname, purpose, theme, is_active: true });
   if (error){
     showToast(error.code === '23505' ? 'That domain is already registered' : 'Failed: ' + error.message, 'err');
     return;
   }
   document.getElementById('newDomainHost').value = '';
   showToast('Domain added — now attach it in Cloudflare', 'ok');
+  await loadDomains();
+}
+
+async function changeDomainTheme(id, theme){
+  const { error } = await window.supabaseClient.from('site_domains').update({ theme }).eq('id', id);
+  if (error){ showToast('Failed: ' + error.message, 'err'); return; }
+  showToast('Theme updated — visitors see it on next page load', 'ok');
   await loadDomains();
 }
 
