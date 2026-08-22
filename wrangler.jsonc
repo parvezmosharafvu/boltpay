@@ -1,0 +1,15 @@
+{
+  "$schema": "node_modules/wrangler/config-schema.json",
+  "name": "boltpay",
+  "compatibility_date": "2026-08-20",
+  "observability": {
+    "enabled": true
+  },
+  "assets": {
+    "directory": "public",
+    // Without this, unmatched paths like /emma return a bare 404 and
+    // 404.html is never served — which is exactly why payment links
+    // were failing while the root domain worked.
+    "not_found_handling": "404-page"
+  }
+}
