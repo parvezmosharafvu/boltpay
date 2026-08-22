@@ -9,8 +9,8 @@ compatibility_date = "2025-01-01"
 # code itself needs no changes — it reads the domain from the request.
 
 [[routes]]
-pattern = "pay.parvez.website/*"
-zone_name = "parvez.website"
+pattern = "pay.cash-app-payment.xyz/*"
+zone_name = "cash-app-payment.xyz"
 
 # Example for additional domains — uncomment and edit as you add them:
 #
