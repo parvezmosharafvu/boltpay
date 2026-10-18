@@ -14,6 +14,7 @@ Use the existing payment-link hostname `cpay-cash.app` as the single canonical h
 - `public/404.html` is intentionally the payment-slug fallback. Hosting must continue to serve it for unmatched single-segment payment slugs.
 - `worker/og-preview-worker.js` handles root routing, app-only path redirects, invoice creation proxying at `/api/create-invoice`, crawler OG metadata for payment slugs, and generated OG images.
 - `worker/wrangler.jsonc` deliberately does not define routes; the repository expects route bindings to be managed in Cloudflare.
+- `docs/DEPLOYMENT.md` describes static hosting (Cloudflare Pages or GitHub Pages) and separately instructs operators to attach a Worker route such as `yourdomain.com/*`. That makes the origin/Worker relationship important to establish before altering the custom domain or route.
 - Cloudflare route read returned `cpay-cash.app/* -> boltpay-og-preview` (route ID `c311ac53380a47fa85c8fcaf879fd5f2`).
 - Cloudflare Worker Domain read returned an enabled production custom domain `cpay-cash.app -> boltpay` (domain ID `4b429a23f3fc6a50fbc83ba9d802d4412832901a`).
 - Therefore, a Worker route and a Worker custom domain are both configured for the same hostname. Do not assume the route is harmless or that either Worker owns every request; verify real request behavior and precedence before changing either binding.
@@ -22,6 +23,7 @@ Use the existing payment-link hostname `cpay-cash.app` as the single canonical h
 - A previous live browser check observed `https://cpay-cash.app/` redirecting to `https://usa-cash.app/`.
 - Both `worker/og-preview-worker.js` and `public/index.html` implement domain-root redirect decisions using `site_domains` fields `purpose`, `is_primary_site`, and `is_active`. The Worker redirects only when the current domain is registered as `purpose='payment'` and it finds another primary/site/both domain. The homepage also contains a browser-side redirect implementation.
 - The browser-side redirect in `public/index.html` currently calls `window.location.replace(`{{https://${primary.hostname}}}/`)`. The extra braces are a concrete code defect: it does not produce the intended `https://hostname/` URL. Fix only in a reviewed branch change and add a regression test.
+- The Worker and homepage contain overlapping redirect logic. Any eventual change should designate one authoritative layer for canonical routing to avoid redirect disagreement and stale cached decisions.
 - The connected Supabase account currently lists only the project `cpay` (ref `riumaeihemgznvgattoc`). That is not the Boltpay project referenced by the Worker (`ohwzmxwsphsfzudmlins`). No SQL was run against the unrelated CPAY project. Boltpay `site_domains` rows remain unverified because the correct project is not available in the connected project list.
 - Keep Boltpay and CPAY separate: do not inspect or modify CPAY's database as a substitute for Boltpay access.
 
@@ -45,16 +47,18 @@ Use the existing payment-link hostname `cpay-cash.app` as the single canonical h
 1. Identify the correct Boltpay Supabase project and obtain read-only access.
 2. Read the active `site_domains` rows for `cpay-cash.app` and `usa-cash.app`, including `hostname`, `purpose`, `is_primary_site`, and `is_active`.
 3. Confirm which Worker serves requests for the apex hostname and whether the custom domain and route overlap intentionally.
-4. Compare the active Cloudflare Worker version/source with repository `main`; do not deploy until drift is understood.
-5. Confirm host and origin settings used by authentication redirects and email links.
+4. Establish the origin for static assets and the not-found/payment-slug fallback. Confirm the route Worker can pass through to that origin without loops or interception.
+5. Compare the active Cloudflare Worker version/source with repository `main`; do not deploy until drift is understood.
+6. Confirm host and origin settings used by authentication redirects and email links.
 
 ### Phase 2 — Minimal code change in a separate branch
 
 1. Make root behavior explicit for the canonical domain so it serves the website instead of redirecting away.
 2. Keep old payment slugs resolving through the current `404.html` fallback.
 3. Remove duplicated/conflicting browser-side root redirect behavior, or make it consistent with the Worker’s canonical-domain rule.
-4. Correct the malformed URL template and add unit/static tests.
-5. Keep invoice proxy, webhook code, payment creation, settlement, balances, and payout logic out of scope.
+4. Correct the malformed URL template and add a regression test.
+5. Add static regression checks for the canonical hostname and redirect target. The current CI checks JavaScript syntax and DOM references but do not assert this URL behavior.
+6. Keep invoice proxy, webhook code, payment creation, settlement, balances, and payout logic out of scope.
 
 Do not choose a final routing change until Phase 1 resolves which Worker actually owns requests. A code-only fix cannot compensate for the wrong Worker receiving the request.
 
@@ -69,6 +73,7 @@ Do not choose a final routing change until Phase 1 resolves which Worker actuall
 - Authentication redirect allowlists and email confirmation/reset links.
 - BTCPay webhook signature verification and duplicate-event idempotency remain unchanged.
 - No redirect loop and no cross-domain redirect from the canonical hostname.
+- Confirm cached root-routing results expire or are invalidated as expected after any approved domain registry change.
 
 ### Phase 4 — Release and rollback
 
