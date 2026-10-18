@@ -220,7 +220,7 @@ async function routeRootDomain(){
     }
 
     document.getElementById('redirectNotice').style.display = 'flex';
-    window.location.replace(`{{https://${primary.hostname}}}/`);
+    window.location.replace(`https://${primary.hostname}/`);
     return true;
   } catch (e) {
     console.error('domain routing check failed', e);
