@@ -156,9 +156,9 @@ function renderOgHtml(origin, slug, data, ogImage) {
 const siteName = escapeHtml(new URL(origin).hostname);
 const title = data?.display_name
 ? `Pay ${escapeHtml(data.display_name)}`
-: "Pay with Cash App";
+: "Pay with Boltpay";
 const description =
-"Pay directly from your Cash balance. No need to buy or convert any crypto.";
+"Secure Lightning checkout. Paid in seconds.";
 const url = `${origin}/${encodeURIComponent(slug)}`;
 
 return `<!DOCTYPE html>
@@ -237,9 +237,9 @@ return null;
 
 function renderHomeOgHtml(origin) {
 const siteName = escapeHtml(new URL(origin).hostname);
-const title = "Get paid from Cash App";
+const title = "Boltpay \u2014 get paid in seconds";
 const description =
-"Share your payment link and they pay from their Cash balance. Secure checkout, paid in seconds \u2014 no crypto to buy, no signup needed to pay.";
+"Share one payment link and get paid over Lightning. Secure checkout, daily statements, fast payouts.";
 const image = `${origin}${OG_PATH}/og-home.png`;
 
 return `<!DOCTYPE html>

@@ -5,7 +5,7 @@
  *
  * It used to swap CSS colour variables per domain, which meant a domain
  * could end up beige or magenta while every other surface — the payment
- * page, the link previews, the admin panel — stayed Cash App green. The
+ * page, the link previews, the admin panel — stayed one fixed colour. The
  * brand is one colour; what varies per domain is how the payment page is
  * arranged.
  *
