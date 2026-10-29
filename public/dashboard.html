@@ -580,6 +580,7 @@ body{
           <button class="tab-btn" data-sec="links"    onclick="showSection('links', this)">🔗 Payment Links</button>
           <button class="tab-btn" data-sec="daily"    onclick="showSection('daily', this)">📅 Daily settled</button>
           <button class="tab-btn" data-sec="earnings" onclick="showSection('earnings', this)">🏆 Earnings</button>
+          <button class="tab-btn" data-sec="invoices" onclick="showSection('invoices', this)">🧾 Invoices</button>
           <button class="tab-btn" data-sec="cashout"  onclick="showSection('cashout', this)">💸 Cash Out</button>
           <button class="tab-btn" data-sec="messages" onclick="showSection('messages', this)">💬 Messages <span class="tab-badge" id="msgBadge">0</span></button>
         </div>
@@ -806,6 +807,18 @@ body{
                every load, on a 5:00 PM – 5:00 PM (Asia/Dhaka) cycle
                rather than midnight-to-midnight. Nothing here is a cron
                job or a backup — reload the page and it recomputes. -->
+          <div class="section" id="sec-invoices">
+            <div class="page-header">
+              <div>
+                <div class="page-title">Invoices</div>
+                <div class="page-sub">One invoice per day, 7pm–7pm (Asia/Dhaka)</div>
+              </div>
+              <button class="btn-ghost" onclick="loadInvoicesTab()">Refresh</button>
+            </div>
+            <div class="card" style="margin-bottom:14px"><div style="font-weight:700;margin-bottom:8px">Last 30 days</div><div id="invChart"></div></div>
+            <div class="card" style="margin-bottom:14px"><div style="font-weight:700;margin-bottom:8px">Top links (30 days)</div><div id="invTopLinks"></div></div>
+            <div class="card" style="overflow-x:auto"><div id="invList"></div></div>
+          </div>
           <div class="section" id="sec-daily">
             <div class="page-header">
               <div>
@@ -2225,6 +2238,36 @@ async function sendReply(){
   document.getElementById('replyInput').value = ''; await loadMessages();
 }
 
+async function loadInvoicesTab(){
+  const esc = s => String(s ?? '').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+  const m = n => '$' + Number(n || 0).toFixed(2);
+  const [days, inv, top] = await Promise.all([
+    window.supabaseClient.rpc('my_daily_settled', { p_days: 30 }),
+    window.supabaseClient.rpc('my_daily_invoices', { p_days: 30 }),
+    window.supabaseClient.rpc('my_top_links', { p_days: 30 }),
+  ]);
+  const chart = document.getElementById('invChart');
+  if (days.error) chart.textContent = 'Could not load chart.';
+  else {
+    const rows = [...days.data].reverse();
+    const max = Math.max(1, ...rows.map(r => Number(r.settled)));
+    const w = 600, h = 140, bw = w / Math.max(rows.length, 1);
+    chart.innerHTML = `<svg viewBox="0 0 ${w} ${h + 16}" style="width:100%;height:auto">` + rows.map((r, i) => {
+      const bh = Math.round(Number(r.settled) / max * h);
+      return `<rect x="${i * bw + 1}" y="${h - bh}" width="${Math.max(bw - 2, 1)}" height="${bh}" fill="var(--accent, #6c5ce7)"><title>${esc(r.cycle_date)}: ${m(r.settled)}</title></rect>`;
+    }).join('') + `<text x="0" y="${h + 14}" font-size="11" fill="currentColor">${esc(rows[0]?.cycle_date)}</text><text x="${w}" y="${h + 14}" font-size="11" text-anchor="end" fill="currentColor">${esc(rows[rows.length - 1]?.cycle_date)}</text></svg>`;
+  }
+  const tl = document.getElementById('invTopLinks');
+  tl.innerHTML = top.error ? 'Could not load top links.' : (top.data.length
+    ? top.data.map(r => `<div style="display:flex;justify-content:space-between;padding:4px 0"><span>${esc(r.display_name || r.slug)}</span><span>${r.payment_count} · ${m(r.settled_usd)}</span></div>`).join('')
+    : '<div style="opacity:.7">No payments yet.</div>');
+  const il = document.getElementById('invList');
+  il.innerHTML = inv.error ? 'Could not load invoices.' : (inv.data.length
+    ? '<table style="width:100%;font-size:13px"><tr><th align="left">Day</th><th>Payments</th><th align="right">Gross</th><th align="right">Commission</th><th align="right">Net</th></tr>'
+      + inv.data.map(r => `<tr><td>${esc(r.cycle_date)}</td><td align="center">${r.payment_count}</td><td align="right">${m(r.gross_usd)}</td><td align="right">${m(r.commission_usd)}</td><td align="right">${m(r.net_usd)}</td></tr>`).join('') + '</table>'
+    : '<div style="opacity:.7">No invoices yet.</div>');
+}
+
 function showSection(sec, btn){
   const target = document.getElementById('sec-' + sec);
   if (!target) return;
@@ -2237,6 +2280,7 @@ function showSection(sec, btn){
   if (sec === 'messages') loadMessages();
   if (sec === 'daily') loadDailySettled();
   if (sec === 'earnings') loadInsights();
+  if (sec === 'invoices') loadInvoicesTab();
 }
 
 /**
