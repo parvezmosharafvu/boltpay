@@ -69,3 +69,6 @@ verify_jwt = false
 
 [functions.lnd-watcher]
 verify_jwt = false
+
+[functions.track-event]
+verify_jwt = false
