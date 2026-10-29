@@ -78,7 +78,7 @@ return Array.isArray(rows) ? rows[0] : rows;
 */
 async function resolveOgImage(origin, slug, ogImage) {
 const candidate = `${origin}${OG_PATH}/${encodeURIComponent(slug)}.png`;
-const fallback = `${origin}${OG_PATH}/og-default.png`;
+const fallback = `${origin}${OG_PATH}/og-default-v2.png`;
 
 // 1. An explicit image on the link wins. The database constrains
 //    payment_links.og_image to a bare filename, so it cannot escape
@@ -143,7 +143,7 @@ redirect: "follow",
 
 if (!res.ok || !(res.headers.get("Content-Type") || "").startsWith("image/")) {
 // Never cache a failure — a crawler would hold on to the broken result.
-return fetch(`${url.origin}${OG_PATH}/og-default.png`);
+return fetch(`${url.origin}${OG_PATH}/og-default-v2.png`);
 }
 
 const out = new Response(res.body, res);
@@ -240,7 +240,7 @@ const siteName = escapeHtml(new URL(origin).hostname);
 const title = "Boltpay \u2014 get paid in seconds";
 const description =
 "Share one payment link and get paid over Lightning. Secure checkout, daily statements, fast payouts.";
-const image = `${origin}${OG_PATH}/og-home.png`;
+const image = `${origin}${OG_PATH}/og-home-v2.png`;
 
 return `<!DOCTYPE html>
 <html lang="en">
