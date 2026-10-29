@@ -6,7 +6,7 @@
     <title>Boltpay — Payment review</title>
     <meta name="robots" content="noindex, nofollow">
     <link rel="icon" type="image/svg+xml" href="/favicon.svg">
-    <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;600;700&family=JetBrains+Mono:wght@400;600;700&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Geist+Mono:wght@400;500;600&display=swap" rel="stylesheet">
     <script>/* PR-H: moderator panel hidden from the UI; file kept. */location.replace("/dashboard");</script>
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <script src="config.js"></script>
@@ -14,25 +14,25 @@
 :root{
   /* One palette for admin, dashboard and moderator — the same near-black
      and Cash App green as the home page and the payment card. */
-  --bg:#0B0F0C; --panel:#131916; --panel-hi:#1A221D;
-  --line:rgba(255,255,255,0.07); --line-strong:rgba(255,255,255,0.14);
-  --text:#F2F7F3; --text-dim:rgba(242,247,243,0.55); --text-faint:rgba(242,247,243,0.30);
-  --amber:#00D632; --green:#00D632; --violet:#69F28D; --ok:#00D632;
+  --bg:#0B0A07; --panel:#15130D; --panel-hi:#1D1A12;
+  --line:#2E2A1F; --line-strong:#3D3726;
+  --text:#F5F3EE; --text-dim:#ADA690; --text-faint:rgba(245,243,238,0.32);
+  --amber:#FFB800; --amber-300:#FFD466; --amber-600:#E0A200; --accent-wash:rgba(255,184,0,.05); --accent-ring:rgba(255,184,0,.20); --panel-band:rgba(21,19,13,.30); --green:#FFB800; --violet:#FFD466; --ok:#FFB800;
   --alert:#FF5C7A; --warn:#F5A623;
   --on-accent:#04240D;
-  --accent-wash:rgba(0,214,50,0.10); --accent-ring:rgba(0,214,50,0.30); --accent-deep:#04240D;
-  --green-soft:rgba(0,214,50,0.10); --violet-soft:rgba(105,242,141,0.10);
+  --accent-wash:rgba(255,184,0,0.10); --accent-ring:rgba(255,184,0,0.30); --accent-deep:#04240D;
+  --green-soft:rgba(255,184,0,0.10); --violet-soft:rgba(255,212,102,0.10);
   --alert-soft:rgba(255,92,122,0.12); --warn-soft:rgba(245,163,35,0.12);
-  --surface:#131916; --sidebar:#0B0F0C; --sidebar-hi:#1A221D;
+  --surface:#15130D; --sidebar:#0B0A07; --sidebar-hi:#1D1A12;
   --sidebar-line:rgba(255,255,255,0.06);
-  --gold:#00D632; --bronze:#69F28D;
+  --gold:#FFB800; --bronze:#E0A200;
 }
 
 /* Compact type: more rows per screen without dropping any field. */
 html{ font-size:15px; }
 *{ margin:0; padding:0; box-sizing:border-box; -webkit-tap-highlight-color:transparent; }
-body{ font-family:'Space Grotesk',sans-serif; background:var(--bg); color:var(--text); min-height:100vh; padding-bottom:48px; }
-.mono{ font-family:'JetBrains Mono',monospace; }
+body{ font-family:'Inter',sans-serif; background:var(--bg); color:var(--text); min-height:100vh; padding-bottom:48px; }
+.mono{ font-family:'Geist Mono',monospace; }
 
 #loginScreen{ min-height:100vh; display:flex; align-items:center; justify-content:center; padding:20px; }
 .login-card{ background:var(--panel); border:1px solid var(--line); border-radius:20px; padding:32px 28px; width:100%; max-width:360px; }
@@ -43,7 +43,7 @@ body{ font-family:'Space Grotesk',sans-serif; background:var(--bg); color:var(--
 .field{ margin-bottom:12px; }
 .field label{ font-size:11px; color:var(--text-faint); text-transform:uppercase; letter-spacing:0.6px; font-weight:700; display:block; margin-bottom:6px; }
 .field input{ width:100%; background:var(--panel-hi); border:1px solid var(--line); color:var(--text); padding:12px 13px;
-  border-radius:10px; font-family:'Space Grotesk'; font-size:13px; outline:none; }
+  border-radius:10px; font-family:'Inter'; font-size:13px; outline:none; }
 .btn-primary{ background:var(--amber); color:var(--on-accent); border:none; border-radius:11px; padding:13px; font-size:14px;
   font-weight:700; cursor:pointer; font-family:inherit; width:100%; }
 .btn-primary:disabled{ opacity:.6; cursor:not-allowed; }
@@ -72,24 +72,24 @@ body{ font-family:'Space Grotesk',sans-serif; background:var(--bg); color:var(--
 @media (min-width:700px){ .stats-grid{ grid-template-columns:repeat(4,1fr); } }
 .stat-card{ background:var(--panel); border:1px solid var(--line); border-radius:12px; padding:11px 12px; }
 .stat-label{ font-size:9px; color:var(--text-faint); text-transform:uppercase; letter-spacing:1px; font-weight:700; margin-bottom:5px; }
-.stat-val{ font-size:17px; font-weight:700; font-family:'JetBrains Mono'; }
+.stat-val{ font-size:17px; font-weight:700; font-family:'Geist Mono'; }
 .stat-val.ok{ color:var(--ok); } .stat-val.alert{ color:var(--alert); }
 .stat-sub{ font-size:10px; color:var(--text-faint); margin-top:4px; }
 .cr-row{ display:flex; align-items:center; gap:10px; background:var(--panel-hi); border:1px solid var(--line); border-radius:12px; padding:10px 12px; margin-bottom:7px; }
 .cr-name{ font-size:13px; font-weight:700; }
 .cr-email{ font-size:10px; color:var(--text-faint); }
-.cr-nums{ margin-left:auto; text-align:right; font-family:'JetBrains Mono'; }
+.cr-nums{ margin-left:auto; text-align:right; font-family:'Geist Mono'; }
 .cr-settled{ font-size:13px; font-weight:700; color:var(--ok); }
 .cr-sub{ font-size:9px; color:var(--text-faint); margin-top:2px; }
 .daily-current{ background:var(--panel-hi); border:1px solid var(--line-strong,var(--line)); border-radius:12px; padding:12px 14px; margin-bottom:4px; }
 .daily-current .dc-label{ font-size:9px; color:var(--text-faint); text-transform:uppercase; letter-spacing:1px; font-weight:700; margin-bottom:6px; }
-.daily-current .dc-total{ font-size:22px; font-weight:700; font-family:'JetBrains Mono'; color:var(--ok); }
+.daily-current .dc-total{ font-size:22px; font-weight:700; font-family:'Geist Mono'; color:var(--ok); }
 .daily-current .dc-sub{ font-size:10.5px; color:var(--text-dim); margin-top:4px; }
 .daily-row{ display:flex; align-items:center; gap:10px; background:var(--panel-hi); border:1px solid var(--line); border-radius:11px; padding:9px 12px; margin-bottom:6px; }
-.daily-date{ font-size:11px; font-weight:700; color:var(--text-dim); width:64px; flex-shrink:0; font-family:'JetBrains Mono'; }
+.daily-date{ font-size:11px; font-weight:700; color:var(--text-dim); width:64px; flex-shrink:0; font-family:'Geist Mono'; }
 .daily-breakdown{ flex:1; min-width:0; font-size:10.5px; color:var(--text-faint); overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
-.daily-total{ font-size:13px; font-weight:700; color:var(--ok); font-family:'JetBrains Mono'; flex-shrink:0; }
-.cost-chip{ display:inline-block; background:rgba(0,214,50,.14); color:var(--ok); border-radius:20px; padding:1px 7px; font-size:10px; font-weight:700; vertical-align:middle; }
+.daily-total{ font-size:13px; font-weight:700; color:var(--ok); font-family:'Geist Mono'; flex-shrink:0; }
+.cost-chip{ display:inline-block; background:rgba(255,184,0,.14); color:var(--ok); border-radius:20px; padding:1px 7px; font-size:10px; font-weight:700; vertical-align:middle; }
 .pay-field-value.with-copy{ display:flex; align-items:center; gap:8px; white-space:nowrap; }
 .pay-field-value.with-copy span{ overflow:hidden; text-overflow:ellipsis; }
 .pay-field-value .ln-value{ color:var(--ok); }
@@ -98,7 +98,7 @@ body{ font-family:'Space Grotesk',sans-serif; background:var(--bg); color:var(--
 .pay-row{ background:var(--panel-hi); border:1px solid var(--line); border-radius:14px; padding:14px 16px; margin-bottom:9px; }
 .pay-row.marked{ border-color:rgba(92,224,160,.45); }
 .pay-top{ display:flex; justify-content:space-between; align-items:flex-start; gap:12px; }
-.pay-amt{ font-size:20px; font-weight:700; font-family:'JetBrains Mono'; line-height:1.1; }
+.pay-amt{ font-size:20px; font-weight:700; font-family:'Geist Mono'; line-height:1.1; }
 .pay-sub{ font-size:12px; color:var(--text-dim); margin-top:3px; }
 .badge{ padding:4px 11px; border-radius:20px; font-size:11px; font-weight:700; white-space:nowrap;
   background:rgba(92,224,160,.14); color:var(--ok); }
@@ -106,7 +106,7 @@ body{ font-family:'Space Grotesk',sans-serif; background:var(--bg); color:var(--
 .pay-grid{ display:grid; grid-template-columns:repeat(auto-fit,minmax(150px,1fr)); gap:10px 18px;
   margin-top:12px; padding-top:12px; border-top:1px solid var(--line); }
 .pay-field-label{ font-size:9px; letter-spacing:.09em; text-transform:uppercase; color:var(--text-faint); font-weight:700; margin-bottom:3px; }
-.pay-field-value{ font-size:12px; font-family:'JetBrains Mono'; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+.pay-field-value{ font-size:12px; font-family:'Geist Mono'; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
 .pay-field.wide{ grid-column:1 / -1; }
 .mark-note{ font-size:12px; color:var(--ok); margin-top:10px; }
 .actions{ display:flex; gap:8px; margin-top:12px; flex-wrap:wrap; }
@@ -190,7 +190,7 @@ body{ font-family:'Space Grotesk',sans-serif; background:var(--bg); color:var(--
 .pay-row.open .pay-details{ max-height:800px; opacity:1; margin-top:2px; }
 
 /* Amount + email stay compact even on the summary row */
-.pay-amt{ font-size:15px !important; font-weight:700; font-family:'JetBrains Mono'; line-height:1.1; }
+.pay-amt{ font-size:15px !important; font-weight:700; font-family:'Geist Mono'; line-height:1.1; }
 .pay-sub{ font-size:10.5px !important; margin-top:2px !important; color:var(--text-dim); }
 
 /* Details grid tighter than before — the panel's already narrow, and

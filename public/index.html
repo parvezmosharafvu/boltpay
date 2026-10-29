@@ -15,7 +15,7 @@
              real hostname instead, for the home page exactly as it already
              does for payment links. -->
         <link rel="icon" type="image/svg+xml" href="/favicon.svg">
-          <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;600;700;800&family=JetBrains+Mono:wght@400;600&display=swap" rel="stylesheet">
+          <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Geist+Mono:wght@400;500;600&display=swap" rel="stylesheet">
             <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
             <script src="config.js"></script>
             <script src="theme.js"></script>
@@ -24,18 +24,18 @@
    Boltpay amber as the single accent. --amber keeps its name so every
    existing rule follows without being rewritten. */
 :root{
-  --bg:#0B0F0C; --panel:#131916; --panel-hi:#1A221D; --line:rgba(255,255,255,0.07);
-  --text:#F2F7F3; --text-dim:rgba(242,247,243,0.55); --text-faint:rgba(242,247,243,0.3);
-  --amber:#FFB800; --violet:#FFB800; --ok:#FFB800; --alert:#FF5C7A;
+  --bg:#0B0A07; --panel:#15130D; --panel-hi:#1D1A12; --line:#2E2A1F;
+  --text:#F5F3EE; --text-dim:#ADA690; --text-faint:rgba(245,243,238,0.32);
+  --amber:#FFB800; --amber-300:#FFD466; --amber-600:#E0A200; --accent-wash:rgba(255,184,0,.05); --accent-ring:rgba(255,184,0,.20); --panel-band:rgba(21,19,13,.30); --violet:#FFB800; --ok:#FFB800; --alert:#FF5C7A;
   --on-accent:#2A1F00;
 }
 *{ margin:0; padding:0; box-sizing:border-box; -webkit-tap-highlight-color:transparent; }
-body{ font-family:var(--font-display,'Space Grotesk',sans-serif); background:var(--bg); color:var(--text); min-height:100vh;
+body{ font-family:var(--font-display,'Inter',sans-serif); background:var(--bg); color:var(--text); min-height:100vh;
   background-image: radial-gradient(circle at 15% 0%, var(--glow-a, rgba(124,92,255,0.12)), transparent 45%),
                      radial-gradient(circle at 85% 15%, var(--glow-b, rgba(245,166,35,0.10)), transparent 42%); }
-.mono{ font-family:'JetBrains Mono',monospace; }
+.mono{ font-family:'Geist Mono',monospace; }
 
-.nav{ display:flex; align-items:center; justify-content:space-between; padding:20px 24px; max-width:1000px; margin:0 auto; }
+.nav{ display:flex; align-items:center; justify-content:space-between; padding:16px 32px; max-width:1280px; margin:0 auto; }
 .nav-left{ display:flex; align-items:center; gap:10px; }
 .mark{ width:34px; height:34px; border-radius:10px; background:linear-gradient(155deg,var(--amber),#d98a12);
   display:flex; align-items:center; justify-content:center; }
@@ -50,19 +50,20 @@ h1{ font-size:34px; font-weight:800; line-height:1.15; letter-spacing:-0.8px; ma
 h1 span{ color:var(--amber); }
 .hero-sub{ font-size:15px; color:var(--text-dim); line-height:1.6; margin-bottom:28px; }
 .hero-actions{ display:flex; gap:12px; justify-content:center; flex-wrap:wrap; }
-.btn-cta{ padding:13px 24px; border-radius:11px; font-weight:700; font-size:14px; text-decoration:none; font-family:'Space Grotesk'; }
+.btn-cta{ padding:13px 24px; border-radius:11px; font-weight:700; font-size:14px; text-decoration:none; font-family:'Inter'; }
 .btn-cta.primary{ background:var(--amber); color:var(--on-accent); }
 .btn-cta.secondary{ background:var(--panel); color:var(--text); border:1px solid var(--line); }
 
-.features{ max-width:920px; margin:0 auto; padding:20px 24px 70px; display:grid; grid-template-columns:1fr; gap:14px; }
+.features{ max-width:1280px; margin:0 auto; padding:96px 32px; display:grid; grid-template-columns:1fr; gap:14px; }
 @media (min-width:720px){ .features{ grid-template-columns:repeat(3,1fr); } }
 .feature{ background:var(--panel); border:1px solid var(--line); border-radius:16px; padding:20px; }
-.feature-num{ font-family:'JetBrains Mono'; font-size:11px; color:var(--violet); font-weight:600; margin-bottom:10px; }
+.feature-num{ font-family:'Geist Mono'; font-size:11px; color:var(--amber); font-weight:600; margin-bottom:10px; }
 .feature h3{ font-size:15px; font-weight:700; margin-bottom:8px; }
 .feature p{ font-size:13px; color:var(--text-dim); line-height:1.55; }
 
 .approval-note{ margin-top:16px; font-size:12px; color:var(--text-faint); }
-.info-block{ max-width:920px; margin:0 auto; padding:0 24px 50px; }
+.info-block{ max-width:1280px; margin:0 auto; padding:0 32px 96px; }
+@media (max-width:639px){ .nav{ padding:16px 20px; } .features{ padding:80px 20px; } .info-block{ padding:0 20px 80px; } }
 .info-block h2{ font-size:20px; font-weight:800; margin-bottom:14px; }
 .steps{ display:grid; grid-template-columns:1fr; gap:12px; counter-reset:st; }
 @media (min-width:720px){ .steps{ grid-template-columns:repeat(4,1fr); } }
@@ -155,7 +156,7 @@ h1 span{ color:var(--amber); }
 /* Home-page sections, in the same palette as the link preview image:
    Boltpay amber, black cards, white pills. */
 .cash-block{
-  max-width:860px; margin:0 auto 40px; padding:28px 26px;
+  max-width:1216px; margin:0 auto 40px; padding:28px 26px;
   background:#FFB800; border-radius:24px; color:#000;
 }
 .cash-block + .cash-block{ margin-top:-14px; }

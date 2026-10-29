@@ -5,7 +5,7 @@
       <meta name="viewport" content="width=device-width, initial-scale=1.0">
         <title>Boltpay — Log in</title>
         <link rel="icon" type="image/svg+xml" href="/favicon.svg">
-          <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;600;700&display=swap" rel="stylesheet">
+          <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
             <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
             <script src="config.js"></script>
             <script src="theme.js"></script>
@@ -15,20 +15,20 @@
      old violet/amber scheme below was left over from before that palette
      was unified, and made the login screen the one page in the app that
      didn't look like it belonged to it. */
-  --bg:#0B0F0C; --panel:#131916; --panel-hi:#1A221D;
-  --line:rgba(255,255,255,0.07); --line-strong:rgba(255,255,255,0.14);
-  --text:#F2F7F3; --text-dim:rgba(242,247,243,0.55); --text-faint:rgba(242,247,243,0.30);
-  --amber:#FFB800; --alert:#FF5C7A; --on-accent:#2A1F00;
+  --bg:#0B0A07; --panel:#15130D; --panel-hi:#1D1A12;
+  --line:#2E2A1F; --line-strong:#3D3726;
+  --text:#F5F3EE; --text-dim:#ADA690; --text-faint:rgba(245,243,238,0.32);
+  --amber:#FFB800; --amber-300:#FFD466; --amber-600:#E0A200; --accent-wash:rgba(255,184,0,.05); --accent-ring:rgba(255,184,0,.20); --panel-band:rgba(21,19,13,.30); --alert:#FF5C7A; --on-accent:#2A1F00;
   --accent-wash:rgba(255,184,0,0.10); --accent-ring:rgba(255,184,0,0.30);
 }
 *{ margin:0; padding:0; box-sizing:border-box; -webkit-tap-highlight-color:transparent; }
-body{ font-family:var(--font-display,'Space Grotesk',sans-serif); background:var(--bg); color:var(--text);
+body{ font-family:var(--font-display,'Inter',sans-serif); background:var(--bg); color:var(--text);
   min-height:100vh; display:flex; align-items:center; justify-content:center; padding:20px;
   background-image: radial-gradient(circle at 15% 0%, var(--glow-a, rgba(255,184,0,0.09)), transparent 45%),
                      radial-gradient(circle at 85% 10%, var(--glow-b, rgba(255,184,0,0.06)), transparent 40%); }
 
 .card{ background:var(--panel); border:1px solid var(--line); border-radius:20px; padding:32px 28px; width:100%; max-width:380px; }
-.mark{ width:48px; height:48px; border-radius:13px; background:linear-gradient(155deg,var(--amber),#00A82A);
+.mark{ width:48px; height:48px; border-radius:13px; background:linear-gradient(155deg,#FFD466,#FFB800);
   display:flex; align-items:center; justify-content:center; margin-bottom:18px; box-shadow:0 0 18px rgba(255,184,0,0.28); }
 h1{ font-size:20px; font-weight:700; margin-bottom:4px; }
 .sub{ font-size:12px; color:var(--text-dim); margin-bottom:24px; }
@@ -36,11 +36,11 @@ h1{ font-size:20px; font-weight:700; margin-bottom:4px; }
 .field{ margin-bottom:14px; }
 .field label{ font-size:11px; color:var(--text-faint); text-transform:uppercase; letter-spacing:0.6px; font-weight:700; display:block; margin-bottom:6px; }
 .field input{ width:100%; background:var(--panel-hi); border:1px solid var(--line); color:var(--text);
-  padding:12px 14px; border-radius:10px; font-family:'Space Grotesk'; font-size:14px; outline:none; }
+  padding:12px 14px; border-radius:10px; font-family:'Inter'; font-size:14px; outline:none; }
 .field input:focus{ border-color:var(--amber); }
 
 .btn-primary{ background:var(--amber); color:var(--on-accent); border:none; padding:13px 20px; border-radius:10px;
-  font-weight:700; font-size:14px; cursor:pointer; width:100%; font-family:'Space Grotesk'; margin-top:4px;
+  font-weight:700; font-size:14px; cursor:pointer; width:100%; font-family:'Inter'; margin-top:4px;
   box-shadow:0 8px 18px rgba(255,184,0,0.16); transition:filter .16s ease-out, box-shadow .16s ease-out, transform .16s ease-out; }
 .btn-primary:hover:not(:disabled){ filter:brightness(1.08); box-shadow:0 10px 24px rgba(255,184,0,0.25); transform:translateY(-1px); }
 .btn-primary:disabled{ opacity:0.6; cursor:not-allowed; }
