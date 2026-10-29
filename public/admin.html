@@ -901,6 +901,23 @@ input:focus-visible,select:focus-visible,button:focus-visible{ outline:2px solid
                                                     <div class="hint" style="font-size:11px; color:var(--text-faint); margin-top:8px;">The email is always shown on the home page. The group link only appears when you fill it in &mdash; clear the field to hide it.</div>
                                                   </div>
 
+                                                  <div class="panel">
+                                                    <div class="panel-head">
+                                                      <div class="panel-title">Exchange rates</div>
+                                                    </div>
+                                                    <div class="settings-row">
+                                                      <div class="field">
+                                                        <label>Buy rate (BDT)</label>
+                                                        <input type="number" step="0.01" id="buyRate" placeholder="133.00">
+                                                        </div>
+                                                        <div class="field">
+                                                          <label>Sell rate (BDT)</label>
+                                                          <input type="number" step="0.01" id="sellRate" placeholder="133.00">
+                                                          </div>
+                                                        </div>
+                                                        <button class="btn-primary" style="max-width:200px;" onclick="saveExchangeRates()">Save rates</button>
+                                                      </div>
+
                                                     </div>
                                                   </div>
                                                 </div>
@@ -2189,9 +2206,11 @@ async function revokeModerator(id, btn){
 
 async function loadSettings(){
   const { data } = await window.supabaseClient.from('app_settings').select('key, value');
+  const rates = data?.find(s => s.key === 'exchange_rates')?.value;
   const notice = data?.find(s => s.key === 'platform_notice')?.value;
   const defaultFee = data?.find(s => s.key === 'default_withdrawal_fee_percent')?.value;
 
+  if (rates){ document.getElementById('buyRate').value = rates.buy_rate || 133.00; document.getElementById('sellRate').value = rates.sell_rate || 133.00; }
   document.getElementById('noticeInput').value = notice?.text || ''; document.getElementById('noticeActiveToggle').checked = notice?.active || false;
   if (defaultFee){ document.getElementById('defaultFeeInput').value = defaultFee.percent; }
   const manual = data?.find(s => s.key === 'manual_withdrawals_enabled')?.value;
@@ -2232,6 +2251,7 @@ async function saveDefaultLinkLimit(){
   showToast(error ? 'Failed: ' + error.message : 'Default link limit saved', error ? 'err' : 'ok');
 }
 
+async function saveExchangeRates(){ const buy_rate = parseFloat(document.getElementById('buyRate').value); const sell_rate = parseFloat(document.getElementById('sellRate').value); const { error } = await window.supabaseClient.from('app_settings').upsert({ key: 'exchange_rates', value: { buy_rate, sell_rate }, updated_at: new Date().toISOString() }); showToast(error ? 'Failed' : 'Rates saved', error ? 'err' : 'ok'); }
 async function saveDefaultFee(){ const percent = parseFloat(document.getElementById('defaultFeeInput').value); if (isNaN(percent) || percent < 0 || percent > 100){ showToast('Enter a fee between 0-100', 'err'); return; } const { error } = await window.supabaseClient.from('app_settings').upsert({ key: 'default_withdrawal_fee_percent', value: { percent }, updated_at: new Date().toISOString() }); showToast(error ? 'Failed' : 'Default fee saved', error ? 'err' : 'ok'); }
 
 
