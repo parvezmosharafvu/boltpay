@@ -49,32 +49,45 @@ h1{ font-size:20px; font-weight:700; margin-bottom:4px; }
 .footer-link{ text-align:center; margin-top:20px; font-size:13px; color:var(--text-dim); }
 .footer-link a{ color:var(--amber); text-decoration:none; font-weight:600; }
 </style>
+<link rel="stylesheet" href="auth.css">
+<script src="auth.js"></script>
+
           </head>
           <body>
-            <div class="card">
-              <div class="mark">
-                <svg viewBox="0 0 24 24" width="20" height="20" fill="none">
-                  <path d="M13 2L4 14h6l-1 8 9-12h-6l1-8z" fill="#2A1F00"/>
-                </svg>
-              </div>
-              <h1>Log in to Boltpay</h1>
-              <div class="sub">Lightning payments for creators and shop owners</div>
-              <div class="field">
-                <label>Email</label>
-                <input type="email" id="email" placeholder="you@example.com" autocomplete="email">
-                </div>
-                <div class="field">
-                  <label>Password</label>
-                  <input type="password" id="password" placeholder="••••••••" autocomplete="current-password">
-                  </div>
-                  <button class="btn-primary" id="submitBtn" onclick="doLogin()">Log in</button>
-                  <div class="error-msg" id="errorMsg">
-                  </div>
-                  <div class="footer-link" style="margin-bottom:6px;">Need help signing in? Contact your administrator. · লগইনে সমস্যা হলে অ্যাডমিনের সাথে যোগাযোগ করুন।</div>
-                  <div class="footer-link">Don't have an account? <a href="register.html">Create one</a>
-                </div>
-              </div>
-              <script>
+<header class="topbar"><div class="topbar-in">
+  <a class="logo" href="/"><span class="logo-mark"><svg viewBox="0 0 24 24" width="18" height="18" fill="none"><path d="M13 2L4 14h6l-1 8 9-12h-6l1-8z" fill="#2A1F00"/></svg></span>Boltpay</a>
+  <div class="top-right"><a class="back" href="/" data-en="← Back to home" data-bn="← হোমে ফিরুন">← Back to home</a>
+  <button type="button" class="lang" id="langBtn" onclick="toggleLang()">বাংলা</button></div>
+</div></header>
+<main class="shell">
+  <aside class="brand-panel" aria-hidden="true">
+    <div>
+      <div class="eyebrow"><svg width="14" height="14" viewBox="0 0 24 24" fill="none"><path d="M13 2L4 14h6l-1 8 9-12h-6l1-8z" fill="currentColor"/></svg><span data-en="Lightning payments" data-bn="লাইটনিং পেমেন্ট">Lightning payments</span></div>
+      <h2><span data-en="Get paid instantly," data-bn="সাথে সাথে পেমেন্ট নিন,">Get paid instantly,</span><br><span class="hl" style="color:var(--amber-300)" data-en="anywhere." data-bn="যেকোনো জায়গা থেকে।">anywhere.</span></h2>
+      <p class="lead" data-en="Share a payment link, your customer pays, and your balance updates in seconds." data-bn="পেমেন্ট লিংক শেয়ার করুন, কাস্টমার পে করলে কয়েক সেকেন্ডে ব্যালান্স আপডেট হয়।">Share a payment link, your customer pays, and your balance updates in seconds.</p>
+    </div>
+    <ul class="perks">
+      <li><span class="perk-ico"><svg width="18" height="18" viewBox="0 0 24 24" fill="none"><path d="M13 2L4 14h6l-1 8 9-12h-6l1-8z" fill="currentColor"/></svg></span><div><b data-en="Instant settlement" data-bn="তাৎক্ষণিক সেটেলমেন্ট">Instant settlement</b><small data-en="Payments confirm over Lightning in seconds." data-bn="লাইটনিংয়ে কয়েক সেকেন্ডে পেমেন্ট নিশ্চিত হয়।">Payments confirm over Lightning in seconds.</small></div></li>
+      <li><span class="perk-ico"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M10 13a5 5 0 007 0l3-3a5 5 0 00-7-7l-1 1"/><path d="M14 11a5 5 0 00-7 0l-3 3a5 5 0 007 7l1-1"/></svg></span><div><b data-en="Your own payment links" data-bn="নিজের পেমেন্ট লিংক">Your own payment links</b><small data-en="One link per product or customer." data-bn="প্রতিটি পণ্য বা কাস্টমারের জন্য আলাদা লিংক।">One link per product or customer.</small></div></li>
+      <li><span class="perk-ico"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 2l8 4v6c0 5-3.5 9-8 10-4.5-1-8-5-8-10V6z"/></svg></span><div><b data-en="Reviewed accounts" data-bn="যাচাই করা অ্যাকাউন্ট">Reviewed accounts</b><small data-en="An administrator approves every account." data-bn="প্রতিটি অ্যাকাউন্ট অ্যাডমিন অনুমোদন করেন।">An administrator approves every account.</small></div></li>
+    </ul>
+    <div class="panel-note" data-en="Need help? Contact your administrator." data-bn="সাহায্য লাগলে অ্যাডমিনের সাথে যোগাযোগ করুন।">Need help? Contact your administrator.</div>
+  </aside>
+  <section>
+  <div class="card">
+<div class="eyebrow" data-en="Account access" data-bn="অ্যাকাউন্ট অ্যাক্সেস">Account access</div>
+<h1 data-en="Log in to Boltpay" data-bn="Boltpay-এ লগইন করুন">Log in to Boltpay</h1>
+<div class="sub" data-en="Welcome back. Enter your details to continue." data-bn="আবার স্বাগতম। চালিয়ে যেতে তথ্য দিন।">Welcome back. Enter your details to continue.</div>
+<form id="loginForm" novalidate onsubmit="event.preventDefault();doLogin();">
+<div class="field"><label for="email"><span data-en="Email" data-bn="ইমেইল">Email</span><span class="req" aria-hidden="true">*</span></label><input type="email" id="email" placeholder="you@example.com" data-ph-en="you@example.com" data-ph-bn="you@example.com" autocomplete="email"  required aria-required="true"><div class="inline-err" role="alert"></div></div>
+<div class="field"><label for="password"><span data-en="Password" data-bn="পাসওয়ার্ড">Password</span><span class="req" aria-hidden="true">*</span></label><div class="pw-wrap"><input type="password" id="password" placeholder="••••••••" data-ph-en="••••••••" data-ph-bn="••••••••" autocomplete="current-password"  required aria-required="true"><button type="button" class="pw-eye" aria-label="Show password" onclick="togglePw('password',this)"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M1 12s4-7 11-7 11 7 11 7-4 7-11 7S1 12 1 12z"/><circle cx="12" cy="12" r="3"/></svg></button></div><div class="inline-err" role="alert"></div></div>
+<button class="btn-primary" id="submitBtn" type="submit"><span id="submitLbl" data-en="Log in" data-bn="লগইন">Log in</span><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M5 12h14M13 6l6 6-6 6"/></svg></button>
+<div class="error-msg" id="errorMsg" role="alert"></div>
+</form>
+</div>
+<div class="footer-link"><span data-en="New to Boltpay?" data-bn="Boltpay-এ নতুন?">New to Boltpay?</span> <a href="register.html" data-en="Create an account ↗" data-bn="অ্যাকাউন্ট খুলুন ↗">Create an account ↗</a></div>
+</section></main>
+<script>
 window.addEventListener('DOMContentLoaded', () => { applyDomainTheme(); });
 window.addEventListener('DOMContentLoaded', async () => {
   const { data: { session } } = await window.supabaseClient.auth.getSession();
@@ -103,27 +116,24 @@ async function doLogin(){
   const btn = document.getElementById('submitBtn');
   errEl.style.display = 'none';
 
-  if (!email || !password){
-    errEl.textContent = 'Enter both email and password.';
-    errEl.style.display = 'block';
-    return;
-  }
+  const okE = setFieldError('email', !email ? 'Enter your email.' : (!/^\S+@\S+\.\S+$/.test(email) ? 'Enter a valid email address.' : ''), !email ? 'ইমেইল দিন।' : 'সঠিক ইমেইল ঠিকানা দিন।');
+  const okP = setFieldError('password', !password ? 'Enter your password.' : '', 'পাসওয়ার্ড দিন।');
+  if (!okE || !okP) return;
 
-  btn.disabled = true; btn.textContent = 'Logging in…';
+  btn.disabled = true; document.getElementById('submitLbl').textContent = t('Logging in…', 'লগইন হচ্ছে…');
 
   const { data, error } = await window.supabaseClient.auth.signInWithPassword({ email, password });
 
   if (error){
-    errEl.textContent = error.message;
+    errEl.textContent = authErrorText(error.message);
     errEl.style.display = 'block';
-    btn.disabled = false; btn.textContent = 'Log in';
+    btn.disabled = false; document.getElementById('submitLbl').textContent = t('Log in', 'লগইন');
     return;
   }
 
   await redirectByRole(data.user.id);
 }
 
-document.getElementById('password').addEventListener('keydown', (e) => { if (e.key === 'Enter') doLogin(); });
 </script>
             </body>
           </html>
