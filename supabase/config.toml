@@ -56,3 +56,16 @@ verify_jwt = false
 # returns a picture built from a public display name.
 [functions.og-image]
 verify_jwt = false
+
+# LND checkout (flag-gated by app_settings.lnd_checkout_enabled, default off).
+# lnd-create-invoice / payment-status: called by anonymous payers through
+# the Worker proxy, same as create-invoice. lnd-watcher: pg_cron with
+# x-cron-secret, fails closed if CRON_SECRET is unset.
+[functions.lnd-create-invoice]
+verify_jwt = false
+
+[functions.payment-status]
+verify_jwt = false
+
+[functions.lnd-watcher]
+verify_jwt = false
