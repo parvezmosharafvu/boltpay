@@ -501,6 +501,13 @@ input:focus-visible,select:focus-visible,button:focus-visible{ outline:2px solid
                         </div>
                         <!-- CUSTOMERS TAB -->
                         <div id="tab-customers" style="display:none;">
+                          <div class="panel" id="pendingAccountsPanel">
+                            <div class="panel-head">
+                              <div class="panel-title">Accounts waiting for approval</div>
+                              <span class="badge-count" id="pendingAccountsCount">0</span>
+                            </div>
+                            <div id="pendingAccountsList"></div>
+                          </div>
                           <div class="panel" id="customerListView">
                             <div class="panel-head">
                               <div class="panel-title">Customers — sorted by earnings</div>
@@ -1279,7 +1286,26 @@ async function loadEarnings(){
   renderEarnings(data || []);
 }
 
+function escAcc(s){ return String(s ?? '').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c])); }
+async function loadPendingAccounts(){
+  const el = document.getElementById('pendingAccountsList');
+  if (!el) return;
+  const { data, error } = await window.supabaseClient.rpc('admin_list_accounts', { p_status: 'pending' });
+  if (error){ el.textContent = 'Could not load accounts.'; return; }
+  document.getElementById('pendingAccountsCount').textContent = data.length;
+  el.innerHTML = data.length ? data.map(u => `<div class="w-row" style="justify-content:space-between;gap:8px;padding:8px 0;border-bottom:1px solid rgba(127,127,127,.2)">
+      <div><b>${escAcc(u.display_name)}</b> · ${escAcc(u.email)}<br><small>Phone: ${escAcc(u.phone) || '—'} · Telegram: ${u.telegram_username ? '@' + escAcc(u.telegram_username) : '—'}</small></div>
+      <div><button class="btn-sm" onclick="setAccountStatus('${u.id}','active')">Approve</button>
+      <button class="btn-sm" onclick="setAccountStatus('${u.id}','rejected')">Reject</button></div></div>`).join('')
+    : '<div style="opacity:.7">No accounts waiting.</div>';
+}
+async function setAccountStatus(id, status){
+  const { error } = await window.supabaseClient.rpc('admin_set_account_status', { p_user_id: id, p_status: status });
+  showToast(error ? 'Failed' : (status === 'active' ? 'Account approved' : 'Account rejected'), error ? 'err' : 'ok');
+  if (!error) await loadPendingAccounts();
+}
 async function loadCustomers(){
+  loadPendingAccounts();
   const { data, error } = await window.supabaseClient.rpc('admin_customer_directory');
   if (error){ showToast('Failed to load customers: ' + error.message, 'err'); return; }
   allCustomers = data || [];
