@@ -72,3 +72,7 @@ verify_jwt = false
 
 [functions.track-event]
 verify_jwt = false
+
+# telegram-webhook: called by Telegram; checks X-Telegram-Bot-Api-Secret-Token itself.
+[functions.telegram-webhook]
+verify_jwt = false

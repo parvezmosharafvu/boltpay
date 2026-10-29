@@ -934,6 +934,14 @@ body{
                 <div class="page-sub">Manage your withdrawal wallets and request payouts</div>
               </div>
             </div>
+            <div class="card" id="tgCard" style="margin-bottom:14px">
+              <div style="display:flex;justify-content:space-between;align-items:center;gap:8px">
+                <div><div style="font-weight:700">Telegram notifications</div><div id="tgStatus" style="font-size:13px;opacity:.8">Checking…</div></div>
+                <div><button class="btn-ghost" id="tgConnectBtn" onclick="connectTelegram()">Connect Telegram</button>
+                <button class="btn-ghost" id="tgDisconnectBtn" style="display:none" onclick="disconnectTelegram()">Disconnect</button></div>
+              </div>
+              <div id="tgCode" style="display:none;margin-top:10px;font-size:13px"></div>
+            </div>
             <div class="panel">
               <div class="panel-head">
                 <div class="panel-title">Your pricing</div>
@@ -2268,6 +2276,32 @@ async function loadInvoicesTab(){
     : '<div style="opacity:.7">No invoices yet.</div>');
 }
 
+async function loadTelegramStatus(){
+  const { data, error } = await window.supabaseClient.rpc('my_telegram_status');
+  const row = Array.isArray(data) ? data[0] : data;
+  const st = document.getElementById('tgStatus'); if (!st) return;
+  if (error || !row){ st.textContent = 'Could not load status.'; return; }
+  window._tgBot = row.bot_username;
+  st.textContent = row.connected ? 'Connected. You get a message for every settled payment.' : (row.bot_username ? 'Not connected.' : 'Not available yet.');
+  document.getElementById('tgConnectBtn').style.display = row.connected || !row.bot_username ? 'none' : '';
+  document.getElementById('tgDisconnectBtn').style.display = row.connected ? '' : 'none';
+}
+async function connectTelegram(){
+  const { data, error } = await window.supabaseClient.rpc('my_telegram_link_code');
+  if (error){ showToast('Could not create code', 'err'); return; }
+  const bot = String(window._tgBot || '').replace(/[^A-Za-z0-9_]/g, '');
+  const code = String(data).replace(/[^A-Z0-9]/g, '');
+  const el = document.getElementById('tgCode');
+  el.style.display = 'block';
+  el.innerHTML = `Open <a href="https://t.me/${bot}?start=${code}" target="_blank" rel="noopener">@${bot}</a> and tap Start, or send <b>/start ${code}</b>. The code works for 15 minutes.`;
+}
+async function disconnectTelegram(){
+  const { error } = await window.supabaseClient.rpc('my_telegram_disconnect');
+  showToast(error ? 'Failed' : 'Telegram disconnected', error ? 'err' : 'ok');
+  document.getElementById('tgCode').style.display = 'none';
+  loadTelegramStatus();
+}
+
 function showSection(sec, btn){
   const target = document.getElementById('sec-' + sec);
   if (!target) return;
@@ -2281,6 +2315,7 @@ function showSection(sec, btn){
   if (sec === 'daily') loadDailySettled();
   if (sec === 'earnings') loadInsights();
   if (sec === 'invoices') loadInvoicesTab();
+  if (sec === 'cashout') loadTelegramStatus();
 }
 
 /**
