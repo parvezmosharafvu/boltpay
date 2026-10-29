@@ -79,3 +79,17 @@ Deno.test("settings default to off, 10/1000/3600", () => {
   assertEquals(parseLndSettings([{ key: "lnd_checkout_enabled", value: "true" }]).enabled, false);
   assertEquals(parseLndSettings([{ key: "lnd_checkout_enabled", value: true }]).enabled, true);
 });
+
+import { sendSettledAlert, settledAlertText } from "./alerts.ts";
+
+Deno.test("settled alert: both channels, respects ALERT_ON_SETTLED=false", async () => {
+  const urls: string[] = [];
+  const f = (async (u: string) => { urls.push(u); return new Response("ok"); }) as unknown as typeof fetch;
+  const env = (m: Record<string, string>) => (k: string) => m[k];
+  const all = { ALERT_WEBHOOK_URL: "https://hook.test/x", ALERT_TELEGRAM_BOT_TOKEN: "t", ALERT_TELEGRAM_CHAT_ID: "1" };
+  assertEquals(await sendSettledAlert("hi", env(all), f), 2);
+  assertEquals(urls.length, 2);
+  assertEquals(await sendSettledAlert("hi", env({ ...all, ALERT_ON_SETTLED: "false" }), f), 0);
+  assertEquals(await sendSettledAlert("hi", env({}), f), 0);
+  assertEquals(settledAlertText(12.5, "shop", "abcdef12-0000"), "✅ Payment settled (Lightning): $12.50 via /shop (payment abcdef12)");
+});

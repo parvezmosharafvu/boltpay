@@ -3,6 +3,7 @@
 // payment is credited exactly once no matter who sees it first.
 import type { SupabaseClient } from "https://esm.sh/@supabase/supabase-js@2";
 import { LndClient } from "./lnd.ts";
+import { notifyLndSettled } from "./alerts.ts";
 
 export interface OpenLndRow {
   id: string;
@@ -32,6 +33,9 @@ export async function syncLndPayment(
       // Same post-settle step as btcpay-webhook.
       const { error: qErr } = await db.rpc("system_queue_withdrawal", { p_user_id: row.user_id });
       if (qErr) console.error("Auto-queue failed for", row.user_id, qErr.message);
+      // Only the caller whose settle returned true gets here, so the
+      // alert fires once even if status and watcher race.
+      await notifyLndSettled(db, row.id);
       return "settled";
     }
     return "unchanged";
