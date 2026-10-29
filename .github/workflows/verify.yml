@@ -81,6 +81,11 @@ jobs:
           PGPASSWORD: postgres
         run: psql -h localhost -U postgres -v ON_ERROR_STOP=1 -f ci/lnd_regression.sql
 
+      - name: Runtime regression — platform commission (0082)
+        env:
+          PGPASSWORD: postgres
+        run: psql -h localhost -U postgres -v ON_ERROR_STOP=1 -f ci/commission_regression.sql
+
   functions:
     name: Edge functions type-check
     runs-on: ubuntu-latest
