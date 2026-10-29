@@ -12,12 +12,6 @@
     const b = document.getElementById('langBtn'); if (b) b.textContent = l === 'bn' ? 'English' : 'বাংলা';
   }
   window.applyLang = apply;
-  window.toggleLang = () => { localStorage.setItem(KEY, authLang() === 'bn' ? 'en' : 'bn'); apply(); };
-  window.togglePw = (id, btn) => {
-    const i = document.getElementById(id); const show = i.type === 'password';
-    i.type = show ? 'text' : 'password';
-    btn.setAttribute('aria-label', show ? t('Hide password','পাসওয়ার্ড লুকান') : t('Show password','পাসওয়ার্ড দেখান'));
-  };
   window.setFieldError = (id, en, bn) => {
     const i = document.getElementById(id); const f = i.closest('.field');
     const e = f.querySelector('.inline-err');
@@ -40,3 +34,9 @@
   };
   document.addEventListener('DOMContentLoaded', apply);
 })();
+function toggleLang(){ localStorage.setItem('boltpay_lang', authLang() === 'bn' ? 'en' : 'bn'); applyLang(); }
+function togglePw(id, btn){
+  const i = document.getElementById(id); const show = i.type === 'password';
+  i.type = show ? 'text' : 'password';
+  btn.setAttribute('aria-label', show ? t('Hide password','পাসওয়ার্ড লুকান') : t('Show password','পাসওয়ার্ড দেখান'));
+}
