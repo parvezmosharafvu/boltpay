@@ -338,8 +338,24 @@ return out;
 }
 // /pay/<slug>, /pay/i/<id>, /pay/i/<id>/success|expired all render the
 // one static page; it reads the path itself.
-function servePayPage(request, url) {
-return fetch(new Request(`${url.origin}/lnd-pay`, { headers: request.headers }));
+// An unknown or inactive /pay/<slug> still renders the page (it shows a
+// bilingual "Link not found"), but with a real 404 status so crawlers and
+// link checkers see it as missing.
+async function servePayPage(request, url) {
+const page = await fetch(new Request(`${url.origin}/lnd-pay`, { headers: request.headers }));
+const parts = url.pathname.replace(/^\/+|\/+$/g, "").split("/");
+let missing = false;
+if (parts.length === 2 && parts[1] !== "i") {
+const api = new URL(`${url.origin}/api/lnd/link?slug=${encodeURIComponent(parts[1])}`);
+try {
+const res = await proxyLnd(new Request(api.toString(), { headers: request.headers }), api, LND_API["api/lnd/link"]);
+missing = res.status === 404;
+} catch (e) { missing = false; }
+}
+if (!missing) return page;
+const out = new Response(page.body, { status: 404, headers: page.headers });
+out.headers.set("Cache-Control", "no-store");
+return out;
 }
 
 export default {

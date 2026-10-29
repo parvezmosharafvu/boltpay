@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
-<meta name="theme-color" content="#000000">
+<meta name="theme-color" content="#F7F5F0">
 <title>Pay with Lightning</title>
 <!-- Served by the Worker for /pay/<slug> and /pay/i/<paymentId>.
      Per-customer URLs: never indexed, never leak via Referer. -->
@@ -12,80 +12,86 @@
 <link rel="icon" type="image/svg+xml" href="/favicon.svg">
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
 <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
+<script src="/auth.js"></script>
 <style>
-* { margin: 0; padding: 0; box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
-html, body { min-height: 100%; font-family: 'Inter', sans-serif; background: #000; color: #fff; }
-body { display: flex; justify-content: center; }
-main { width: 100%; max-width: 430px; padding: 20px; }
-.view { display: none; flex-direction: column; gap: 14px; }
-.view.on { display: flex; }
-.brand { font-size: 13px; color: rgba(255,255,255,.55); font-weight: 600; letter-spacing: .3px; }
-h1 { font-size: 26px; font-weight: 800; letter-spacing: -.5px; }
-.sub { color: rgba(255,255,255,.7); font-size: 15px; }
-.amount-row { display: flex; align-items: center; background: rgba(255,255,255,.08); border-radius: 16px; padding: 14px 18px; font-size: 34px; font-weight: 800; }
-.amount-row input { background: none; border: 0; color: #fff; font: inherit; width: 100%; outline: none; margin-left: 4px; }
-.btn { border: 0; border-radius: 999px; padding: 16px; font: 700 16px 'Inter', sans-serif; cursor: pointer; text-align: center; text-decoration: none; display: block; }
-.btn.primary { background: #FFB800; color: #000; }
-.btn.ghost { background: rgba(255,255,255,.1); color: #fff; }
-.quick { display: flex; flex-wrap: wrap; gap: 8px; margin: 12px 0; }
-.quick button { flex: 1 1 28%; border: 0; border-radius: 12px; padding: 12px; background: rgba(255,255,255,.1); color: #fff; font: 700 15px 'Inter', sans-serif; cursor: pointer; }
-.note { opacity: .8; font-size: 14px; margin: 4px 0 8px; white-space: pre-wrap; }
-.btn:disabled { opacity: .5; cursor: default; }
-.err { color: #ff6b60; font-size: 14px; min-height: 18px; }
-#qr { background: #fff; padding: 12px; border-radius: 16px; align-self: center; }
-.pill { align-self: center; background: rgba(255,255,255,.08); border-radius: 999px; padding: 8px 14px; font-weight: 700; font-variant-numeric: tabular-nums; }
-.pill.urgent { background: rgba(255,69,58,.18); color: #ff6b60; }
-.meta { text-align: center; color: rgba(255,255,255,.7); font-size: 14px; }
-.addr { word-break: break-all; font-size: 12px; color: rgba(255,255,255,.6); text-align: center; }
-.big { font-size: 64px; text-align: center; }
-.center { text-align: center; }
+:root{ --bg:#F7F5F0; --card:#FFFFFF; --line:#E7E2D6; --text:#1A1712; --dim:#6B6455; --amber:#FFB800; --amber-600:#E0A200; --wash:#FFF6DC; --on:#2A1F00; --err:#C2410C; }
+*{ margin:0; padding:0; box-sizing:border-box; -webkit-tap-highlight-color:transparent; }
+html,body{ min-height:100%; font-family:'Inter',sans-serif; background:var(--bg); color:var(--text); }
+body{ display:flex; justify-content:center; align-items:flex-start; padding:40px 16px; }
+main{ width:100%; max-width:420px; }
+.top{ display:flex; justify-content:space-between; align-items:center; margin-bottom:14px; }
+.brand{ font-size:13px; color:var(--dim); font-weight:500; }
+.lang{ background:var(--card); border:1px solid var(--line); color:var(--text); border-radius:10px; min-height:40px; padding:0 12px; font:500 14px 'Inter'; cursor:pointer; }
+.card{ background:var(--card); border:1px solid var(--line); border-radius:22px; padding:28px; box-shadow:0 10px 30px rgba(26,23,18,.06); }
+.view{ display:none; flex-direction:column; gap:14px; } .view.on{ display:flex; }
+h1{ font-size:24px; line-height:32px; font-weight:600; letter-spacing:-.02em; }
+.sub{ color:var(--dim); font-size:14px; }
+.note{ color:var(--dim); font-size:14px; white-space:pre-wrap; background:var(--wash); border-radius:12px; padding:10px 12px; }
+.quick{ display:grid; grid-template-columns:repeat(3,1fr); gap:8px; }
+.quick button{ min-height:48px; border:1px solid var(--line); border-radius:12px; background:var(--card); color:var(--text); font:600 15px 'Inter'; cursor:pointer; }
+.quick button.on{ background:var(--wash); border-color:var(--amber); }
+.quick button.extra{ display:none; } .quick.all button.extra{ display:block; }
+.more{ align-self:flex-start; background:none; border:0; color:var(--amber-600); font:600 14px 'Inter'; cursor:pointer; min-height:44px; }
+.amount-row{ display:flex; align-items:center; border:1px solid var(--line); border-radius:14px; padding:0 16px; min-height:56px; font-size:24px; font-weight:600; }
+.amount-row:focus-within{ border-color:var(--amber); box-shadow:0 0 0 3px rgba(255,184,0,.25); }
+.amount-row input{ background:none; border:0; color:var(--text); font:inherit; width:100%; outline:none; margin-left:4px; }
+.btn{ min-height:48px; border:1px solid transparent; border-radius:14px; padding:12px 16px; font:600 16px 'Inter'; cursor:pointer; text-align:center; text-decoration:none; display:flex; align-items:center; justify-content:center; }
+.btn.primary{ background:var(--amber); color:var(--on); }
+.btn.ghost{ background:var(--card); border-color:var(--line); color:var(--text); }
+.btn:disabled{ opacity:.45; cursor:default; }
+.err{ color:var(--err); font-size:14px; min-height:18px; }
+#qr{ background:#fff; padding:12px; border:1px solid var(--line); border-radius:16px; align-self:center; }
+.pill{ align-self:center; background:var(--wash); border-radius:999px; padding:6px 14px; font-weight:600; font-variant-numeric:tabular-nums; }
+.pill.urgent{ background:#FDE7DD; color:var(--err); }
+.meta{ text-align:center; color:var(--dim); font-size:14px; }
+.addr{ word-break:break-all; font-size:12px; color:var(--dim); text-align:center; font-family:'Geist Mono',monospace; }
+.big{ font-size:52px; text-align:center; color:var(--amber-600); }
+.center{ text-align:center; }
+.foot{ text-align:center; font-size:12px; color:var(--dim); margin-top:16px; }
+@media (max-width:480px){ body{ padding:20px 12px; } .card{ padding:22px; } }
 </style>
 </head>
 <body>
 <main>
-  <div class="brand" id="brand"></div>
-
-  <!-- 1. Amount -->
+  <div class="top"><div class="brand" id="brand"></div><button type="button" class="lang" id="langBtn" onclick="toggleLang()">বাংলা</button></div>
+  <div class="card">
   <section class="view" id="v-amount">
-    <h1 id="payee">Pay</h1>
+    <h1 id="payee" data-en="Pay" data-bn="পেমেন্ট">Pay</h1>
     <p class="note" id="note" style="display:none"></p>
-    <p class="sub" id="limits">Enter an amount</p>
+    <p class="sub" id="limits" data-en="Choose an amount" data-bn="অ্যামাউন্ট বেছে নিন">Choose an amount</p>
     <div class="quick" id="quick"></div>
-    <label class="amount-row">$<input id="amount" type="text" inputmode="decimal" autocomplete="off" placeholder="0" oninput="onAmount()"></label>
-    <div class="err" id="amount-err"></div>
-    <button class="btn primary" id="continue" onclick="createInvoice()" disabled>Continue</button>
+    <button type="button" class="more" id="more" style="display:none" onclick="showMore()" data-en="Show more" data-bn="আরও দেখুন">Show more</button>
+    <label class="amount-row">$<input id="amount" type="text" inputmode="decimal" autocomplete="off" placeholder="0" aria-label="Amount" oninput="onAmount()"></label>
+    <div class="err" id="amount-err" role="alert"></div>
+    <button class="btn primary" id="continue" onclick="createInvoice()" disabled data-en="Continue" data-bn="এগিয়ে যান">Continue</button>
   </section>
-
-  <!-- 2. Invoice -->
   <section class="view" id="v-invoice">
-    <h1>Scan or tap to pay</h1>
+    <h1 class="center" data-en="Scan or tap to pay" data-bn="স্ক্যান বা ট্যাপ করে পে করুন">Scan or tap to pay</h1>
     <div class="pill" id="timer">--:--</div>
     <div id="qr"></div>
     <p class="meta" id="inv-amount"></p>
     <a class="btn primary" id="cashapp" href="#" rel="noopener" onclick="payClick()">Open in Cash App</a>
-    <button class="btn ghost" id="copy" onclick="copyInvoice()">Copy Lightning invoice</button>
+    <button class="btn ghost" id="copy" onclick="copyInvoice()" data-en="Copy Lightning invoice" data-bn="লাইটনিং ইনভয়েস কপি করুন">Copy Lightning invoice</button>
     <div id="btc-box" style="display:none">
-      <p class="meta">Or send on-chain Bitcoin to:</p>
+      <p class="meta" data-en="Or send on-chain Bitcoin to:" data-bn="অথবা অন-চেইন বিটকয়েন পাঠান:">Or send on-chain Bitcoin to:</p>
       <p class="addr" id="btc-addr"></p>
     </div>
-    <p class="meta">Waiting for payment… this page updates automatically.</p>
+    <p class="meta" data-en="Waiting for payment… this page updates automatically." data-bn="পেমেন্টের অপেক্ষা… পেজটি নিজে থেকেই আপডেট হবে।">Waiting for payment… this page updates automatically.</p>
   </section>
-
-  <!-- 3. Paid -->
   <section class="view" id="v-paid">
     <div class="big">✓</div>
-    <h1 class="center">Payment received</h1>
+    <h1 class="center" data-en="Payment received" data-bn="পেমেন্ট পাওয়া গেছে">Payment received</h1>
     <p class="meta" id="paid-amount"></p>
     <p class="meta" id="paid-at"></p>
   </section>
-
-  <!-- 4. Expired / error -->
   <section class="view" id="v-expired">
     <div class="big">⏱</div>
     <h1 class="center" id="exp-title">Invoice expired</h1>
-    <p class="meta" id="exp-msg">This invoice is no longer payable. No money was taken.</p>
-    <a class="btn ghost" id="retry" href="/">Start again</a>
+    <p class="meta" id="exp-msg"></p>
+    <a class="btn ghost" id="retry" href="/" data-en="Start again" data-bn="আবার শুরু করুন">Start again</a>
   </section>
+  </div>
+  <p class="foot" data-en="Secured by Lightning · Boltpay" data-bn="লাইটনিং দ্বারা সুরক্ষিত · Boltpay">Secured by Lightning · Boltpay</p>
 </main>
 
 <script>
@@ -109,9 +115,12 @@ function show(view) {
   for (const v of ['v-amount', 'v-invoice', 'v-paid', 'v-expired']) el(v).classList.toggle('on', v === view);
 }
 
+// Bilingual text that survives the language switch.
+function setT(id, en, bn) { const e = el(id); e.dataset.en = en; e.dataset.bn = bn === undefined ? en : bn; e.textContent = t(e.dataset.en, e.dataset.bn); }
+
 function fail(title, msg) {
-  el('exp-title').textContent = title;
-  el('exp-msg').textContent = msg;
+  setT('exp-title', title[0], title[1]);
+  setT('exp-msg', msg[0], msg[1]);
   show('v-expired');
 }
 
@@ -143,36 +152,38 @@ function parseAmount() {
 function onAmount() {
   const a = parseAmount();
   let msg = '';
-  if (el('amount').value.trim() && a === null) msg = 'Enter a valid amount';
-  else if (a !== null && (a < limits.min || a > limits.max)) msg = 'Amount must be between ' + money(limits.min) + ' and ' + money(limits.max);
+  if (el('amount').value.trim() && a === null) msg = t('Enter a valid amount', 'সঠিক অ্যামাউন্ট দিন');
+  else if (a !== null && (a < limits.min || a > limits.max)) msg = t('Amount must be between ', 'অ্যামাউন্ট হতে হবে ') + money(limits.min) + ' – ' + money(limits.max);
   el('amount-err').textContent = msg;
   el('continue').disabled = a === null || !!msg;
+  document.querySelectorAll('#quick button').forEach(function (b) { b.classList.toggle('on', a !== null && Number(b.dataset.v) === a); });
 }
 
 async function loadLink() {
   try {
     const d = await api('/api/lnd/link?slug=' + encodeURIComponent(slug));
     limits = { min: d.minUsd, max: d.maxUsd };
-    el('payee').textContent = 'Pay ' + d.displayName;
-    el('limits').textContent = money(limits.min) + ' – ' + money(limits.max);
+    setT('payee', 'Pay ' + d.displayName, d.displayName + '-কে পেমেন্ট');
+    setT('limits', 'Choose an amount · ' + money(limits.min) + ' – ' + money(limits.max), 'অ্যামাউন্ট বেছে নিন · ' + money(limits.min) + ' – ' + money(limits.max));
     if (d.note) { el('note').textContent = d.note; el('note').style.display = ''; }
     el('quick').innerHTML = '';
     // Links without their own quick amounts get sensible defaults inside
     // the link's min/max, so the payer always has one-tap choices.
     let quick = (d.quickAmounts || []).slice();
     if (!quick.length) quick = [10, 25, 50, 100, 250, 500].filter(function (q) { return q >= limits.min && q <= limits.max; }).slice(0, 4);
-    quick.forEach(function (q) {
+    quick.forEach(function (q, i) {
       const b = document.createElement('button');
-      b.type = 'button';
+      b.type = 'button'; b.dataset.v = q;
+      if (i >= 3) b.className = 'extra';
       b.textContent = money(q);
       b.onclick = function () { el('amount').value = String(q); onAmount(); };
       el('quick').appendChild(b);
     });
+    el('more').style.display = quick.length > 3 ? '' : 'none';
     document.title = 'Pay ' + d.displayName;
     show('v-amount');
-    el('amount').focus();
   } catch (e) {
-    fail('Link unavailable', e.message);
+    fail(['Link not found', 'লিংক পাওয়া যায়নি'], [e.message, 'লিংকটি পাওয়া যায়নি বা বন্ধ আছে।']);
   }
 }
 
@@ -180,7 +191,7 @@ async function createInvoice() {
   const a = parseAmount();
   if (a === null) return;
   el('continue').disabled = true;
-  el('continue').textContent = 'Creating invoice…';
+  setT('continue', 'Creating invoice…', 'ইনভয়েস তৈরি হচ্ছে…');
   try {
     const d = await api('/api/lnd/invoice', {
       method: 'POST',
@@ -192,7 +203,7 @@ async function createInvoice() {
     await openInvoice();
   } catch (e) {
     el('amount-err').textContent = e.message;
-    el('continue').textContent = 'Continue';
+    setT('continue', 'Continue', 'এগিয়ে যান');
     el('continue').disabled = false;
   }
 }
@@ -200,7 +211,7 @@ async function createInvoice() {
 function render(d) {
   if (d.status === 'paid') {
     stop();
-    el('paid-amount').textContent = money(d.amountUSD) + ' paid';
+    setT('paid-amount', money(d.amountUSD) + ' paid', money(d.amountUSD) + ' পরিশোধিত');
     el('paid-at').textContent = d.paidAt ? new Date(d.paidAt).toLocaleString() : '';
     if (location.pathname.indexOf('/success') < 0) history.replaceState(null, '', '/pay/i/' + paymentId + '/success');
     track('paid-observed');
@@ -210,7 +221,7 @@ function render(d) {
   if (d.status !== 'pending') {
     stop();
     if (location.pathname.indexOf('/expired') < 0) history.replaceState(null, '', '/pay/i/' + paymentId + '/expired');
-    fail('Invoice expired', 'This invoice is no longer payable. No money was taken.');
+    fail(['Invoice expired', 'ইনভয়েসের মেয়াদ শেষ'], ['This invoice is no longer payable. No money was taken.', 'এই ইনভয়েস আর পরিশোধযোগ্য নয়। কোনো টাকা কাটা হয়নি।']);
     return;
   }
   expiresAt = d.expiresAt ? new Date(d.expiresAt).getTime() : null;
@@ -244,7 +255,7 @@ async function openInvoice() {
   try {
     render(await api('/api/lnd/status?id=' + encodeURIComponent(paymentId)));
   } catch (e) {
-    fail('Invoice not found', e.message);
+    fail(['Invoice not found', 'ইনভয়েস পাওয়া যায়নি'], [e.message, 'লিংকটি দেখে আবার চেষ্টা করুন।']);
     return;
   }
   if (el('v-invoice').classList.contains('on')) {
@@ -255,13 +266,15 @@ async function openInvoice() {
   }
 }
 
+function showMore() { el('quick').classList.add('all'); el('more').style.display = 'none'; }
+
 function payClick() { track('pay-click'); }
 
 async function copyInvoice() {
   if (!bolt11) return;
-  try { await navigator.clipboard.writeText(bolt11); el('copy').textContent = 'Copied'; }
-  catch (e) { el('copy').textContent = 'Copy failed'; }
-  setTimeout(function () { el('copy').textContent = 'Copy Lightning invoice'; }, 1500);
+  try { await navigator.clipboard.writeText(bolt11); setT('copy', 'Copied', 'কপি হয়েছে'); }
+  catch (e) { setT('copy', 'Copy failed', 'কপি হয়নি'); }
+  setTimeout(function () { setT('copy', 'Copy Lightning invoice', 'লাইটনিং ইনভয়েস কপি করুন'); }, 1500);
 }
 
 document.addEventListener('visibilitychange', function () {
@@ -279,7 +292,7 @@ document.addEventListener('visibilitychange', function () {
     el('retry').href = '/pay/' + slug;
     loadLink();
   } else {
-    fail('Link not found', 'Check the link and try again.');
+    fail(['Link not found', 'লিংক পাওয়া যায়নি'], ['Check the link and try again.', 'লিংকটি দেখে আবার চেষ্টা করুন।']);
   }
 })();
 </script>
