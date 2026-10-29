@@ -1,0 +1,55 @@
+/* Shared login/register shell (DESIGN-SPEC sections 1, 3, 4). Our amber brand. */
+:root{ --ok:#7FD4A0; }
+*{ margin:0; padding:0; box-sizing:border-box; -webkit-tap-highlight-color:transparent; }
+body{ font-family:'Inter',sans-serif; background:var(--bg); color:var(--text); min-height:100vh; font-size:16px; line-height:24px; display:block; padding:0; background-image:none; }
+h1,h2,h3{ font-weight:600; letter-spacing:-0.02em; }
+.topbar{ border-bottom:1px solid var(--line); }
+.topbar-in{ max-width:1280px; margin:0 auto; padding:20px 32px; display:flex; align-items:center; justify-content:space-between; gap:12px; }
+.logo{ display:flex; align-items:center; gap:10px; color:var(--text); text-decoration:none; font-weight:600; font-size:16px; }
+.logo-mark{ width:32px; height:32px; border-radius:9px; background:linear-gradient(155deg,var(--amber-300),var(--amber)); display:flex; align-items:center; justify-content:center; }
+.top-right{ display:flex; align-items:center; gap:16px; }
+.back{ color:var(--text-dim); font-size:14px; font-weight:500; text-decoration:none; min-height:44px; display:inline-flex; align-items:center; }
+.back:hover{ color:var(--text); }
+.lang{ background:var(--panel); border:1px solid var(--line); color:var(--text); border-radius:10px; min-height:44px; padding:0 12px; font:500 14px 'Inter'; cursor:pointer; }
+.shell{ max-width:1280px; margin:0 auto; padding:48px 32px 80px; display:grid; grid-template-columns:minmax(0,554px) minmax(0,574px); gap:80px; justify-content:center; align-items:start; }
+.brand-panel{ border:1px solid var(--line); border-radius:22px; padding:48px; background:linear-gradient(160deg,rgba(255,184,0,.10),rgba(255,184,0,0) 55%),var(--panel); display:flex; flex-direction:column; justify-content:space-between; gap:40px; min-height:100%; }
+.eyebrow{ font-size:11px; line-height:16px; font-weight:600; letter-spacing:.2em; text-transform:uppercase; color:var(--amber-300); display:flex; align-items:center; gap:8px; }
+.brand-panel h2{ font-size:48px; line-height:55px; max-width:448px; margin-top:20px; }
+.brand-panel h2 .hl{ color:var(--amber-300); }
+.brand-panel p.lead{ font-size:16px; line-height:28px; color:var(--text-dim); margin-top:16px; }
+.perks{ list-style:none; display:flex; flex-direction:column; gap:24px; }
+.perks li{ display:flex; gap:14px; align-items:flex-start; }
+.perk-ico{ flex:none; width:36px; height:36px; border-radius:10px; background:var(--accent-wash); border:1px solid var(--accent-ring); display:flex; align-items:center; justify-content:center; color:var(--amber); }
+.perks b{ display:block; font-size:14px; font-weight:600; line-height:20px; }
+.perks small{ font-size:12px; color:var(--text-dim); line-height:16px; }
+.panel-note{ border-top:1px solid var(--line); padding-top:20px; font-size:12px; color:var(--text-dim); }
+.card{ background:var(--panel); border:1px solid var(--line); border-radius:22px; padding:36px; width:100%; max-width:none; }
+.card h1{ font-size:30px; line-height:36px; margin:8px 0 4px; }
+.card .sub{ font-size:14px; line-height:20px; color:var(--text-dim); margin-bottom:24px; }
+.field{ margin-bottom:20px; }
+.field label{ display:block; font-size:14px; line-height:20px; font-weight:500; color:var(--text); text-transform:none; letter-spacing:0; margin-bottom:8px; }
+.field label .req{ color:var(--amber); margin-left:2px; }
+.field input{ width:100%; height:44px; padding:0 12px; border-radius:10px; background:var(--bg); border:1px solid var(--line-strong); color:var(--text); font:400 14px/20px 'Inter'; outline:none; }
+.field input:focus{ border-color:var(--amber); box-shadow:0 0 0 3px var(--accent-ring); }
+.field input[aria-invalid="true"]{ border-color:var(--alert); }
+.field .inline-err{ display:none; color:var(--alert); font-size:12px; line-height:16px; margin-top:6px; }
+.field.invalid .inline-err{ display:block; }
+.field-hint{ font-size:12px; line-height:16px; color:var(--text-dim); margin-top:6px; }
+.pw-wrap{ position:relative; }
+.pw-wrap input{ padding-right:48px; }
+.pw-eye{ position:absolute; right:2px; top:0; width:44px; height:44px; background:none; border:none; color:var(--text-dim); cursor:pointer; display:flex; align-items:center; justify-content:center; }
+.callout{ border-radius:10px; background:var(--accent-wash); border:1px solid var(--accent-ring); font-size:13px; line-height:20px; padding:10px 12px; margin-bottom:20px; color:var(--text); }
+.btn-primary{ width:100%; min-height:48px; padding:12px 20px; border-radius:14px; border:none; background:var(--amber); color:var(--on-accent); font:600 14px/20px 'Inter'; cursor:pointer; display:inline-flex; align-items:center; justify-content:center; gap:8px; margin-top:4px; box-shadow:none; transform:none; }
+.btn-primary:hover:not(:disabled){ filter:brightness(1.06); }
+.btn-primary:disabled{ opacity:.6; cursor:not-allowed; }
+.error-msg{ color:var(--alert); font-size:13px; line-height:20px; margin-top:12px; display:none; }
+.success-msg{ color:var(--ok); font-size:13px; line-height:20px; margin-top:12px; display:none; }
+.footer-link{ text-align:center; margin-top:20px; font-size:14px; color:var(--text-dim); }
+.footer-link a{ color:var(--amber); text-decoration:none; font-weight:600; display:inline-flex; min-height:44px; align-items:center; }
+@media (max-width:1023px){ .shell{ grid-template-columns:minmax(0,574px); } .brand-panel{ display:none; } }
+@media (max-width:639px){
+  .topbar-in{ padding:16px 20px; }
+  .shell{ padding:24px 20px 56px; }
+  .card{ border:none; background:transparent; padding:0; }
+  .card h1{ font-size:24px; line-height:32px; }
+}

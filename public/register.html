@@ -49,51 +49,51 @@ h1{ font-size:20px; font-weight:700; margin-bottom:4px; }
 .footer-link{ text-align:center; margin-top:20px; font-size:13px; color:var(--text-dim); }
 .footer-link a{ color:var(--amber); text-decoration:none; font-weight:600; }
 </style>
+<link rel="stylesheet" href="auth.css">
+<script src="auth.js"></script>
+
           </head>
           <body>
-            <div class="card">
-              <div class="mark">
-                <svg viewBox="0 0 24 24" width="20" height="20" fill="none">
-                  <path d="M13 2L4 14h6l-1 8 9-12h-6l1-8z" fill="#2A1F00"/>
-                </svg>
-              </div>
-              <h1>Create your Boltpay account</h1>
-              <div class="sub">Start accepting Lightning payments in minutes</div>
-              <div class="field">
-                <label>Display name</label>
-                <input type="text" id="displayName" placeholder="How customers will see you">
-                </div>
-                <div class="field">
-                  <label>Email</label>
-                  <input type="email" id="email" placeholder="you@example.com" autocomplete="email">
-                  </div>
-                  <div class="field">
-                    <label>Phone</label>
-                    <input type="tel" id="phone" placeholder="+1 555 000 0000" autocomplete="tel" maxlength="32">
-                  </div>
-                  <div class="field">
-                    <label>Telegram username</label>
-                    <input type="text" id="telegram" placeholder="@username" maxlength="64">
-                  </div>
-                  <div class="field">
-                    <label>Password</label>
-                    <input type="password" id="password" placeholder="At least 8 characters" autocomplete="new-password">
-                      <div class="field-hint">8+ characters, including an uppercase letter and a number. · ৮+ অক্ষর, অন্তত একটি বড় হাতের অক্ষর ও একটি সংখ্যা।</div>
-                    </div>
-                  <div class="field">
-                    <label>Confirm password · পাসওয়ার্ড আবার লিখুন</label>
-                    <input type="password" id="password2" autocomplete="new-password">
-                  </div>
-                  <div class="field-hint" style="margin-bottom:12px;">Administrator approval is required. You can sign in after your account is activated. · অ্যাডমিন অনুমোদন লাগবে; অ্যাকাউন্ট চালু হলে লগইন করতে পারবেন।</div>
-                    <button class="btn-primary" id="submitBtn" onclick="doRegister()">Create account</button>
-                    <div class="error-msg" id="errorMsg">
-                    </div>
-                    <div class="success-msg" id="successMsg">
-                    </div>
-                    <div class="footer-link">Already have an account? <a href="login.html">Log in</a>
-                  </div>
-                </div>
-                <script>
+<header class="topbar"><div class="topbar-in">
+  <a class="logo" href="/"><span class="logo-mark"><svg viewBox="0 0 24 24" width="18" height="18" fill="none"><path d="M13 2L4 14h6l-1 8 9-12h-6l1-8z" fill="#2A1F00"/></svg></span>Boltpay</a>
+  <div class="top-right"><a class="back" href="/" data-en="← Back to home" data-bn="← হোমে ফিরুন">← Back to home</a>
+  <button type="button" class="lang" id="langBtn" onclick="toggleLang()">বাংলা</button></div>
+</div></header>
+<main class="shell">
+  <aside class="brand-panel" aria-hidden="true">
+    <div>
+      <div class="eyebrow"><svg width="14" height="14" viewBox="0 0 24 24" fill="none"><path d="M13 2L4 14h6l-1 8 9-12h-6l1-8z" fill="currentColor"/></svg><span data-en="Lightning payments" data-bn="লাইটনিং পেমেন্ট">Lightning payments</span></div>
+      <h2><span data-en="Get paid instantly," data-bn="সাথে সাথে পেমেন্ট নিন,">Get paid instantly,</span><br><span class="hl" style="color:var(--amber-300)" data-en="anywhere." data-bn="যেকোনো জায়গা থেকে।">anywhere.</span></h2>
+      <p class="lead" data-en="Share a payment link, your customer pays, and your balance updates in seconds." data-bn="পেমেন্ট লিংক শেয়ার করুন, কাস্টমার পে করলে কয়েক সেকেন্ডে ব্যালান্স আপডেট হয়।">Share a payment link, your customer pays, and your balance updates in seconds.</p>
+    </div>
+    <ul class="perks">
+      <li><span class="perk-ico"><svg width="18" height="18" viewBox="0 0 24 24" fill="none"><path d="M13 2L4 14h6l-1 8 9-12h-6l1-8z" fill="currentColor"/></svg></span><div><b data-en="Instant settlement" data-bn="তাৎক্ষণিক সেটেলমেন্ট">Instant settlement</b><small data-en="Payments confirm over Lightning in seconds." data-bn="লাইটনিংয়ে কয়েক সেকেন্ডে পেমেন্ট নিশ্চিত হয়।">Payments confirm over Lightning in seconds.</small></div></li>
+      <li><span class="perk-ico"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M10 13a5 5 0 007 0l3-3a5 5 0 00-7-7l-1 1"/><path d="M14 11a5 5 0 00-7 0l-3 3a5 5 0 007 7l1-1"/></svg></span><div><b data-en="Your own payment links" data-bn="নিজের পেমেন্ট লিংক">Your own payment links</b><small data-en="One link per product or customer." data-bn="প্রতিটি পণ্য বা কাস্টমারের জন্য আলাদা লিংক।">One link per product or customer.</small></div></li>
+      <li><span class="perk-ico"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 2l8 4v6c0 5-3.5 9-8 10-4.5-1-8-5-8-10V6z"/></svg></span><div><b data-en="Reviewed accounts" data-bn="যাচাই করা অ্যাকাউন্ট">Reviewed accounts</b><small data-en="An administrator approves every account." data-bn="প্রতিটি অ্যাকাউন্ট অ্যাডমিন অনুমোদন করেন।">An administrator approves every account.</small></div></li>
+    </ul>
+    <div class="panel-note" data-en="Need help? Contact your administrator." data-bn="সাহায্য লাগলে অ্যাডমিনের সাথে যোগাযোগ করুন।">Need help? Contact your administrator.</div>
+  </aside>
+  <section>
+  <div class="card">
+<div class="eyebrow" data-en="Create account" data-bn="অ্যাকাউন্ট খুলুন">Create account</div>
+<h1 data-en="Create your Boltpay account" data-bn="আপনার Boltpay অ্যাকাউন্ট খুলুন">Create your Boltpay account</h1>
+<div class="sub" data-en="Start accepting Lightning payments in minutes." data-bn="কয়েক মিনিটেই লাইটনিং পেমেন্ট নেওয়া শুরু করুন।">Start accepting Lightning payments in minutes.</div>
+<div class="callout" data-en="Administrator approval is required. You can sign in after your account is activated." data-bn="অ্যাডমিন অনুমোদন লাগবে; অ্যাকাউন্ট চালু হলে লগইন করতে পারবেন।">Administrator approval is required. You can sign in after your account is activated.</div>
+<form id="regForm" novalidate onsubmit="event.preventDefault();doRegister();">
+<div class="field"><label for="displayName"><span data-en="Display name" data-bn="ডিসপ্লে নাম">Display name</span></label><input type="text" id="displayName" placeholder="How customers will see you" data-ph-en="How customers will see you" data-ph-bn="কাস্টমাররা যে নামে দেখবে" ><div class="inline-err" role="alert"></div></div>
+<div class="field"><label for="email"><span data-en="Email" data-bn="ইমেইল">Email</span><span class="req" aria-hidden="true">*</span></label><input type="email" id="email" placeholder="you@example.com" data-ph-en="you@example.com" data-ph-bn="you@example.com" autocomplete="email"  required aria-required="true"><div class="inline-err" role="alert"></div></div>
+<div class="field"><label for="phone"><span data-en="Phone" data-bn="ফোন">Phone</span><span class="req" aria-hidden="true">*</span></label><input type="tel" id="phone" placeholder="+880 1XXX XXXXXX" data-ph-en="+880 1XXX XXXXXX" data-ph-bn="+880 1XXX XXXXXX" autocomplete="tel" maxlength="32"  required aria-required="true"><div class="inline-err" role="alert"></div></div>
+<div class="field"><label for="telegram"><span data-en="Telegram username" data-bn="টেলিগ্রাম ইউজারনেম">Telegram username</span><span class="req" aria-hidden="true">*</span></label><input type="text" id="telegram" placeholder="@username" data-ph-en="@username" data-ph-bn="@username" maxlength="64"  required aria-required="true"><div class="inline-err" role="alert"></div></div>
+<div class="field"><label for="password"><span data-en="Password" data-bn="পাসওয়ার্ড">Password</span><span class="req" aria-hidden="true">*</span></label><div class="pw-wrap"><input type="password" id="password" placeholder="At least 8 characters" data-ph-en="At least 8 characters" data-ph-bn="কমপক্ষে ৮ অক্ষর" autocomplete="new-password"  required aria-required="true"><button type="button" class="pw-eye" aria-label="Show password" onclick="togglePw('password',this)"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M1 12s4-7 11-7 11 7 11 7-4 7-11 7S1 12 1 12z"/><circle cx="12" cy="12" r="3"/></svg></button></div><div class="field-hint" data-en="8+ characters, including an uppercase letter and a number." data-bn="৮+ অক্ষর, অন্তত একটি বড় হাতের অক্ষর ও একটি সংখ্যা।">8+ characters, including an uppercase letter and a number.</div><div class="inline-err" role="alert"></div></div>
+<div class="field"><label for="password2"><span data-en="Confirm password" data-bn="পাসওয়ার্ড আবার লিখুন">Confirm password</span><span class="req" aria-hidden="true">*</span></label><div class="pw-wrap"><input type="password" id="password2" placeholder="" data-ph-en="" data-ph-bn="" autocomplete="new-password"  required aria-required="true"><button type="button" class="pw-eye" aria-label="Show password" onclick="togglePw('password2',this)"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M1 12s4-7 11-7 11 7 11 7-4 7-11 7S1 12 1 12z"/><circle cx="12" cy="12" r="3"/></svg></button></div><div class="inline-err" role="alert"></div></div>
+<button class="btn-primary" id="submitBtn" type="submit"><span id="submitLbl" data-en="Create account" data-bn="অ্যাকাউন্ট খুলুন">Create account</span><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M5 12h14M13 6l6 6-6 6"/></svg></button>
+<div class="error-msg" id="errorMsg" role="alert"></div>
+<div class="success-msg" id="successMsg" role="status"></div>
+</form>
+</div>
+<div class="footer-link"><span data-en="Already have an account?" data-bn="আগে থেকেই অ্যাকাউন্ট আছে?">Already have an account?</span> <a href="login.html" data-en="Log in" data-bn="লগইন">Log in</a></div>
+</section></main>
+<script>
 window.addEventListener('DOMContentLoaded', () => { applyDomainTheme(); });
 window.addEventListener('DOMContentLoaded', async () => {
   const { data: { session } } = await window.supabaseClient.auth.getSession();
@@ -112,23 +112,17 @@ async function doRegister(){
   errEl.style.display = 'none';
   okEl.style.display = 'none';
 
-  if (!email || !password || !phone || !telegram){
-    errEl.textContent = 'Email, phone, Telegram username and password are required.';
-    errEl.style.display = 'block';
-    return;
-  }
-  if (password.length < 8 || !/[A-Z]/.test(password) || !/[0-9]/.test(password)){
-    errEl.textContent = 'Password needs 8+ characters, an uppercase letter and a number. · পাসওয়ার্ডে ৮+ অক্ষর, একটি বড় হাতের অক্ষর ও একটি সংখ্যা লাগবে।';
-    errEl.style.display = 'block';
-    return;
-  }
-  if (password !== document.getElementById('password2').value){
-    errEl.textContent = 'Passwords do not match. · দুটি পাসওয়ার্ড মেলেনি।';
-    errEl.style.display = 'block';
-    return;
-  }
+  const pw2 = document.getElementById('password2').value;
+  const ok = [
+    setFieldError('email', !email ? 'Enter your email.' : (!/^\S+@\S+\.\S+$/.test(email) ? 'Enter a valid email address.' : ''), !email ? 'ইমেইল দিন।' : 'সঠিক ইমেইল ঠিকানা দিন।'),
+    setFieldError('phone', phone.replace(/\D/g,'').length < 7 ? 'Enter your phone number.' : '', 'ফোন নম্বর দিন।'),
+    setFieldError('telegram', !telegram ? 'Enter your Telegram username.' : '', 'টেলিগ্রাম ইউজারনেম দিন।'),
+    setFieldError('password', (password.length < 8 || !/[A-Z]/.test(password) || !/[0-9]/.test(password)) ? 'Password needs 8+ characters, an uppercase letter and a number.' : '', 'পাসওয়ার্ডে ৮+ অক্ষর, একটি বড় হাতের অক্ষর ও একটি সংখ্যা লাগবে।'),
+    setFieldError('password2', password !== pw2 ? 'Passwords do not match.' : '', 'দুটি পাসওয়ার্ড মেলেনি।'),
+  ].every(Boolean);
+  if (!ok) return;
 
-  btn.disabled = true; btn.textContent = 'Creating account…';
+  btn.disabled = true; document.getElementById('submitLbl').textContent = t('Creating account…', 'অ্যাকাউন্ট তৈরি হচ্ছে…');
 
   const { data, error } = await window.supabaseClient.auth.signUp({
     email, password,
@@ -136,9 +130,9 @@ async function doRegister(){
   });
 
   if (error){
-    errEl.textContent = error.message;
+    errEl.textContent = authErrorText(error.message);
     errEl.style.display = 'block';
-    btn.disabled = false; btn.textContent = 'Create account';
+    btn.disabled = false; document.getElementById('submitLbl').textContent = t('Create account', 'অ্যাকাউন্ট খুলুন');
     return;
   }
 
@@ -149,9 +143,9 @@ async function doRegister(){
   }
 
   // Otherwise the project requires email confirmation before login.
-  okEl.textContent = 'Account requested. Confirm your email; you can log in once an administrator activates it. · অনুরোধ পাঠানো হয়েছে। ইমেইল নিশ্চিত করুন; অ্যাডমিন চালু করলে লগইন করতে পারবেন।';
+  okEl.textContent = t('Account requested. Confirm your email; you can log in once an administrator activates it.', 'অনুরোধ পাঠানো হয়েছে। ইমেইল নিশ্চিত করুন; অ্যাডমিন চালু করলে লগইন করতে পারবেন।');
   okEl.style.display = 'block';
-  btn.textContent = 'Account created';
+  document.getElementById('submitLbl').textContent = t('Account created', 'অ্যাকাউন্ট তৈরি হয়েছে');
 }
 </script>
               </body>
