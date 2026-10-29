@@ -652,6 +652,20 @@ input:focus-visible,select:focus-visible,button:focus-visible{ outline:2px solid
                                   </div>
                                   <!-- EARNINGS TAB -->
                                   <div id="tab-earnings" style="display:none;">
+                                    <div class="panel" id="manualInvoicePanel">
+                                      <div class="panel-head">
+                                        <div class="panel-title">Create invoice · ইনভয়েস তৈরি</div>
+                                      </div>
+                                      <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(170px,1fr));gap:8px">
+                                        <select id="miUser"><option value="">Select user · ইউজার বাছুন</option></select>
+                                        <input id="miAmount" type="number" min="0.01" step="0.01" placeholder="Amount USD · পরিমাণ">
+                                        <input id="miDate" type="date">
+                                        <input id="miDesc" maxlength="500" placeholder="Description · বিবরণ">
+                                        <button class="btn-sm" onclick="createManualInvoice(this)">Create invoice · তৈরি করুন</button>
+                                      </div>
+                                      <small style="opacity:.7">Record only; does not change any balance. · শুধু রেকর্ড, ব্যালেন্সে প্রভাব নেই।</small>
+                                      <div id="manualInvoicesList" style="overflow-x:auto;margin-top:10px"></div>
+                                    </div>
                                     <div class="panel">
                                       <div class="panel-head">
                                         <div class="panel-title">Daily invoices &middot; 7pm–7pm (Asia/Dhaka)</div>
@@ -1292,6 +1306,39 @@ async function loadDailyInvoices(){
     + data.map(r => `<tr><td>${esc(r.cycle_date)}</td><td>${esc(r.display_name || r.email)}</td><td align="center">${r.payment_count}</td><td align="right">${m(r.gross_usd)}</td><td align="right">${m(r.commission_usd)}</td><td align="right">${m(r.net_usd)}</td></tr>`).join('') + '</table>'
     : '<div style="opacity:.7">No invoices yet.</div>';
 }
+async function loadManualInvoices(){
+  const el = document.getElementById('manualInvoicesList'); if (!el) return;
+  const esc = s => String(s ?? '').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+  const sel = document.getElementById('miUser');
+  if (sel && sel.options.length <= 1){
+    const u = await window.supabaseClient.rpc('admin_customer_directory');
+    (u.data || []).forEach(c => { const id = c.id || c.user_id; if (!id) return;
+      const o = document.createElement('option'); o.value = id; o.textContent = (c.display_name || '') + ' · ' + (c.email || ''); sel.appendChild(o); });
+  }
+  const { data, error } = await window.supabaseClient.rpc('admin_list_manual_invoices', { p_limit: 100 });
+  if (error){ el.textContent = 'Could not load invoices. · ইনভয়েস লোড হয়নি।'; return; }
+  el.innerHTML = data.length ? '<table style="width:100%;font-size:13px"><tr><th align="left">Date</th><th align="left">Creator</th><th align="left">Description</th><th align="right">Amount</th><th>Status</th><th></th></tr>'
+    + data.map(r => `<tr><td>${esc(r.invoice_date)}</td><td>${esc(r.display_name || r.email)}</td><td>${esc(r.description)}</td><td align="right">$${Number(r.amount_usd).toFixed(2)}</td><td align="center">${esc(r.status)}</td><td>`
+      + ['open','paid','void'].filter(st => st !== r.status).map(st => `<button class="btn-sm" onclick="setManualInvoiceStatus('${r.id}','${st}')">${st}</button>`).join(' ') + '</td></tr>').join('') + '</table>'
+    : '<div style="opacity:.7">No manual invoices yet. · কোনো ইনভয়েস নেই।</div>';
+}
+async function createManualInvoice(btn){
+  const user = document.getElementById('miUser').value;
+  const amt = parseFloat(document.getElementById('miAmount').value);
+  const desc = document.getElementById('miDesc').value.trim();
+  const date = document.getElementById('miDate').value || null;
+  if (!user || !(amt > 0) || !desc){ showToast('User, amount and description are required · ইউজার, পরিমাণ ও বিবরণ দিন', 'err'); return; }
+  btn.disabled = true;
+  const { error } = await window.supabaseClient.rpc('admin_create_manual_invoice', { p_user_id: user, p_amount_usd: amt, p_description: desc, p_invoice_date: date });
+  btn.disabled = false;
+  showToast(error ? ('Failed · ব্যর্থ: ' + error.message) : 'Invoice created · ইনভয়েস তৈরি হয়েছে', error ? 'err' : 'ok');
+  if (!error){ ['miAmount','miDesc','miDate'].forEach(id => document.getElementById(id).value = ''); loadManualInvoices(); }
+}
+async function setManualInvoiceStatus(id, st){
+  const { error } = await window.supabaseClient.rpc('admin_set_manual_invoice_status', { p_id: id, p_status: st });
+  showToast(error ? 'Failed · ব্যর্থ' : 'Updated · আপডেট হয়েছে', error ? 'err' : 'ok');
+  if (!error) loadManualInvoices();
+}
 async function runDailyInvoices(btn){
   btn.disabled = true;
   const { error } = await window.supabaseClient.rpc('admin_run_daily_invoices');
@@ -1301,6 +1348,7 @@ async function runDailyInvoices(btn){
 }
 async function loadEarnings(){
   loadDailyInvoices();
+  loadManualInvoices();
   // Live, not the daily-report cron's daily_stats table: computed fresh
   // from payments on every call, on the same 7pm-7pm Dhaka cycle the
   // moderator panel uses, so it can never sit at $0.00 because a cron run

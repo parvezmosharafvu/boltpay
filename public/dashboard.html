@@ -842,6 +842,7 @@ body{
             <div class="card" style="margin-bottom:14px"><div style="font-weight:700;margin-bottom:8px">Last 30 days</div><div id="invChart"></div></div>
             <div class="card" style="margin-bottom:14px"><div style="font-weight:700;margin-bottom:8px">Top links (30 days)</div><div id="invTopLinks"></div></div>
             <div class="card" style="overflow-x:auto"><div id="invList"></div></div>
+            <div class="card" style="overflow-x:auto;margin-top:14px"><div style="font-weight:700;margin-bottom:8px">Other invoices · অন্যান্য ইনভয়েস</div><div id="manualInvList"></div></div>
           </div>
           <div class="section" id="sec-daily">
             <div class="page-header">
@@ -2312,6 +2313,12 @@ async function loadInvoicesTab(){
     ? '<table style="width:100%;font-size:13px"><tr><th align="left">Day</th><th>Payments</th><th align="right">Gross</th><th align="right">Commission</th><th align="right">Net</th></tr>'
       + inv.data.map(r => `<tr><td>${esc(r.cycle_date)}</td><td align="center">${r.payment_count}</td><td align="right">${m(r.gross_usd)}</td><td align="right">${m(r.commission_usd)}</td><td align="right">${m(r.net_usd)}</td></tr>`).join('') + '</table>'
     : '<div style="opacity:.7">No invoices yet.</div>');
+  const mi = await window.supabaseClient.rpc('my_manual_invoices');
+  const ml = document.getElementById('manualInvList');
+  if (ml) ml.innerHTML = mi.error ? 'Could not load invoices. · ইনভয়েস লোড হয়নি।' : (mi.data.length
+    ? '<table style="width:100%;font-size:13px"><tr><th align="left">Date</th><th align="left">Description</th><th align="right">Amount</th><th>Status</th></tr>'
+      + mi.data.map(r => `<tr><td>${esc(r.invoice_date)}</td><td>${esc(r.description)}</td><td align="right">${m(r.amount_usd)}</td><td align="center">${esc(r.status)}</td></tr>`).join('') + '</table>'
+    : '<div style="opacity:.7">No other invoices. · কোনো ইনভয়েস নেই।</div>');
 }
 
 async function loadTelegramStatus(){
