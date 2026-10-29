@@ -652,6 +652,30 @@ body{
               </div>
               <div class="stat-card">
                 <div class="stat-head">
+                  <div class="stat-label">Today · আজ</div>
+                  <div class="stat-icon green">☀</div>
+                </div>
+                <div class="stat-val green mono" id="statToday">$0.00</div>
+                <div class="stat-sub">Settled today · আজকের আয়</div>
+              </div>
+              <div class="stat-card">
+                <div class="stat-head">
+                  <div class="stat-label">This month · এই মাস</div>
+                  <div class="stat-icon gold">📅</div>
+                </div>
+                <div class="stat-val mono" id="statMonth">$0.00</div>
+                <div class="stat-sub">Settled this month · এই মাসের আয়</div>
+              </div>
+              <div class="stat-card">
+                <div class="stat-head">
+                  <div class="stat-label">Success rate · সফলতার হার</div>
+                  <div class="stat-icon violet">✓</div>
+                </div>
+                <div class="stat-val violet mono" id="statSuccessRate">—</div>
+                <div class="stat-sub" id="statOutcomeCounts">Paid 0 · Expired 0 · Failed 0</div>
+              </div>
+              <div class="stat-card">
+                <div class="stat-head">
                   <div class="stat-label">Withdrawal fee</div>
                   <div class="stat-icon alert">%</div>
                 </div>
@@ -1850,6 +1874,20 @@ async function refreshBalance(){
   }
   computeStats();
   renderTiers();
+  refreshOverview();
+}
+
+async function refreshOverview(){
+  const { data, error } = await window.supabaseClient.rpc('my_overview_stats');
+  if (error) return;
+  const r = Array.isArray(data) ? data[0] : data;
+  if (!r) return;
+  const set = (id, v) => { const el = document.getElementById(id); if (el) el.textContent = v; };
+  set('statToday', '$' + parseFloat(r.today_settled || 0).toFixed(2));
+  set('statMonth', '$' + parseFloat(r.month_settled || 0).toFixed(2));
+  set('statSuccessRate', r.success_rate == null ? '—' : (Number(r.success_rate).toFixed(1) + '%'));
+  set('statOutcomeCounts', 'Paid ' + Number(r.paid_count || 0) + ' · Expired ' + Number(r.expired_count || 0) + ' · Failed ' + Number(r.failed_count || 0)
+    + ' (সফল ' + Number(r.paid_count || 0) + ' · মেয়াদোত্তীর্ণ ' + Number(r.expired_count || 0) + ' · ব্যর্থ ' + Number(r.failed_count || 0) + ')');
 }
 
 function computeStats(){
