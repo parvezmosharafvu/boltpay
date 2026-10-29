@@ -157,7 +157,11 @@ async function loadLink() {
     el('limits').textContent = money(limits.min) + ' – ' + money(limits.max);
     if (d.note) { el('note').textContent = d.note; el('note').style.display = ''; }
     el('quick').innerHTML = '';
-    (d.quickAmounts || []).forEach(function (q) {
+    // Links without their own quick amounts get sensible defaults inside
+    // the link's min/max, so the payer always has one-tap choices.
+    let quick = (d.quickAmounts || []).slice();
+    if (!quick.length) quick = [10, 25, 50, 100, 250, 500].filter(function (q) { return q >= limits.min && q <= limits.max; }).slice(0, 4);
+    quick.forEach(function (q) {
       const b = document.createElement('button');
       b.type = 'button';
       b.textContent = money(q);
