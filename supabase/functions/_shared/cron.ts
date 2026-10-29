@@ -5,13 +5,14 @@
 // service-role-only RPC system_cron_secret (migration 0075). Function
 // secrets cannot always be set on this project, so Vault is the fallback;
 // a header matching either is accepted. Compared in constant time; values
-// are never logged. The Vault value is cached per isolate (a miss retries
-// after a minute). Fails closed when neither is available.
+// are never logged. The Vault value is cached per isolate for a minute, so
+// a rotated secret is picked up within a minute. Fails closed when neither
+// is available.
 
 type RpcClient = { rpc: (fn: string, args?: Record<string, unknown>) => PromiseLike<{ data: unknown; error: unknown }> };
 
 let cache: { v: string; at: number } | null = null;
-const MISS_TTL_MS = 60_000;
+const CACHE_TTL_MS = 60_000;
 
 export function resetCronSecretCache() {
   cache = null;
@@ -28,7 +29,7 @@ export function timingSafeEqual(a: string, b: string): boolean {
 }
 
 async function vaultCronSecret(db: RpcClient): Promise<string> {
-  if (cache && (cache.v || Date.now() - cache.at < MISS_TTL_MS)) return cache.v;
+  if (cache && Date.now() - cache.at < CACHE_TTL_MS) return cache.v;
   let v = "";
   try {
     const { data, error } = await db.rpc("system_cron_secret");

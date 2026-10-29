@@ -1,4 +1,5 @@
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
+import { cronAuthorized } from "../_shared/cron.ts";
 
 const SUPABASE_URL = Deno.env.get("SUPABASE_URL")!;
 const SERVICE_ROLE_KEY = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
@@ -131,8 +132,8 @@ console.warn("sendAlert called but no alert channel is configured.");
 }
 
 Deno.serve(async (req) => {
-  const cronSecret = Deno.env.get("CRON_SECRET") ?? "";
-  if (!cronSecret || req.headers.get("x-cron-secret") !== cronSecret) {
+  // Env CRON_SECRET or Vault boltpay_cron_secret; constant-time, fails closed.
+  if (!(await cronAuthorized(req, supabase))) {
     return new Response("Unauthorized", { status: 401 });
   }
 
