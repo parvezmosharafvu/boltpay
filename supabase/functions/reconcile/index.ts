@@ -180,7 +180,34 @@ Deno.serve(async (req) => {
 
     const startMs = new Date(bounds.cycle_start).getTime();
     const endMs = new Date(bounds.cycle_end).getTime();
-    const ledgerTotal = Number(bounds.total_settled || 0);
+    // daily_totals_for_cycle counts every settled payment, including the
+    // LND checkout's (0067). BTCPay never saw those, so take them out
+    // before comparing — otherwise every LND sale reads as a "BTCPay is
+    // short" mismatch. Paged for the same 1000-row reason as below.
+    let lndTotal = 0;
+    let lndFailed = false;
+    for (let from = 0; ; from += 1000) {
+      const { data: page, error: lndErr } = await supabase
+        .from("payments")
+        .select("amount_settled")
+        .eq("status", "settled")
+        .eq("backend", "lnd")
+        .gte("settled_at", bounds.cycle_start)
+        .lt("settled_at", bounds.cycle_end)
+        .range(from, from + 999);
+      if (lndErr) {
+        problems.push(`${cycleDate}: could not total LND payments (${lndErr.message})`);
+        lndFailed = true;
+        break;
+      }
+      for (const r of page ?? []) lndTotal += Number(r.amount_settled || 0);
+      if (!page || page.length < 1000) break;
+    }
+    if (lndFailed) {
+      report.push({ cycleDate, skipped: true, reason: "LND total unreadable" });
+      continue;
+    }
+    const ledgerTotal = Number((Number(bounds.total_settled || 0) - lndTotal).toFixed(2));
 
     let btcpayTotal = 0;
     let btcpayIds = new Set<string>();
@@ -229,6 +256,7 @@ Deno.serve(async (req) => {
         .from("payments")
         .select("btcpay_invoice_id")
         .eq("status", "settled")
+        .eq("backend", "btcpay")
         .gte("settled_at", bounds.cycle_start)
         .lt("settled_at", bounds.cycle_end)
         .range(from, from + PAGE - 1);
