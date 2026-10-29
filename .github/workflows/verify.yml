@@ -110,6 +110,18 @@ jobs:
           done
           exit $fail
 
+  unit:
+    name: Edge function unit tests (LND checkout)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: denoland/setup-deno@v2
+        with:
+          deno-version: v2.x
+      - name: deno test _shared
+        working-directory: supabase/functions
+        run: deno test --node-modules-dir=none _shared/
+
   frontend:
     name: Pages parse and reference real things
     runs-on: ubuntu-latest
