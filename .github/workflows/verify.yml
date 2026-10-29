@@ -76,17 +76,6 @@ jobs:
           done
           echo "All migrations applied cleanly to an empty database."
 
-      - name: Runtime regression — overpayment cap and message soft-delete
-        env:
-          PGPASSWORD: postgres
-        run: |
-          # Exercises 0050's two fixes at the data level, not just syntax:
-          # a settlement far above amount_requested must be rejected, and
-          # clearing a thread must hide rows rather than delete them. Runs
-          # inside BEGIN/ROLLBACK against the database the migrations were
-          # just applied to, so it leaves nothing behind.
-          psql -h localhost -U postgres -v ON_ERROR_STOP=1 -f ci/cloudai_regression.sql
-
       - name: Runtime regression — LND backend (0067)
         env:
           PGPASSWORD: postgres

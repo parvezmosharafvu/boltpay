@@ -145,28 +145,6 @@ h1 span{ color:var(--amber); }
             <details><summary>When is my balance settled? · ব্যালান্স কখন হিসাব হয়?</summary><p>Every day at 7 pm (Dhaka time) a daily statement is created in your dashboard.<span class="bn">প্রতিদিন সন্ধ্যা ৭টায় (ঢাকা সময়) ড্যাশবোর্ডে দৈনিক হিসাব তৈরি হয়।</span></p></details>
             <details><summary>How do I withdraw? · কীভাবে withdraw করব?</summary><p>Request a withdrawal from your dashboard using one of the methods your administrator has enabled.<span class="bn">অ্যাডমিনের চালু করা method দিয়ে ড্যাশবোর্ড থেকে withdraw অনুরোধ করুন।</span></p></details>
           </div>
-          <!-- Live payments. Hidden unless an admin turns the switch on.
-               Every identifying field arrives from the server already
-               masked — see public_settled_feed(). -->
-          <div class="cash-block" id="liveBlock" style="display:none;">
-            <div class="cash-head">
-              <h2 class="cash-title">Live payments</h2>
-              <span class="cash-dot" id="liveDot">live</span>
-            </div>
-            <p class="cash-sub">Names, emails and invoice IDs are hidden. Paste an exact invoice ID or Lightning address below to see one payment in full.</p>
-            <div class="feed" id="liveList"></div>
-          </div>
-
-          <div class="cash-block">
-            <h2 class="cash-title">Check a payment</h2>
-            <p class="cash-sub">Paste the full invoice ID or Lightning address.</p>
-            <div class="lookup-row">
-              <input type="text" id="lookupInput" placeholder="Invoice ID or lnbc…" autocomplete="off" spellcheck="false">
-              <button id="lookupBtn">Check</button>
-            </div>
-            <div class="lookup-result" id="lookupResult"></div>
-          </div>
-
           <div class="cash-block" id="supportBlock">
             <h2 class="cash-title">Need help?</h2>
             <div class="support-links" id="supportLinks"></div>
@@ -183,33 +161,9 @@ h1 span{ color:var(--amber); }
 .cash-block + .cash-block{ margin-top:-14px; }
 .cash-title{ font-size:26px; font-weight:800; letter-spacing:-0.8px; margin-bottom:6px; }
 .cash-sub{ font-size:14px; font-weight:500; color:#0A3D14; margin-bottom:18px; line-height:1.55; }
-.cash-head{ display:flex; align-items:center; justify-content:space-between; gap:12px; }
-.cash-dot{
-  background:#000; color:#FFB800; border-radius:999px; padding:5px 14px;
-  font-size:11px; font-weight:800; letter-spacing:.1em; text-transform:uppercase;
-}
-.cash-dot::before{ content:''; display:inline-block; width:7px; height:7px; border-radius:50%;
-  background:#FFB800; margin-right:7px; vertical-align:middle; animation:blip 1.6s infinite; }
 @keyframes blip{ 0%,100%{opacity:1} 50%{opacity:.25} }
 
-.feed{ display:flex; flex-direction:column; gap:10px; }
-.feed-row{ background:#000; border-radius:16px; padding:14px 16px; color:#fff; }
-.feed-top{ display:flex; align-items:baseline; justify-content:space-between; gap:12px; }
-.feed-amt{ font-family:'JetBrains Mono',monospace; font-size:20px; font-weight:700; color:#FFB800; }
-.feed-when{ font-size:12px; color:rgba(255,255,255,.45); white-space:nowrap; }
-.feed-grid{ display:grid; grid-template-columns:repeat(auto-fit,minmax(140px,1fr)); gap:9px 16px; margin-top:11px; padding-top:11px; border-top:1px solid rgba(255,255,255,.12); }
-.feed-label{ font-size:9px; letter-spacing:.09em; text-transform:uppercase; color:rgba(255,255,255,.35); font-weight:700; margin-bottom:2px; }
-.feed-value{ font-size:12px; font-family:'JetBrains Mono',monospace; color:rgba(255,255,255,.85); overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
-.feed-value.hidden-val{ color:rgba(255,255,255,.4); letter-spacing:.04em; }
-.feed-cell.wide{ grid-column:1 / -1; }
 
-.lookup-row{ display:flex; gap:10px; flex-wrap:wrap; }
-.lookup-row input{ flex:1; min-width:200px; background:#000; color:#fff; border:none; border-radius:14px; padding:15px 17px; font-size:14px; font-family:inherit; outline:none; }
-.lookup-row input::placeholder{ color:rgba(255,255,255,.35); }
-.lookup-row button{ background:#000; color:#FFB800; border:none; border-radius:14px; padding:15px 30px; font-size:14px; font-weight:800; cursor:pointer; font-family:inherit; }
-.lookup-row button:disabled{ opacity:.55; cursor:not-allowed; }
-.lookup-result{ margin-top:14px; display:none; }
-.lookup-result.show{ display:block; }
 
 .support-links{ display:flex; gap:12px; flex-wrap:wrap; }
 .support-links a{ background:#000; color:#fff; border-radius:999px; padding:14px 24px; font-size:14px; font-weight:700; text-decoration:none; }
@@ -267,25 +221,17 @@ window.addEventListener('DOMContentLoaded', async () => {
   window.location.href = profile?.role === 'admin' ? 'admin.html' : 'dashboard.html#income';
 });
 
-/* ============ Home page: live feed, lookup, support ============ */
+/* ============ Home page: support links ============ */
 
 function esc(str){
   return String(str ?? '').replace(/&/g,'&amp;').replace(/</g,'&lt;')
     .replace(/\"/g,'&quot;').replace(/'/g,'&#39;');
 }
 
-function ago(ts){
-  const secs = Math.max(0, Math.floor((Date.now() - new Date(ts)) / 1000));
-  if (secs < 60) return 'just now';
-  if (secs < 3600) return Math.floor(secs/60) + 'm ago';
-  if (secs < 86400) return Math.floor(secs/3600) + 'h ago';
-  return Math.floor(secs/86400) + 'd ago';
-}
-
 async function loadHomeExtras(){
   const { data } = await window.supabaseClient
     .from('app_settings').select('key, value')
-    .in('key', ['public_feed_enabled', 'support_links']);
+    .in('key', ['support_links']);
   const settings = Object.fromEntries((data || []).map(r => [r.key, r.value]));
 
   // Support: the email always shows. The group link only renders when set
@@ -302,94 +248,8 @@ async function loadHomeExtras(){
   if (parts.length) document.getElementById('supportLinks').innerHTML = parts.join('');
   else document.getElementById('supportBlock').style.display = 'none';
 
-  if (settings.public_feed_enabled !== true) return;
-  // PR-H: public feed hidden from the UI (code kept).
-  // await refreshFeed();
-  setInterval(refreshFeed, 20000);
 }
 
-function cell(label, value, masked, wide){
-  return '<div class="feed-cell' + (wide ? ' wide' : '') + '">' +
-    '<div class="feed-label">' + esc(label) + '</div>' +
-    '<div class="feed-value' + (masked ? ' hidden-val' : '') + '">' + esc(value || '—') + '</div></div>';
-}
-
-async function refreshFeed(){
-  const { data, error } = await window.supabaseClient
-    .rpc('public_settled_feed', { p_limit: 15 });
-  if (error) return;
-  const rows = data || [];
-  if (!rows.length) return;
-
-  document.getElementById('liveBlock').style.display = '';
-  document.getElementById('liveList').innerHTML = rows.map(function(r){
-    // The public RPC intentionally returns only amount and settlement time.
-    // Keep the public feed aligned with that privacy boundary instead of
-    // rendering empty cells for fields the backend no longer exposes.
-    return '<div class="feed-row">' +
-      '<div class="feed-top">' +
-        '<span class="feed-amt">$' + parseFloat(r.amount || 0).toFixed(2) + '</span>' +
-        '<span class="feed-when">' + esc(ago(r.settled_at)) + '</span>' +
-      '</div>' +
-      '<div class="feed-grid">' +
-        cell('Status', 'Settled', false) +
-        cell('Settled', new Date(r.settled_at).toLocaleString(), false, true) +
-      '</div></div>';
-  }).join('');
-}
-
-async function lookupPayment(){
-  const input = document.getElementById('lookupInput');
-  const out = document.getElementById('lookupResult');
-  const btn = document.getElementById('lookupBtn');
-  const ref = input.value.trim();
-
-  out.className = 'lookup-result show';
-  if (ref.length < 12){
-    out.innerHTML = '<div class="feed-row" style="color:#FF8AA0;">Paste the full invoice ID or Lightning address.</div>';
-    return;
-  }
-
-  btn.disabled = true;
-  out.innerHTML = '<div class="feed-row" style="color:rgba(255,255,255,.6);">Checking\u2026</div>';
-  try {
-    const { data, error } = await window.supabaseClient
-      .rpc('lookup_payment_status', { p_reference: ref });
-    if (error){
-      out.innerHTML = '<div class="feed-row" style="color:#FF8AA0;">' + esc(error.message) + '</div>';
-      return;
-    }
-    const r = Array.isArray(data) ? data[0] : data;
-    if (!r){
-      out.innerHTML = '<div class="feed-row" style="color:rgba(255,255,255,.6);">No payment found with that reference.</div>';
-      return;
-    }
-    // The lookup RPC returns only payment status and timestamps. The exact
-    // reference is already known to the visitor, so do not echo private
-    // creator/link data that the backend intentionally omits.
-    const colour = r.status === 'settled' ? '#FFB800'
-      : (r.status === 'expired' || r.status === 'invalid') ? '#FF8AA0' : '#F5A623';
-    out.innerHTML = '<div class="feed-row">' +
-      '<div class="feed-top">' +
-        '<span class="feed-amt">$' + parseFloat(r.amount || 0).toFixed(2) + '</span>' +
-        '<span class="feed-when" style="color:' + colour + '; font-weight:700; text-transform:uppercase;">' + esc(r.status) + '</span>' +
-      '</div>' +
-      '<div class="feed-grid">' +
-        cell('Created', r.created_at ? new Date(r.created_at).toLocaleString() : null, false, true) +
-        cell('Settled', r.settled_at ? new Date(r.settled_at).toLocaleString() : null, false, true) +
-      '</div></div>';
-  } catch (e) {
-    console.error('lookup failed:', e);
-    out.innerHTML = '<div class="feed-row" style="color:#FF8AA0;">Something went wrong. Please try again.</div>';
-  } finally {
-    btn.disabled = false;
-  }
-}
-
-document.getElementById('lookupBtn').addEventListener('click', lookupPayment);
-document.getElementById('lookupInput').addEventListener('keydown', function(e){
-  if (e.key === 'Enter') lookupPayment();
-});
 loadHomeExtras();
 </script>
         </body>
