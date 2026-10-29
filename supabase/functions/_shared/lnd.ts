@@ -1,6 +1,8 @@
 // Minimal LND REST client for the LND checkout backend.
 //
-// Secrets (Supabase Edge Function secrets, never in code or the DB):
+// Secrets (Supabase Edge Function secrets, or — when those env vars are
+// missing — Supabase Vault 'lnd_rest_url' / 'lnd_invoice_macaroon', read via
+// the service-role-only RPC system_lnd_config from migration 0074):
 //   LND_REST_URL          https base URL of the LND REST proxy (Cloudflare Tunnel)
 //   LND_INVOICE_MACAROON  hex macaroon baked with invoice-only permissions
 //                         (invoices:read invoices:write address:write onchain:read)
@@ -54,6 +56,48 @@ export function lndConfigFromEnv(
     cfAccessId: get("CF_ACCESS_CLIENT_ID") || undefined,
     cfAccessSecret: get("CF_ACCESS_CLIENT_SECRET") || undefined,
   };
+}
+
+type RpcClient = { rpc: (fn: string, args?: Record<string, unknown>) => PromiseLike<{ data: unknown; error: unknown }> };
+
+let vaultCache: { cfg: LndConfig | null; at: number } | null = null;
+const VAULT_MISS_TTL_MS = 60_000;
+
+/** Test hook: forget the per-isolate Vault cache. */
+export function resetLndConfigCache() {
+  vaultCache = null;
+}
+
+/**
+ * Env first (LND_REST_URL / LND_INVOICE_MACAROON); if missing, Vault via the
+ * service-role-only RPC system_lnd_config. A found config is cached for the
+ * life of the isolate; a miss is retried after a minute. Never logs values.
+ */
+export async function lndConfig(
+  db: RpcClient,
+  get: (k: string) => string | undefined = (k) => Deno.env.get(k),
+): Promise<LndConfig | null> {
+  const env = lndConfigFromEnv(get);
+  if (env) return env;
+  if (vaultCache && (vaultCache.cfg || Date.now() - vaultCache.at < VAULT_MISS_TTL_MS)) return vaultCache.cfg;
+  let cfg: LndConfig | null = null;
+  try {
+    const { data, error } = await db.rpc("system_lnd_config");
+    const row = (Array.isArray(data) ? data[0] : data) as { rest_url?: string; macaroon?: string } | null;
+    if (!error && row) {
+      cfg = lndConfigFromEnv((k) =>
+        k === "LND_REST_URL" ? row.rest_url ?? undefined
+        : k === "LND_INVOICE_MACAROON" ? row.macaroon ?? undefined
+        : get(k)
+      );
+    } else if (error) {
+      console.error("lnd config: vault rpc failed");
+    }
+  } catch {
+    console.error("lnd config: vault rpc threw");
+  }
+  vaultCache = { cfg, at: Date.now() };
+  return cfg;
 }
 
 export function base64ToHex(b64: string): string {

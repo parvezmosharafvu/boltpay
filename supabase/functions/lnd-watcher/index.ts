@@ -4,7 +4,7 @@
 // status endpoint uses. Fails closed without CRON_SECRET; does nothing
 // without the LND secrets. Not scheduled by this PR.
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
-import { LndClient, lndConfigFromEnv } from "../_shared/lnd.ts";
+import { LndClient, lndConfig } from "../_shared/lnd.ts";
 import { syncLndPayment } from "../_shared/lnd_settle.ts";
 
 const db = createClient(Deno.env.get("SUPABASE_URL")!, Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!);
@@ -14,7 +14,7 @@ Deno.serve(async (req) => {
   if (!cronSecret || req.headers.get("x-cron-secret") !== cronSecret) {
     return new Response("Unauthorized", { status: 401 });
   }
-  const cfg = lndConfigFromEnv();
+  const cfg = await lndConfig(db);
   if (!cfg) return Response.json({ skipped: "LND not configured" });
   const lnd = new LndClient(cfg);
 
