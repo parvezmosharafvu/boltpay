@@ -37,6 +37,8 @@ const RESERVED = new Set([
 'index','login','register','dashboard','admin','404','config','theme',
 'assets','favicon','invoice-boltpay-v2','api','u','static','public',
 'well-known','robots','sitemap','moderator',
+// Worker-only (not in validate_link_slug): the Lightning checkout page file.
+'lnd-pay',
 ]);
 const CRAWLER_PATTERNS = [
 "whatsapp", "facebookexternalhit", "telegrambot", "twitterbot",
@@ -294,10 +296,60 @@ out.headers.set("Content-Type", "application/json");
 return out;
 }
 
+// ---- Lightning (LND) checkout --------------------------------------------
+// Same-origin proxy for the /pay/* pages, so the page's CSP stays
+// connect-src 'self' and Cloudflare's city/country reach the function.
+// Every function behind these is itself gated by lnd_checkout_enabled;
+// with the flag off they answer 404/503 and nothing changes.
+const LND_API = {
+"api/lnd/link": { fn: "lnd-create-invoice", method: "GET", query: ["slug"] },
+"api/lnd/invoice": { fn: "lnd-create-invoice", method: "POST" },
+"api/lnd/status": { fn: "payment-status", method: "GET", query: ["id"] },
+"api/lnd/event": { fn: "track-event", method: "POST" },
+};
+async function proxyLnd(request, url, route) {
+if (request.method !== route.method) {
+return new Response(JSON.stringify({ error: { message: "Method not allowed" } }), {
+status: 405, headers: { "Content-Type": "application/json" },
+});
+}
+const target = new URL(`${SUPABASE_URL}/functions/v1/${route.fn}`);
+for (const k of route.query || []) {
+const v = url.searchParams.get(k);
+if (v !== null) target.searchParams.set(k, v);
+}
+const cf = request.cf || {};
+const init = {
+method: route.method,
+headers: {
+"Content-Type": "application/json",
+apikey: SUPABASE_ANON_KEY,
+Authorization: `Bearer ${SUPABASE_ANON_KEY}`,
+"User-Agent": request.headers.get("User-Agent") || "",
+"cf-ipcity": cf.city || "",
+"cf-ipcountry": cf.country || "",
+},
+};
+if (route.method === "POST") init.body = (await request.text()).slice(0, 4096);
+const res = await fetch(target.toString(), init);
+const out = new Response(res.body, res);
+out.headers.set("Cache-Control", "no-store");
+return out;
+}
+// /pay/<slug>, /pay/i/<id>, /pay/i/<id>/success|expired all render the
+// one static page; it reads the path itself.
+function servePayPage(request, url) {
+return fetch(new Request(`${url.origin}/lnd-pay`, { headers: request.headers }));
+}
+
 export default {
                             async fetch(request) {
                             const url = new URL(request.url);
                             const path = url.pathname.replace(/^\/|\/$/g, "");
+
+if (LND_API[path]) return proxyLnd(request, url, LND_API[path]);
+// Bare /pay stays an ordinary slug; only /pay/... is the checkout.
+if (path.startsWith("pay/")) return servePayPage(request, url);
 
 // Generated preview images.
 if (path.startsWith("og-image/") && path.endsWith(".png")) {

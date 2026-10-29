@@ -20,7 +20,7 @@ const db = createClient(SUPABASE_URL, SERVICE_ROLE_KEY);
 const CORS = {
   "Access-Control-Allow-Origin": "*",
   "Access-Control-Allow-Headers": "Content-Type",
-  "Access-Control-Allow-Methods": "POST, OPTIONS",
+  "Access-Control-Allow-Methods": "GET, POST, OPTIONS",
 };
 
 function err(message: string, status: number) {
@@ -45,8 +45,27 @@ function cleanDevice(v: unknown): string | null {
   return /^[A-Za-z0-9-]{8,64}$/.test(s) ? s : null;
 }
 
+// GET ?slug= -> { data: { displayName, minUsd, maxUsd } } for the /pay amount
+// page. Same gate as POST: 404 unless the flag is on and the link uses LND.
+async function linkInfo(slug: string) {
+  if (!/^[A-Za-z0-9][A-Za-z0-9-]{2,48}[A-Za-z0-9]$/.test(slug)) return err("Invalid payment link", 400);
+  let settings;
+  try {
+    settings = await loadLndSettings(db);
+  } catch {
+    return err("Temporarily unavailable", 503);
+  }
+  if (!settings.enabled) return err("This payment method is not available", 404);
+  const { data: rows, error } = await db.rpc("system_lnd_link_for_invoice", { p_slug: slug });
+  const link = Array.isArray(rows) ? rows[0] : rows;
+  if (error || !link || link.checkout_backend !== "lnd") return err("Payment link not found", 404);
+  if (!link.is_active) return err("This payment link is no longer active", 410);
+  return json({ data: { displayName: link.display_name ?? slug, minUsd: settings.minUsd, maxUsd: settings.maxUsd } });
+}
+
 Deno.serve(async (req) => {
   if (req.method === "OPTIONS") return new Response(null, { headers: CORS });
+  if (req.method === "GET") return linkInfo(new URL(req.url).searchParams.get("slug") ?? "");
   if (req.method !== "POST") return err("Method not allowed", 405);
 
   let body: Record<string, unknown>;
