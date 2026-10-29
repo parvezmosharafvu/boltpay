@@ -10,13 +10,13 @@ const BD_OFFSET_MS = 6 * 60 * 60 * 1000;
 /**
 * The cycle date `daysAgo` cycles before the current one.
 *
-* A "cycle" runs 5pm Dhaka to 5pm Dhaka, and is named after the date it
+* A "cycle" runs 7pm Dhaka to 7pm Dhaka, and is named after the date it
 * STARTED on. Shifting back 17 hours before taking the date turns
-* "5pm today through 4:59pm tomorrow" into a single calendar date —
+* "7pm today through 6:59pm tomorrow" into a single calendar date —
 * the same arithmetic staff_daily_settled() does in SQL.
 */
 function bdCycleDate(daysAgo: number): string {
-  const t = new Date(Date.now() + BD_OFFSET_MS - 17 * 3600000 - daysAgo * 86400000);
+  const t = new Date(Date.now() + BD_OFFSET_MS - 19 * 3600000 - daysAgo * 86400000);
   return t.toISOString().slice(0, 10);
 }
 
@@ -26,7 +26,7 @@ async function computeDay(dateStr: string) {
   // This used to fetch the day's rows and add them up in JavaScript,
   // which meant PostgREST's 1000-row cap silently truncated any busy
   // day — the same failure as the ledger backup. It also bucketed by
-  // midnight Dhaka while every live view on the site buckets 5pm–5pm,
+  // midnight Dhaka while every live view on the site buckets 7pm–7pm,
   // so the archive and the screen disagreed about which day a payment
   // belonged to.
   //
