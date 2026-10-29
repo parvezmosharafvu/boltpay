@@ -501,6 +501,20 @@ input:focus-visible,select:focus-visible,button:focus-visible{ outline:2px solid
                         </div>
                         <!-- CUSTOMERS TAB -->
                         <div id="tab-customers" style="display:none;">
+                          <div class="panel" id="createUserPanel">
+                            <div class="panel-head">
+                              <div class="panel-title">Create user · নতুন ইউজার তৈরি</div>
+                            </div>
+                            <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:8px">
+                              <input id="cuName" placeholder="Full name · পুরো নাম" autocomplete="off">
+                              <input id="cuEmail" type="email" placeholder="Email · ইমেইল" autocomplete="off">
+                              <input id="cuPhone" placeholder="Phone · ফোন" autocomplete="off">
+                              <input id="cuTelegram" placeholder="Telegram username · টেলিগ্রাম" autocomplete="off">
+                              <input id="cuPassword" type="password" placeholder="Password (min 8) · পাসওয়ার্ড" autocomplete="new-password">
+                              <button class="btn-sm" onclick="adminCreateUser(this)">Create user · তৈরি করুন</button>
+                            </div>
+                            <small style="opacity:.7">Account starts approved. · অ্যাকাউন্ট সরাসরি অনুমোদিত থাকবে।</small>
+                          </div>
                           <div class="panel" id="pendingAccountsPanel">
                             <div class="panel-head">
                               <div class="panel-title">Accounts waiting for approval</div>
@@ -1323,6 +1337,26 @@ async function loadPendingAccounts(){
       <div><button class="btn-sm" onclick="setAccountStatus('${u.id}','active')">Approve</button>
       <button class="btn-sm" onclick="setAccountStatus('${u.id}','rejected')">Reject</button></div></div>`).join('')
     : '<div style="opacity:.7">No accounts waiting.</div>';
+}
+async function adminCreateUser(btn){
+  const v = id => document.getElementById(id).value.trim();
+  const body = { display_name: v('cuName'), email: v('cuEmail'), phone: v('cuPhone'),
+                 telegram_username: v('cuTelegram'), password: document.getElementById('cuPassword').value };
+  if (!body.email || body.password.length < 8){ showToast('Email and an 8+ character password are required · ইমেইল ও ৮+ অক্ষরের পাসওয়ার্ড দিন', 'err'); return; }
+  btn.disabled = true;
+  try {
+    const { data: { session } } = await window.supabaseClient.auth.getSession();
+    const res = await fetch(`${window.SUPABASE_URL}/functions/v1/admin-create-user`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${session.access_token}` },
+      body: JSON.stringify(body)
+    });
+    const out = await res.json().catch(() => ({}));
+    if (!res.ok){ showToast(out.error || 'Create failed · তৈরি ব্যর্থ', 'err'); return; }
+    showToast('User created · ইউজার তৈরি হয়েছে', 'ok');
+    ['cuName','cuEmail','cuPhone','cuTelegram','cuPassword'].forEach(id => document.getElementById(id).value = '');
+    loadCustomers();
+  } finally { btn.disabled = false; }
 }
 async function setAccountStatus(id, status){
   const { error } = await window.supabaseClient.rpc('admin_set_account_status', { p_user_id: id, p_status: status });
