@@ -8,7 +8,7 @@
 // checkout_backend is 'lnd'. Otherwise it refuses, and the existing
 // BTCPay create-invoice keeps handling every link exactly as before.
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
-import { LndClient, lndConfigFromEnv } from "../_shared/lnd.ts";
+import { LndClient, lndConfig } from "../_shared/lnd.ts";
 import { chargedAmount, parseUsd, usdToSats, withinLimits } from "../_shared/pricing.ts";
 import { btcUsdRate } from "../_shared/rate.ts";
 import { loadLndSettings } from "../_shared/settings.ts";
@@ -103,7 +103,7 @@ Deno.serve(async (req) => {
     return err(`Amount must be between $${settings.minUsd} and $${settings.maxUsd}`, 400);
   }
 
-  const cfg = lndConfigFromEnv();
+  const cfg = await lndConfig(db);
   if (!cfg) {
     console.error("LND_REST_URL / LND_INVOICE_MACAROON not set or invalid");
     return err("This payment method is not available right now", 503);

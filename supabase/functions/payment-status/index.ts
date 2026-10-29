@@ -8,7 +8,7 @@
 // payer is never stuck waiting for the cron. Works even when the global
 // flag is off, so invoices already issued can still complete.
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
-import { LndClient, lndConfigFromEnv } from "../_shared/lnd.ts";
+import { LndClient, lndConfig } from "../_shared/lnd.ts";
 import { syncLndPayment } from "../_shared/lnd_settle.ts";
 
 const db = createClient(Deno.env.get("SUPABASE_URL")!, Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!);
@@ -39,7 +39,7 @@ Deno.serve(async (req) => {
   if (!row) return json({ error: { message: "Payment not found" } }, 404);
 
   if (row.status === "new" || row.status === "pending") {
-    const cfg = lndConfigFromEnv();
+    const cfg = await lndConfig(db);
     if (cfg) {
       try {
         const out = await syncLndPayment(db, new LndClient(cfg, fetch), row);

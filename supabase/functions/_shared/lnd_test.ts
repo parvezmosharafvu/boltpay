@@ -93,3 +93,22 @@ Deno.test("settled alert: both channels, respects ALERT_ON_SETTLED=false", async
   assertEquals(await sendSettledAlert("hi", env({}), f), 0);
   assertEquals(settledAlertText(12.5, "shop", "abcdef12-0000"), "✅ Payment settled (Lightning): $12.50 via /shop (payment abcdef12)");
 });
+
+Deno.test("lndConfig: env wins, else Vault RPC, cached per isolate", async () => {
+  const { lndConfig, resetLndConfigCache } = await import("./lnd.ts");
+  resetLndConfigCache();
+  let calls = 0;
+  const db = { rpc: (_fn: string) => { calls++; return Promise.resolve({ data: [{ rest_url: "https://lnd.example/", macaroon: "abcd" }], error: null }); } };
+  const envCfg = await lndConfig(db, (k) => ({ LND_REST_URL: "https://env.example", LND_INVOICE_MACAROON: "ff" } as Record<string, string>)[k]);
+  assertEquals(envCfg?.baseUrl, "https://env.example");
+  assertEquals(calls, 0);
+  const v1 = await lndConfig(db, () => undefined);
+  const v2 = await lndConfig(db, () => undefined);
+  assertEquals(v1?.baseUrl, "https://lnd.example");
+  assertEquals(v2?.macaroonHex, "abcd");
+  assertEquals(calls, 1);
+  resetLndConfigCache();
+  const bad = { rpc: () => Promise.resolve({ data: null, error: { message: "denied" } }) };
+  assertEquals(await lndConfig(bad, () => undefined), null);
+  resetLndConfigCache();
+});
