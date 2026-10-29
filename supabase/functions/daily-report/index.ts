@@ -12,7 +12,7 @@ const BD_OFFSET_MS = 6 * 60 * 60 * 1000;
 * The cycle date `daysAgo` cycles before the current one.
 *
 * A "cycle" runs 7pm Dhaka to 7pm Dhaka, and is named after the date it
-* STARTED on. Shifting back 17 hours before taking the date turns
+* STARTED on. Shifting back 19 hours before taking the date turns
 * "7pm today through 6:59pm tomorrow" into a single calendar date —
 * the same arithmetic staff_daily_settled() does in SQL.
 */
