@@ -87,6 +87,11 @@ jobs:
           # just applied to, so it leaves nothing behind.
           psql -h localhost -U postgres -v ON_ERROR_STOP=1 -f ci/cloudai_regression.sql
 
+      - name: Runtime regression — LND backend (0067)
+        env:
+          PGPASSWORD: postgres
+        run: psql -h localhost -U postgres -v ON_ERROR_STOP=1 -f ci/lnd_regression.sql
+
   functions:
     name: Edge functions type-check
     runs-on: ubuntu-latest
