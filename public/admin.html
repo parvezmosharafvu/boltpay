@@ -439,6 +439,7 @@ input:focus-visible,select:focus-visible,button:focus-visible{ outline:2px solid
                       <button class="tab-btn" data-tab="earnings" onclick="switchTab('earnings', this)">Earnings</button>
                       <button class="tab-btn" data-tab="shops" style="display:none" onclick="switchTab('shops', this)">Shops</button>
                       <button class="tab-btn" data-tab="domains" onclick="switchTab('domains', this)">Domains</button>
+                      <button class="tab-btn" data-tab="methods" onclick="switchTab('methods', this)">Payment methods</button>
                       <button class="tab-btn" data-tab="settings" onclick="switchTab('settings', this)">Settings</button>
                     </div>
                     <!-- MERGED TRANSACTIONS TAB -->
@@ -500,6 +501,13 @@ input:focus-visible,select:focus-visible,button:focus-visible{ outline:2px solid
                           </div>
                         </div>
                         <!-- CUSTOMERS TAB -->
+                        <div id="tab-methods" style="display:none;">
+                          <div class="panel">
+                            <div class="panel-head"><div class="panel-title">Payment methods · পেমেন্ট মেথড</div></div>
+                            <small style="opacity:.7">Withdrawal methods creators can choose. Disabled methods are hidden from creators and new requests are refused. · বন্ধ মেথড ইউজাররা দেখবে না এবং নতুন রিকোয়েস্ট নেওয়া হবে না।</small>
+                            <div id="methodsList" style="margin-top:10px"></div>
+                          </div>
+                        </div>
                         <div id="tab-customers" style="display:none;">
                           <div class="panel" id="createUserPanel">
                             <div class="panel-head">
@@ -1405,6 +1413,19 @@ async function adminCreateUser(btn){
     ['cuName','cuEmail','cuPhone','cuTelegram','cuPassword'].forEach(id => document.getElementById(id).value = '');
     loadCustomers();
   } finally { btn.disabled = false; }
+}
+async function loadWithdrawalMethods(){
+  const el = document.getElementById('methodsList'); if (!el) return;
+  const { data, error } = await window.supabaseClient.rpc('admin_list_withdrawal_methods');
+  if (error){ el.textContent = 'Could not load methods. · মেথড লোড হয়নি।'; return; }
+  el.innerHTML = '<table style="width:100%;font-size:13px"><tr><th align="left">Method</th><th align="left">Code</th><th>Status</th><th></th></tr>'
+    + data.map(r => `<tr><td>${escAcc(r.label_en)} · ${escAcc(r.label_bn)}</td><td class="mono">${escAcc(r.code)}</td><td align="center">${r.enabled ? 'Enabled · চালু' : 'Disabled · বন্ধ'}</td>`
+      + `<td><button class="btn-sm" onclick="setWithdrawalMethod('${escAcc(r.code)}', ${!r.enabled})">${r.enabled ? 'Disable · বন্ধ করুন' : 'Enable · চালু করুন'}</button></td></tr>`).join('') + '</table>';
+}
+async function setWithdrawalMethod(code, enabled){
+  const { error } = await window.supabaseClient.rpc('admin_set_withdrawal_method', { p_code: code, p_enabled: enabled });
+  showToast(error ? 'Failed · ব্যর্থ' : 'Saved · সেভ হয়েছে', error ? 'err' : 'ok');
+  if (!error) loadWithdrawalMethods();
 }
 async function setAccountStatus(id, status){
   const { error } = await window.supabaseClient.rpc('admin_set_account_status', { p_user_id: id, p_status: status });
@@ -2415,13 +2436,14 @@ async function deleteShop(id, btn){
 
 function switchTab(tab, btn){
   document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active')); btn.classList.add('active');
-  ['transactions','pending','customers','links','messages','earnings','shops','domains','settings'].forEach(t => { document.getElementById('tab-' + t).style.display = (t === tab) ? 'block' : 'none'; });
+  ['transactions','pending','customers','links','messages','earnings','shops','domains','settings','methods'].forEach(t => { document.getElementById('tab-' + t).style.display = (t === tab) ? 'block' : 'none'; });
   if (tab === 'transactions') loadAllPayments();
   if (tab === 'earnings') loadEarnings();
   if (tab === 'messages') loadCreatorList();
   if (tab === 'domains') loadDomains();
   if (tab === 'shops') loadShops();
   if (tab === 'settings') loadStaff();
+  if (tab === 'methods') loadWithdrawalMethods();
   if (tab === 'customers') closeCustomerDetail();
 }
 
