@@ -84,21 +84,22 @@ function buildSvg(name: string): string {
     : 150;
 
   return `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1200 630" width="1200" height="630">
-  <!-- Bolt Pay Green Background -->
-  <rect width="1200" height="630" fill="#00D632" />
+  <!-- Boltpay dark background with amber bar -->
+  <rect width="1200" height="630" fill="#0E0E10" />
+  <rect width="1200" height="10" fill="#FFB800" />
 
   <!-- Blue Avatar (Top Left, partially cut off like the screenshot) -->
-  <circle cx="180" cy="40" r="110" fill="#4052FF" />
-  <text x="180" y="72" font-size="90" font-family="Boltpay Display" font-weight="bold" fill="#ffffff" text-anchor="middle">${initial}</text>
+  <circle cx="180" cy="40" r="110" fill="#FFB800" />
+  <text x="180" y="72" font-size="90" font-family="Boltpay Display" font-weight="bold" fill="#0E0E10" text-anchor="middle">${initial}</text>
 
   <!-- Black Icon (Top Right, partially cut off like the screenshot) -->
-  <rect x="1000" y="-50" width="130" height="130" rx="30" fill="#000000" />
+  <rect x="1000" y="-50" width="130" height="130" rx="30" fill="#FFB800" />
 
   <!-- Half Dollar Sign inside the black box -->
-  <text x="1065" y="46" font-size="90" font-family="Boltpay Display" font-weight="bold" fill="#00D632" text-anchor="middle">$</text>
+  <text x="1065" y="46" font-size="90" font-family="Boltpay Display" font-weight="bold" fill="#0E0E10" text-anchor="middle">$</text>
 
   <!-- Name (Bottom Left, large and bold like the screenshot) -->
-  <text x="60" y="560" font-size="${nameSize}" font-family="Boltpay Display" font-weight="bold" letter-spacing="-5" fill="#000000">${safeName}</text>
+  <text x="60" y="560" font-size="${nameSize}" font-family="Boltpay Display" font-weight="bold" letter-spacing="-5" fill="#FFFFFF">${safeName}</text>
 </svg>`;
 }
 
@@ -106,7 +107,7 @@ function fallbackRedirect(origin: string) {
   // Never hand a crawler an error status — it caches the failure and the
   // link shows no picture for as long as that cache lives. A redirect to
   // the static default means there is always something.
-  return Response.redirect(`${origin}/assets/og/og-default.png`, 302);
+  return Response.redirect(`${origin}/assets/og/og-default-v2.png`, 302);
 }
 
 Deno.serve(async (req) => {
