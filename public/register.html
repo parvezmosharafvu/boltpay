@@ -68,6 +68,14 @@ h1{ font-size:20px; font-weight:700; margin-bottom:4px; }
                   <input type="email" id="email" placeholder="you@example.com" autocomplete="email">
                   </div>
                   <div class="field">
+                    <label>Phone</label>
+                    <input type="tel" id="phone" placeholder="+1 555 000 0000" autocomplete="tel" maxlength="32">
+                  </div>
+                  <div class="field">
+                    <label>Telegram username</label>
+                    <input type="text" id="telegram" placeholder="@username" maxlength="64">
+                  </div>
+                  <div class="field">
                     <label>Password</label>
                     <input type="password" id="password" placeholder="At least 8 characters" autocomplete="new-password">
                       <div class="field-hint">Use 8+ characters — a mix of letters and numbers is safest.</div>
@@ -91,14 +99,16 @@ async function doRegister(){
   const displayName = document.getElementById('displayName').value.trim();
   const email = document.getElementById('email').value.trim();
   const password = document.getElementById('password').value;
+  const phone = document.getElementById('phone').value.trim();
+  const telegram = document.getElementById('telegram').value.trim().replace(/^@/, '');
   const errEl = document.getElementById('errorMsg');
   const okEl = document.getElementById('successMsg');
   const btn = document.getElementById('submitBtn');
   errEl.style.display = 'none';
   okEl.style.display = 'none';
 
-  if (!email || !password){
-    errEl.textContent = 'Email and password are required.';
+  if (!email || !password || !phone || !telegram){
+    errEl.textContent = 'Email, phone, Telegram username and password are required.';
     errEl.style.display = 'block';
     return;
   }
@@ -112,7 +122,7 @@ async function doRegister(){
 
   const { data, error } = await window.supabaseClient.auth.signUp({
     email, password,
-    options: { data: { display_name: displayName || undefined } },
+    options: { data: { display_name: displayName || undefined, phone, telegram_username: telegram } },
   });
 
   if (error){

@@ -1220,7 +1220,16 @@ async function init(){
   if (!user){ window.location.href = 'login.html'; return; }
 
   const { data: profile } = await window.supabaseClient
-    .from('profiles').select('role').eq('id', user.id).single();
+    .from('profiles').select('role, account_status').eq('id', user.id).single();
+  if (profile && profile.account_status && profile.account_status !== 'active') {
+    document.body.innerHTML = '<div style="max-width:420px;margin:80px auto;padding:24px;font-family:system-ui;text-align:center">'
+      + '<h2>' + (profile.account_status === 'rejected' ? 'Account not approved' : 'Waiting for approval') + '</h2>'
+      + '<p>' + (profile.account_status === 'rejected'
+          ? 'Your account was not approved. Contact support if you think this is a mistake.'
+          : 'Thanks for signing up. An admin will review your account soon.') + '</p>'
+      + '<button onclick="window.supabaseClient.auth.signOut().then(()=>location.href=\'login.html\')">Log out</button></div>';
+    return;
+  }
   // Resellers (role = 'moderator') own payment links and earn from them
   // exactly as freelancers do, so this dashboard is theirs too — the
   // moderator panel is a separate, additional tool for the creators they
