@@ -1355,6 +1355,7 @@ async function fetchProfile(){
     const lnIndex = Array.from(methodDropdown.options).findIndex(o => o.value === 'lightning');
     if (lnIndex >= 0) methodDropdown.remove(lnIndex);
   }
+  await applyEnabledWithdrawalMethods();
   toggleInvoiceInput();
 
   // If every payout field is empty, the creator has nowhere to be paid.
@@ -1888,6 +1889,27 @@ async function refreshOverview(){
   set('statSuccessRate', r.success_rate == null ? '—' : (Number(r.success_rate).toFixed(1) + '%'));
   set('statOutcomeCounts', 'Paid ' + Number(r.paid_count || 0) + ' · Expired ' + Number(r.expired_count || 0) + ' · Failed ' + Number(r.failed_count || 0)
     + ' (সফল ' + Number(r.paid_count || 0) + ' · মেয়াদোত্তীর্ণ ' + Number(r.expired_count || 0) + ' · ব্যর্থ ' + Number(r.failed_count || 0) + ')');
+}
+
+// Admin-managed list (withdrawal_methods). Disabled methods are removed
+// from the withdraw dropdown and their wallet fields are hidden; the
+// database refuses new requests for them regardless.
+const WALLET_FIELD_METHOD = { wallet_binance_id:'binance', wallet_usdt_bep20:'usdt_bep20', wallet_bkash:'bkash', wallet_nagad:'nagad' };
+async function applyEnabledWithdrawalMethods(){
+  const { data, error } = await window.supabaseClient.rpc('list_enabled_withdrawal_methods');
+  if (error || !Array.isArray(data)) return;
+  const enabled = new Set(data.map(r => r.code));
+  const dd = document.getElementById('wdMethod');
+  Array.from(dd.options).forEach(o => { if (!enabled.has(o.value)) o.remove(); });
+  data.forEach(r => {
+    if (r.code === 'lightning') return; // Lightning appears only with auto-withdraw (above)
+    if (!Array.from(dd.options).some(o => o.value === r.code)){
+      const o = document.createElement('option'); o.value = r.code; o.text = r.label_en + ' · ' + r.label_bn; dd.appendChild(o);
+    }
+  });
+  Object.entries(WALLET_FIELD_METHOD).forEach(([id, code]) => {
+    const el = document.getElementById(id); if (el && !enabled.has(code) && !el.value.trim()) el.style.display = 'none';
+  });
 }
 
 function computeStats(){
