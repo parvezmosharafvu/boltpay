@@ -1025,6 +1025,7 @@ body{
               <div class="w-row">
                 <input type="number" class="w-input mono" id="wdAmount" placeholder="Amount (USD)">
               </div>
+              <div class="w-row" id="wdBdtPreview" style="display:none;font-size:13px;color:var(--text-dim);" aria-live="polite"></div>
               <div class="w-row" id="invoiceRow" style="display:none;">
                 <input type="text" class="w-input mono" id="wdInvoice" placeholder="Paste Lightning Invoice here (Matches USD amount)">
               </div>
@@ -1902,11 +1903,28 @@ async function refreshOverview(){
 // Admin-managed list (withdrawal_methods). Disabled methods are removed
 // from the withdraw dropdown and their wallet fields are hidden; the
 // database refuses new requests for them regardless.
+// BDT pricing (0083): shown only when the admin flag is on (rate != null)
+// and the chosen method is a BDT method. The USD ledger is unchanged.
+const METHOD_CURRENCY = {};
+let MY_BDT_RATE = null;
+function updateBdtPreview(){
+  const box = document.getElementById('wdBdtPreview'); if (!box) return;
+  const m = document.getElementById('wdMethod')?.value;
+  const amt = parseFloat(document.getElementById('wdAmount').value);
+  if (!MY_BDT_RATE || METHOD_CURRENCY[m] !== 'BDT'){ box.style.display = 'none'; return; }
+  const fee = parseFloat((document.getElementById('statFee')?.textContent || '').replace('%','')) || 0;
+  const usd = amt > 0 ? amt * (1 - fee/100) : 0;
+  const bdt = (usd * MY_BDT_RATE).toFixed(2);
+  box.textContent = `Rate ৳${MY_BDT_RATE} / USD · You receive ≈ ৳${bdt} (রেট ৳${MY_BDT_RATE} / USD · আপনি পাবেন ≈ ৳${bdt})`;
+  box.style.display = 'block';
+}
 const WALLET_FIELD_METHOD = { wallet_binance_id:'binance', wallet_usdt_bep20:'usdt_bep20', wallet_bkash:'bkash', wallet_nagad:'nagad' };
 async function applyEnabledWithdrawalMethods(){
   const { data, error } = await window.supabaseClient.rpc('list_enabled_withdrawal_methods');
   if (error || !Array.isArray(data)) return;
   const enabled = new Set(data.map(r => r.code));
+  data.forEach(r => { METHOD_CURRENCY[r.code] = r.currency || 'USD'; });
+  try { const rr = await window.supabaseClient.rpc('get_my_withdrawal_rate'); MY_BDT_RATE = rr.error ? null : (rr.data ? Number(rr.data) : null); } catch(_) { MY_BDT_RATE = null; }
   const dd = document.getElementById('wdMethod');
   Array.from(dd.options).forEach(o => { if (!enabled.has(o.value)) o.remove(); });
   data.forEach(r => {
@@ -2148,7 +2166,7 @@ function renderWithdrawals(){
   const c = document.getElementById('withdrawalsList');
   if (!allWithdrawals.length){ c.innerHTML = '<div class="empty-state">No withdrawal history</div>'; return; }
   c.innerHTML = allWithdrawals.map(w => `<div class="tx-row"><div class="tx-top"><div>
-    <div class="tx-amt" style="color:var(--alert);">-$${parseFloat(w.amount_after_fee||0).toFixed(2)}</div>
+    <div class="tx-amt" style="color:var(--alert);">-$${parseFloat(w.amount_after_fee||0).toFixed(2)}${w.payout_currency === 'BDT' && w.payout_amount != null ? ' · ৳' + parseFloat(w.payout_amount).toFixed(2) : ''}</div>
     <div class="tx-meta-row">${safeMethod(w.method)} · ${fmtDate(w.requested_at)}</div></div>
     <span class="badge ${escapeHtml(w.status)}"><span class="badge-dot"></span>${escapeHtml(w.status)}</span></div></div>`).join('');
 }
@@ -2178,6 +2196,8 @@ function toggleInvoiceInput() {
   }
 }
 
+document.getElementById('wdAmount').addEventListener('input', updateBdtPreview);
+document.getElementById('wdMethod').addEventListener('change', updateBdtPreview);
 document.getElementById('wdAmount').addEventListener('input', function(e) {
   const amt = parseFloat(e.target.value);
   const feeStr = document.getElementById('statFee').textContent.replace('%','');
