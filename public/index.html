@@ -276,7 +276,8 @@ async function loadHomeExtras(){
   else document.getElementById('supportBlock').style.display = 'none';
 
   if (settings.public_feed_enabled !== true) return;
-  await refreshFeed();
+  // PR-H: public feed hidden from the UI (code kept).
+  // await refreshFeed();
   setInterval(refreshFeed, 20000);
 }
 

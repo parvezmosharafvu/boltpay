@@ -437,7 +437,7 @@ input:focus-visible,select:focus-visible,button:focus-visible{ outline:2px solid
                         <button class="tab-btn" data-tab="messages" onclick="switchTab('messages', this)">Messages <span class="tab-badge" id="msgTabBadge">0</span>
                       </button>
                       <button class="tab-btn" data-tab="earnings" onclick="switchTab('earnings', this)">Earnings</button>
-                      <button class="tab-btn" data-tab="shops" onclick="switchTab('shops', this)">Shops</button>
+                      <button class="tab-btn" data-tab="shops" style="display:none" onclick="switchTab('shops', this)">Shops</button>
                       <button class="tab-btn" data-tab="domains" onclick="switchTab('domains', this)">Domains</button>
                       <button class="tab-btn" data-tab="settings" onclick="switchTab('settings', this)">Settings</button>
                     </div>
@@ -814,7 +814,7 @@ input:focus-visible,select:focus-visible,button:focus-visible{ outline:2px solid
                                                     <button class="btn-primary" style="max-width:200px;" onclick="saveProfitMargin()">Save Margin %</button>
                                                     <div class="hint" style="font-size:11px; color:var(--text-faint); margin-top:8px;">Calculates Admin Profit and Node Balance based on [{Total - (Total * Margin%)} / 2] formula.</div>
                                                   </div>
-                                                  <div class="panel">
+                                                  <div class="panel" style="display:none">
                                                     <div class="panel-head">
                                                       <div class="panel-title">Staff access</div>
                                                     </div>
@@ -847,7 +847,7 @@ input:focus-visible,select:focus-visible,button:focus-visible{ outline:2px solid
                                                       <span>Instant Lightning payouts</span>
                                                     </label>
                                                     <div class="hint" style="font-size:11px; color:var(--text-faint); margin:4px 0 14px;">Master switch. Off here means no creator gets an instant payout, whatever their own profile says. On here does not enable anyone by itself &mdash; you still turn it on per creator under Customers.</div>
-                                                    <label class="toggle-row">
+                                                    <label class="toggle-row" style="display:none">
                                                       <input type="checkbox" id="globalPublicFeed" onchange="saveGlobalToggle('public_feed_enabled', this)">
                                                       <span>Live payments on the home page</span>
                                                     </label>
@@ -1472,7 +1472,7 @@ function renderPending(){
     if (w.status === 'pending'){
       actions = `
         <button class="act-btn act-approve" onclick="handleAction('${escapeAttr(w.id)}','${w.method === 'lightning' ? 'approve' : 'mark_paid_manual'}',this)">
-          ${w.method === 'lightning' ? 'Force BTCPay Payout' : 'Mark Paid'}
+          ${w.method === 'lightning' ? 'Force Lightning Payout' : 'Mark Paid'}
         </button>
         <button class="act-btn act-reject" onclick="handleAction('${w.id}','reject',this)">Reject</button>`;
     } else if (w.status === 'approved'){
