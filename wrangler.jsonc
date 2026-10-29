@@ -8,5 +8,8 @@
 "assets": {
 "directory": "public",
 "not_found_handling": "404-page"
-}
+},
+// Required by `npx wrangler preview` (Workers Builds on non-production branches).
+// Empty: previews use only top-level settings. https://developers.cloudflare.com/workers/previews/configuration/#wrangler-configuration-file
+"previews": {}
 }
