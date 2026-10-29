@@ -652,6 +652,13 @@ input:focus-visible,select:focus-visible,button:focus-visible{ outline:2px solid
                                   </div>
                                   <!-- EARNINGS TAB -->
                                   <div id="tab-earnings" style="display:none;">
+                                    <div class="panel">
+                                      <div class="panel-head">
+                                        <div class="panel-title">Daily invoices &middot; 7pm–7pm (Asia/Dhaka)</div>
+                                        <button class="btn-sm" onclick="runDailyInvoices(this)">Run now</button>
+                                      </div>
+                                      <div id="dailyInvoicesList" style="overflow-x:auto"></div>
+                                    </div>
                                     <div class="panel" style="background:rgba(0,214,50,0.05); border:1px solid rgba(0,214,50,0.2);">
                                       <div style="font-size:12px; color:var(--amber); font-weight:700; text-transform:uppercase; letter-spacing:1px; margin-bottom:6px;">Total Admin Profit</div>
                                       <div class="stat-val amber" id="earningsTabProfit">$0.00</div>
@@ -1275,9 +1282,27 @@ async function loadMoreAdminPayments(btn){
   finally { btn.disabled = false; }
 }
 
+async function loadDailyInvoices(){
+  const el = document.getElementById('dailyInvoicesList'); if (!el) return;
+  const { data, error } = await window.supabaseClient.rpc('admin_list_daily_invoices', { p_days: 14 });
+  if (error){ el.textContent = 'Could not load daily invoices.'; return; }
+  const esc = s => String(s ?? '').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+  const m = n => '$' + Number(n || 0).toFixed(2);
+  el.innerHTML = data.length ? '<table style="width:100%;font-size:13px"><tr><th align="left">Cycle</th><th align="left">Creator</th><th>Payments</th><th>Gross</th><th>Commission</th><th>Net</th></tr>'
+    + data.map(r => `<tr><td>${esc(r.cycle_date)}</td><td>${esc(r.display_name || r.email)}</td><td align="center">${r.payment_count}</td><td align="right">${m(r.gross_usd)}</td><td align="right">${m(r.commission_usd)}</td><td align="right">${m(r.net_usd)}</td></tr>`).join('') + '</table>'
+    : '<div style="opacity:.7">No invoices yet.</div>';
+}
+async function runDailyInvoices(btn){
+  btn.disabled = true;
+  const { error } = await window.supabaseClient.rpc('admin_run_daily_invoices');
+  btn.disabled = false;
+  showToast(error ? 'Run failed' : 'Daily invoices updated', error ? 'err' : 'ok');
+  if (!error) await loadDailyInvoices();
+}
 async function loadEarnings(){
+  loadDailyInvoices();
   // Live, not the daily-report cron's daily_stats table: computed fresh
-  // from payments on every call, on the same 5pm-5pm Dhaka cycle the
+  // from payments on every call, on the same 7pm-7pm Dhaka cycle the
   // moderator panel uses, so it can never sit at $0.00 because a cron run
   // was missed and never needs a backfill. ledger-backup and daily_stats
   // are untouched and keep running for anything else that reads them.
@@ -1766,7 +1791,7 @@ function renderEarnings(rows){
   const maxVal = Math.max(...rows.map(r => parseFloat(r.settled || 0)), 1);
   c.innerHTML = rows.map(r => {
     const pct = Math.max(4, (parseFloat(r.settled || 0) / maxVal) * 100);
-    // cycle_start is the actual 5pm Dhaka boundary the day began at — use
+    // cycle_start is the actual 7pm Dhaka boundary the day began at — use
     // it for the label rather than cycle_date, which is a plain calendar
     // date and would misdescribe the boundary by a few hours near midnight.
     const label = new Date(r.cycle_start).toLocaleDateString([], { month:'short', day:'numeric' });
