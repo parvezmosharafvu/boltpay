@@ -20,156 +20,138 @@
             <script src="config.js"></script>
             <script src="theme.js"></script>
             <style>
-/* Same family as the payment page and the link previews: near-black with
-   Boltpay amber as the single accent. --amber keeps its name so every
-   existing rule follows without being rewritten. */
-:root{
-  --bg:#0B0A07; --panel:#15130D; --panel-hi:#1D1A12; --line:#2E2A1F;
-  --text:#F5F3EE; --text-dim:#ADA690; --text-faint:rgba(245,243,238,0.32);
-  --amber:#FFB800; --amber-300:#FFD466; --amber-600:#E0A200; --accent-wash:rgba(255,184,0,.05); --accent-ring:rgba(255,184,0,.20); --panel-band:rgba(21,19,13,.30); --violet:#FFB800; --ok:#FFB800; --alert:#FF5C7A;
-  --on-accent:#2A1F00;
-}
-*{ margin:0; padding:0; box-sizing:border-box; -webkit-tap-highlight-color:transparent; }
-body{ font-family:var(--font-display,'Inter',sans-serif); background:var(--bg); color:var(--text); min-height:100vh;
-  background-image: radial-gradient(circle at 15% 0%, var(--glow-a, rgba(124,92,255,0.12)), transparent 45%),
-                     radial-gradient(circle at 85% 15%, var(--glow-b, rgba(245,166,35,0.10)), transparent 42%); }
-.mono{ font-family:'Geist Mono',monospace; }
-
-.nav{ display:flex; align-items:center; justify-content:space-between; padding:16px 32px; max-width:1280px; margin:0 auto; }
-.nav-left{ display:flex; align-items:center; gap:10px; }
-.mark{ width:34px; height:34px; border-radius:10px; background:linear-gradient(155deg,var(--amber),#d98a12);
-  display:flex; align-items:center; justify-content:center; }
-.nav-title{ font-size:15px; font-weight:700; }
-.nav-link{ color:var(--text-dim); text-decoration:none; font-size:13px; font-weight:600; padding:9px 16px;
-  border-radius:9px; border:1px solid var(--line); }
-.nav-link.primary{ background:var(--amber); color:var(--on-accent); border-color:transparent; }
-
-.hero{ max-width:640px; margin:0 auto; padding:60px 24px 40px; text-align:center; }
-.eyebrow{ font-size:11px; letter-spacing:1.4px; text-transform:uppercase; color:var(--amber); font-weight:700; margin-bottom:16px; }
-h1{ font-size:34px; font-weight:800; line-height:1.15; letter-spacing:-0.8px; margin-bottom:16px; }
-h1 span{ color:var(--amber); }
-.hero-sub{ font-size:15px; color:var(--text-dim); line-height:1.6; margin-bottom:28px; }
-.hero-actions{ display:flex; gap:12px; justify-content:center; flex-wrap:wrap; }
-.btn-cta{ padding:13px 24px; border-radius:11px; font-weight:700; font-size:14px; text-decoration:none; font-family:'Inter'; }
-.btn-cta.primary{ background:var(--amber); color:var(--on-accent); }
-.btn-cta.secondary{ background:var(--panel); color:var(--text); border:1px solid var(--line); }
-
-.features{ max-width:1280px; margin:0 auto; padding:96px 32px; display:grid; grid-template-columns:1fr; gap:14px; }
-@media (min-width:720px){ .features{ grid-template-columns:repeat(3,1fr); } }
-.feature{ background:var(--panel); border:1px solid var(--line); border-radius:16px; padding:20px; }
-.feature-num{ font-family:'Geist Mono'; font-size:11px; color:var(--amber); font-weight:600; margin-bottom:10px; }
-.feature h3{ font-size:15px; font-weight:700; margin-bottom:8px; }
-.feature p{ font-size:13px; color:var(--text-dim); line-height:1.55; }
-
-.approval-note{ margin-top:16px; font-size:12px; color:var(--text-faint); }
-.info-block{ max-width:1280px; margin:0 auto; padding:0 32px 96px; }
-@media (max-width:639px){ .nav{ padding:16px 20px; } .features{ padding:80px 20px; } .info-block{ padding:0 20px 80px; } }
-.info-block h2{ font-size:20px; font-weight:800; margin-bottom:14px; }
-.steps{ display:grid; grid-template-columns:1fr; gap:12px; counter-reset:st; }
-@media (min-width:720px){ .steps{ grid-template-columns:repeat(4,1fr); } }
-.step{ background:var(--panel); border:1px solid var(--line); border-radius:14px; padding:16px; font-size:13px; color:var(--text-dim); line-height:1.5; }
-.step b{ display:block; color:var(--text); font-size:14px; margin-bottom:6px; }
-.faq details{ background:var(--panel); border:1px solid var(--line); border-radius:12px; padding:14px 16px; margin-bottom:10px; }
-.faq summary{ cursor:pointer; font-weight:700; font-size:14px; }
-.faq p{ margin-top:10px; font-size:13px; color:var(--text-dim); line-height:1.55; }
-.bn{ display:block; color:var(--text-faint); font-size:12px; margin-top:4px; font-weight:500; }
-.foot{ text-align:center; padding:20px 24px 40px; font-size:12px; color:var(--text-faint); }
-
-#redirectNotice{ display:none; position:fixed; inset:0; background:var(--bg); z-index:999;
-  align-items:center; justify-content:center; flex-direction:column; gap:16px; text-align:center; padding:20px; }
-.spinner{ width:32px; height:32px; border-radius:50%; border:3px solid var(--line); border-top-color:var(--amber);
-  animation:spin 0.8s linear infinite; }
-@keyframes spin{ to{ transform:rotate(360deg); } }
-</style>
-          </head>
-          <body>
-            <div id="redirectNotice">
-              <div class="spinner">
-              </div>
-              <div style="font-size:13px; color:var(--text-dim);">Taking you to Boltpay…</div>
-            </div>
-            <div class="nav">
-              <div class="nav-left">
-                <div class="mark">
-                  <svg viewBox="0 0 24 24" width="16" height="16" fill="none">
-                    <path d="M13 2L4 14h6l-1 8 9-12h-6l1-8z" fill="#1A1206"/>
-                  </svg>
-                </div>
-                <div class="nav-title">Boltpay</div>
-              </div>
-              <div style="display:flex; gap:8px;">
-                <a href="login.html" class="nav-link">Log in</a>
-                <a href="register.html" class="nav-link primary">Get started</a>
-              </div>
-            </div>
-            <div class="hero">
-              <div class="eyebrow">Lightning Network payments</div>
-              <h1>Get paid instantly, <span>keep more of it</span>
-            </h1>
-            <p class="hero-sub">Boltpay gives freelancers and shop owners a payment link customers can pay in seconds — low fees, fast settlement, and a clear daily statement of what you earned.</p>
-            <div class="hero-actions">
-              <a href="register.html" class="btn-cta primary">Create your link</a>
-              <a href="login.html" class="btn-cta secondary">I already have an account</a>
-            </div>
-            <p class="approval-note">Accounts are reviewed and activated by an administrator. · অ্যাডমিন যাচাই করে অ্যাকাউন্ট চালু করেন।</p>
-          </div>
-          <div class="features">
-            <div class="feature">
-              <div class="feature-num mono">01</div>
-              <h3>One link, unlimited invoices</h3>
-              <p>Generate a personal payment link and share it anywhere. Every payment becomes a tracked invoice in your dashboard.</p>
-            </div>
-            <div class="feature">
-              <div class="feature-num mono">02</div>
-              <h3>Settles in seconds</h3>
-              <p>Lightning Network confirms almost instantly — no waiting on block confirmations to know a payment landed.</p>
-            </div>
-            <div class="feature">
-              <div class="feature-num mono">03</div>
-              <h3>Cash out your way</h3>
-              <p>Request a withdrawal from your dashboard whenever you like. Small amounts auto-approve; larger ones get a quick review.</p>
-            </div>
-          </div>
-          <div class="info-block" id="how">
-            <h2>How it works <span class="bn">কীভাবে কাজ করে</span></h2>
-            <div class="steps">
-              <div class="step"><b>1. Request an account</b>Sign up with your name, email, phone and Telegram.<span class="bn">নাম, ইমেইল, ফোন আর Telegram দিয়ে অ্যাকাউন্টের অনুরোধ করুন।</span></div>
-              <div class="step"><b>2. Get approved</b>An administrator reviews and activates your account.<span class="bn">অ্যাডমিন যাচাই করে অ্যাকাউন্ট চালু করবেন।</span></div>
-              <div class="step"><b>3. Share your link</b>Set a display name, note, min/max and quick amounts.<span class="bn">নাম, নোট, সর্বনিম্ন/সর্বোচ্চ আর quick amount সেট করে লিংক শেয়ার করুন।</span></div>
-              <div class="step"><b>4. Get paid &amp; withdraw</b>Follow payments and the 7 pm daily statement, then request a withdrawal.<span class="bn">পেমেন্ট আর সন্ধ্যা ৭টার দৈনিক হিসাব দেখুন, তারপর withdraw করুন।</span></div>
-            </div>
-          </div>
-          <div class="info-block faq" id="faq">
-            <h2>FAQ <span class="bn">সাধারণ প্রশ্ন</span></h2>
-            <details><summary>How do customers pay? · কাস্টমার কীভাবে পেমেন্ট করবে?</summary><p>They open your link, choose an amount and pay the Lightning invoice — for example with the "Open in Cash App" button or any Lightning wallet.<span class="bn">লিংক খুলে amount বেছে Lightning invoice পরিশোধ করবে — "Open in Cash App" বাটন বা যেকোনো Lightning wallet দিয়ে।</span></p></details>
-            <details><summary>When can I sign in? · কখন লগইন করতে পারব?</summary><p>After an administrator activates your account.<span class="bn">অ্যাডমিন অ্যাকাউন্ট চালু করার পর।</span></p></details>
-            <details><summary>When is my balance settled? · ব্যালান্স কখন হিসাব হয়?</summary><p>Every day at 7 pm (Dhaka time) a daily statement is created in your dashboard.<span class="bn">প্রতিদিন সন্ধ্যা ৭টায় (ঢাকা সময়) ড্যাশবোর্ডে দৈনিক হিসাব তৈরি হয়।</span></p></details>
-            <details><summary>How do I withdraw? · কীভাবে withdraw করব?</summary><p>Request a withdrawal from your dashboard using one of the methods your administrator has enabled.<span class="bn">অ্যাডমিনের চালু করা method দিয়ে ড্যাশবোর্ড থেকে withdraw অনুরোধ করুন।</span></p></details>
-          </div>
-          <div class="cash-block" id="supportBlock">
-            <h2 class="cash-title">Need help?</h2>
-            <div class="support-links" id="supportLinks"></div>
-          </div>
-
-          <div class="foot">© Boltpay</div>
-          <style>
-/* Home-page sections, in the same palette as the link preview image:
-   Boltpay amber, black cards, white pills. */
-.cash-block{
-  max-width:1216px; margin:0 auto 40px; padding:28px 26px;
-  background:#FFB800; border-radius:24px; color:#000;
-}
-.cash-block + .cash-block{ margin-top:-14px; }
-.cash-title{ font-size:26px; font-weight:800; letter-spacing:-0.8px; margin-bottom:6px; }
-.cash-sub{ font-size:14px; font-weight:500; color:#0A3D14; margin-bottom:18px; line-height:1.55; }
-@keyframes blip{ 0%,100%{opacity:1} 50%{opacity:.25} }
-
-
-
+:root{ --bg:#0B0A07; --panel:#15130D; --panel-hi:#1D1A12; --line:#2E2A1F; --line-strong:#3D3726; --text:#F5F3EE; --text-dim:#ADA690; --text-faint:rgba(245,243,238,.32);
+  --amber:#FFB800; --amber-300:#FFD466; --amber-600:#E0A200; --accent-wash:rgba(255,184,0,.08); --accent-ring:rgba(255,184,0,.25); --panel-band:rgba(21,19,13,.5); --on-accent:#2A1F00; }
+*{ margin:0; padding:0; box-sizing:border-box; }
+html{ scroll-behavior:smooth; }
+body{ font-family:'Inter',sans-serif; background:var(--bg); color:var(--text); font-size:16px; line-height:24px; }
+a{ color:inherit; }
+h1,h2,h3{ font-weight:600; letter-spacing:-0.02em; }
+.wrap{ max-width:1280px; margin:0 auto; padding:0 32px; }
+#redirectNotice{ display:none; position:fixed; inset:0; background:var(--bg); z-index:99; flex-direction:column; gap:14px; align-items:center; justify-content:center; }
+.spinner{ width:28px; height:28px; border:3px solid var(--line); border-top-color:var(--amber); border-radius:50%; animation:spin 1s linear infinite; } @keyframes spin{ to{ transform:rotate(360deg); } }
+.nav{ position:sticky; top:0; z-index:20; background:rgba(11,10,7,.95); backdrop-filter:blur(8px); border-bottom:1px solid var(--line); }
+.nav .wrap{ height:72px; display:flex; align-items:center; justify-content:space-between; gap:16px; }
+.logo{ display:flex; align-items:center; gap:10px; font-weight:600; text-decoration:none; }
+.mark{ width:32px; height:32px; border-radius:10px; background:linear-gradient(155deg,var(--amber-300),var(--amber)); color:var(--on-accent); display:flex; align-items:center; justify-content:center; }
+.nav-links{ display:flex; gap:32px; font-size:14px; font-weight:500; }
+.nav-links a{ color:var(--text-dim); text-decoration:none; } .nav-links a:hover{ color:var(--text); }
+.nav-right{ display:flex; align-items:center; gap:12px; }
+.lnk{ font-size:14px; font-weight:500; text-decoration:none; color:var(--text-dim); min-height:44px; display:inline-flex; align-items:center; padding:0 6px; }
+.lang{ background:var(--panel); border:1px solid var(--line); color:var(--text); border-radius:10px; min-height:40px; padding:0 12px; font:500 14px 'Inter'; cursor:pointer; }
+.btn{ display:inline-flex; align-items:center; justify-content:center; gap:8px; min-height:48px; padding:12px 20px; border-radius:14px; font:600 14px/20px 'Inter'; text-decoration:none; border:1px solid transparent; }
+.btn-p{ background:var(--amber); color:var(--on-accent); } .btn-p:hover{ filter:brightness(1.06); }
+.btn-s{ background:var(--panel); border-color:var(--line); color:var(--text); font-weight:500; }
+.btn-sm{ min-height:40px; padding:8px 16px; border-radius:10px; }
+.hero .wrap{ display:grid; grid-template-columns:1.05fr 1fr; gap:56px; align-items:center; padding-top:96px; padding-bottom:112px; }
+.pill{ display:inline-flex; align-items:center; gap:8px; padding:6px 12px; border-radius:9999px; font-size:11px; line-height:16px; font-weight:500; background:var(--accent-wash); border:1px solid var(--accent-ring); color:var(--amber-300); }
+.hero h1{ font-size:84px; line-height:89px; margin-top:24px; } .hero h1 .hl{ color:var(--amber-300); display:block; }
+.hero .lead{ font-size:18px; line-height:28px; color:var(--text-dim); max-width:480px; margin-top:24px; }
+.actions{ display:flex; flex-wrap:wrap; gap:12px; margin-top:32px; }
+.note{ font-size:12px; color:var(--text-faint); margin-top:16px; }
+.trust{ display:flex; flex-wrap:wrap; gap:24px; margin-top:20px; font-size:12px; color:var(--text-dim); } .trust span{ display:inline-flex; gap:6px; align-items:center; } .trust svg{ color:var(--amber); }
+.preview{ background:var(--panel); border:1px solid var(--line); border-radius:22px; padding:28px; box-shadow:0 30px 80px rgba(0,0,0,.45); }
+.pv-head{ display:flex; justify-content:space-between; align-items:center; font-size:13px; color:var(--text-dim); }
+.pv-name{ font-size:22px; font-weight:600; margin:14px 0 4px; }
+.pv-amts{ display:grid; grid-template-columns:repeat(3,1fr); gap:8px; margin:18px 0; }
+.pv-amts span{ height:40px; border-radius:10px; border:1px solid var(--accent-ring); display:flex; align-items:center; justify-content:center; font-weight:700; font-size:14px; }
+.pv-amts span.on{ background:var(--amber); color:var(--on-accent); border-color:var(--amber); }
+.pv-row{ display:flex; justify-content:space-between; font-size:13px; color:var(--text-dim); padding:10px 0; border-top:1px solid var(--line); }
+.pv-row b{ color:var(--text); font-family:'Geist Mono',monospace; font-weight:500; }
+.strip{ border-top:1px solid var(--line); border-bottom:1px solid var(--line); }
+.strip .wrap{ display:grid; grid-template-columns:repeat(4,1fr); min-height:64px; align-items:center; gap:16px; font-size:14px; color:var(--text-dim); }
+.strip span{ display:flex; gap:8px; align-items:center; } .strip svg{ color:var(--amber); }
+section.sec{ padding:96px 0; }
+.eyebrow{ font-size:12px; line-height:16px; font-weight:600; letter-spacing:.2em; text-transform:uppercase; color:var(--amber-300); }
+.sec h2{ font-size:36px; line-height:45px; max-width:672px; margin-top:12px; }
+.sec .sub{ font-size:16px; color:var(--text-dim); margin-top:12px; max-width:560px; }
+.grid3{ display:grid; grid-template-columns:repeat(3,1fr); gap:16px; margin-top:40px; }
+.fcard{ background:var(--panel); border:1px solid var(--line); border-radius:16px; padding:24px; }
+.ico{ width:40px; height:40px; border-radius:10px; background:var(--accent-wash); color:var(--amber); display:flex; align-items:center; justify-content:center; }
+.fcard h3{ font-size:16px; line-height:24px; margin-top:24px; } .fcard p,.step p{ font-size:14px; line-height:20px; color:var(--text-dim); margin-top:8px; }
+.band{ background:var(--panel-band); border-top:1px solid var(--line); border-bottom:1px solid var(--line); }
+.head2{ display:grid; grid-template-columns:1fr 1fr; gap:40px; align-items:end; }
+.steps{ display:grid; grid-template-columns:repeat(3,1fr); gap:32px; margin-top:48px; }
+.step{ border-top:1px solid var(--line); padding-top:24px; } .step h3{ font-size:18px; line-height:28px; margin-top:12px; }
+.panel{ background:var(--panel); border:1px solid var(--line); border-radius:22px; padding:40px; display:grid; grid-template-columns:584fr 486fr; gap:64px; align-items:center; }
+.panel .more{ display:inline-flex; gap:6px; align-items:center; margin-top:20px; color:var(--amber); font-weight:600; font-size:14px; text-decoration:none; min-height:44px; }
+.checks{ list-style:none; display:flex; flex-direction:column; gap:14px; }
+.checks li{ display:flex; gap:12px; align-items:flex-start; font-size:14px; line-height:20px; color:var(--text-dim); }
+.checks li svg{ flex:none; color:var(--amber); margin-top:3px; }
+.faq{ display:grid; grid-template-columns:.85fr 1.15fr; gap:80px; }
+.qa{ border-bottom:1px solid var(--line); }
+.qa summary{ list-style:none; cursor:pointer; min-height:60px; display:flex; align-items:center; justify-content:space-between; gap:16px; font-size:15px; font-weight:500; }
+.qa summary::-webkit-details-marker{ display:none; }
+.qa .chev{ color:var(--text-dim); transition:transform .2s; flex:none; } .qa[open] .chev{ transform:rotate(180deg); }
+.qa p{ font-size:14px; line-height:22px; color:var(--text-dim); padding:0 0 18px; }
+.cta{ border:1px solid var(--line); border-radius:22px; padding:48px; display:flex; align-items:center; justify-content:space-between; gap:24px; background:radial-gradient(circle at 85% 50%, rgba(255,184,0,.14), transparent 55%), var(--panel); }
+.cta h2{ font-size:36px; line-height:45px; max-width:600px; }
+.support{ margin-top:16px; background:var(--panel); border:1px solid var(--line); border-radius:16px; padding:24px; display:flex; flex-wrap:wrap; gap:16px; align-items:center; justify-content:space-between; }
 .support-links{ display:flex; gap:12px; flex-wrap:wrap; }
-.support-links a{ background:#000; color:#fff; border-radius:999px; padding:14px 24px; font-size:14px; font-weight:700; text-decoration:none; }
-.support-links a:first-child{ background:#fff; color:#000; }
-          </style>
+.support-links a{ min-height:44px; display:inline-flex; align-items:center; padding:0 16px; border-radius:10px; background:var(--panel-hi); border:1px solid var(--line); font-size:14px; font-weight:500; text-decoration:none; }
+footer{ border-top:1px solid var(--line); margin-top:96px; }
+footer .wrap{ min-height:100px; display:flex; align-items:center; justify-content:space-between; gap:16px; font-size:12px; color:var(--text-dim); flex-wrap:wrap; }
+footer nav{ display:flex; gap:20px; } footer nav a{ text-decoration:none; min-height:44px; display:inline-flex; align-items:center; }
+@media (max-width:1023px){ .nav-links{ display:none; } .hero .wrap{ grid-template-columns:1fr; gap:48px; } .panel,.faq,.head2{ grid-template-columns:1fr; gap:40px; } .grid3,.steps{ grid-template-columns:1fr 1fr; } }
+@media (max-width:639px){
+  .wrap{ padding:0 20px; } .nav .wrap{ height:68px; } .nav-right .btn{ display:none; }
+  .hero .wrap{ padding-top:56px; padding-bottom:64px; } .hero h1{ font-size:44px; line-height:46.6px; }
+  .actions .btn{ width:100%; } section.sec{ padding:80px 0; } .sec h2,.cta h2{ font-size:30px; line-height:37.5px; }
+  .grid3,.steps{ grid-template-columns:1fr; } .strip .wrap{ grid-template-columns:1fr 1fr; padding-top:14px; padding-bottom:14px; }
+  .panel,.cta{ padding:28px; } .cta{ flex-direction:column; align-items:flex-start; } footer{ margin-top:80px; }
+}
+</style>
+<script src="auth.js"></script>
+</head>
+<body>
+<div id="redirectNotice"><div class="spinner"></div><div style="font-size:13px;color:var(--text-dim);">Taking you to Boltpay… · Boltpay-এ নিয়ে যাওয়া হচ্ছে…</div></div>
+<header class="nav"><div class="wrap">
+  <a class="logo" href="/"><span class="mark"><svg viewBox="0 0 24 24" width="16" height="16" fill="none"><path d="M13 2L4 14h6l-1 8 9-12h-6l1-8z" fill="currentColor"/></svg></span>Boltpay</a>
+  <nav class="nav-links"><a href="#features" data-en="Features" data-bn="ফিচার">Features</a><a href="#how" data-en="How it works" data-bn="কীভাবে কাজ করে">How it works</a><a href="#access" data-en="Account access" data-bn="অ্যাকাউন্ট">Account access</a><a href="#faq" data-en="FAQ" data-bn="প্রশ্নোত্তর">FAQ</a></nav>
+  <div class="nav-right"><button type="button" class="lang" id="langBtn" onclick="toggleLang()">বাংলা</button><a class="lnk" href="login.html" data-en="Log in" data-bn="লগইন">Log in</a><a class="btn btn-p btn-sm" href="register.html" data-en="Get started" data-bn="শুরু করুন">Get started</a></div>
+</div></header>
+<main>
+<section class="hero"><div class="wrap">
+  <div>
+    <span class="pill"><svg viewBox="0 0 24 24" width="16" height="16" fill="none"><path d="M13 2L4 14h6l-1 8 9-12h-6l1-8z" fill="currentColor"/></svg><span data-en="Lightning Network payments" data-bn="লাইটনিং নেটওয়ার্ক পেমেন্ট">Lightning Network payments</span></span>
+    <h1><span data-en="Get paid" data-bn="পেমেন্ট নিন">Get paid</span><br><span data-en="instantly," data-bn="সাথে সাথে,">instantly,</span><span class="hl" data-en="keep more." data-bn="বেশি রাখুন।">keep more.</span></h1>
+    <p class="lead" data-en="Boltpay gives freelancers and shop owners a payment link customers can pay in seconds, with fast settlement and a clear daily statement." data-bn="Boltpay ফ্রিল্যান্সার আর দোকান মালিকদের এমন পেমেন্ট লিংক দেয় যা কাস্টমার কয়েক সেকেন্ডে পে করতে পারে, দ্রুত সেটেলমেন্ট আর পরিষ্কার দৈনিক হিসাবসহ।">Boltpay gives freelancers and shop owners a payment link customers can pay in seconds, with fast settlement and a clear daily statement.</p>
+    <div class="actions"><a class="btn btn-p" href="register.html"><span data-en="Create your link" data-bn="লিংক তৈরি করুন">Create your link</span><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M5 12h14M13 6l6 6-6 6"/></svg></a><a class="btn btn-s" href="login.html" data-en="I have an account" data-bn="আমার অ্যাকাউন্ট আছে">I have an account</a></div>
+    <p class="note" data-en="Accounts are reviewed and activated by an administrator." data-bn="অ্যাডমিন যাচাই করে অ্যাকাউন্ট চালু করেন।">Accounts are reviewed and activated by an administrator.</p>
+    <div class="trust"><span><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M5 12l5 5L20 7"/></svg><span data-en="Instant settlement" data-bn="তাৎক্ষণিক সেটেলমেন্ট">Instant settlement</span></span><span><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M5 12l5 5L20 7"/></svg><span data-en="Daily statement" data-bn="দৈনিক হিসাব">Daily statement</span></span><span><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M5 12l5 5L20 7"/></svg><span data-en="Reviewed accounts" data-bn="যাচাই করা অ্যাকাউন্ট">Reviewed accounts</span></span></div>
+  </div>
+  <div class="preview" aria-hidden="true">
+    <div class="pv-head"><span class="pill"><svg viewBox="0 0 24 24" width="16" height="16" fill="none"><path d="M13 2L4 14h6l-1 8 9-12h-6l1-8z" fill="currentColor"/></svg><span data-en="Secure payment" data-bn="নিরাপদ পেমেন্ট">Secure payment</span></span><span>boltpay</span></div>
+    <div class="pv-name">Your Shop</div><div style="font-size:13px;color:var(--text-dim)" data-en="Select an amount" data-bn="অ্যামাউন্ট বেছে নিন">Select an amount</div>
+    <div class="pv-amts"><span>$10</span><span class="on">$25</span><span>$50</span></div>
+    <div class="pv-row"><span data-en="Network" data-bn="নেটওয়ার্ক">Network</span><b>Lightning</b></div>
+    <div class="pv-row"><span data-en="Status" data-bn="অবস্থা">Status</span><b style="color:var(--amber)" data-en="Paid · 2s" data-bn="পরিশোধিত · ২s">Paid · 2s</b></div>
+    <div class="btn btn-p" style="width:100%;margin-top:14px"><span data-en="Pay now" data-bn="এখনই পে করুন">Pay now</span><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M5 12h14M13 6l6 6-6 6"/></svg></div>
+  </div>
+</div></section>
+<div class="strip"><div class="wrap"><span><svg viewBox="0 0 24 24" width="16" height="16" fill="none"><path d="M13 2L4 14h6l-1 8 9-12h-6l1-8z" fill="currentColor"/></svg><span data-en="Lightning fast" data-bn="লাইটনিং গতি">Lightning fast</span></span><span><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M5 12l5 5L20 7"/></svg><span data-en="Daily statements" data-bn="দৈনিক হিসাব">Daily statements</span></span><span><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M5 12l5 5L20 7"/></svg><span data-en="Bilingual" data-bn="দ্বিভাষিক">Bilingual</span></span><span><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M5 12l5 5L20 7"/></svg><span data-en="Admin-reviewed" data-bn="অ্যাডমিন-যাচাইকৃত">Admin-reviewed</span></span></div></div>
+<section class="sec" id="features"><div class="wrap">
+  <div class="eyebrow" data-en="Features" data-bn="ফিচার">Features</div><h2 data-en="Everything you need to get paid" data-bn="পেমেন্ট নিতে যা যা লাগে">Everything you need to get paid</h2><p class="sub" data-en="Simple tools built around one payment link." data-bn="একটি পেমেন্ট লিংক ঘিরে সহজ টুল।">Simple tools built around one payment link.</p>
+  <div class="grid3"><div class="fcard"><span class="ico"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M13 2L4 14h6l-1 8 9-12h-6l1-8z"/></svg></span><h3 data-en="Settles in seconds" data-bn="সেকেন্ডেই সেটেল">Settles in seconds</h3><p data-en="Lightning confirms almost instantly, so you know right away that a payment landed." data-bn="লাইটনিং প্রায় সাথে সাথে নিশ্চিত করে, তাই পেমেন্ট এলো কিনা সাথে সাথে জানবেন।">Lightning confirms almost instantly, so you know right away that a payment landed.</p></div><div class="fcard"><span class="ico"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10 13a5 5 0 007 0l3-3a5 5 0 00-7-7l-1 1"/><path d="M14 11a5 5 0 00-7 0l-3 3a5 5 0 007 7l1-1"/></svg></span><h3 data-en="One link, unlimited invoices" data-bn="এক লিংক, অসংখ্য ইনভয়েস">One link, unlimited invoices</h3><p data-en="Share a personal payment link anywhere. Every payment becomes a tracked invoice." data-bn="নিজের পেমেন্ট লিংক যেকোনো জায়গায় শেয়ার করুন। প্রতিটি পেমেন্ট ট্র্যাক করা ইনভয়েস হয়।">Share a personal payment link anywhere. Every payment becomes a tracked invoice.</p></div><div class="fcard"><span class="ico"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="16" rx="2"/><path d="M3 10h18"/></svg></span><h3 data-en="Quick amounts" data-bn="কুইক অ্যামাউন্ট">Quick amounts</h3><p data-en="Set minimum, maximum and preset amounts so customers pay with one tap." data-bn="সর্বনিম্ন, সর্বোচ্চ আর প্রিসেট অ্যামাউন্ট দিন, কাস্টমার এক ট্যাপে পে করবে।">Set minimum, maximum and preset amounts so customers pay with one tap.</p></div><div class="fcard"><span class="ico"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 3v18h18"/><path d="M7 15l4-4 3 3 5-6"/></svg></span><h3 data-en="Live dashboard" data-bn="লাইভ ড্যাশবোর্ড">Live dashboard</h3><p data-en="Follow payments, totals and top links as they happen." data-bn="পেমেন্ট, মোট আয় আর সেরা লিংক সাথে সাথে দেখুন।">Follow payments, totals and top links as they happen.</p></div><div class="fcard"><span class="ico"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M8 7V3h8v4"/><rect x="3" y="7" width="18" height="14" rx="2"/><path d="M3 12h18"/></svg></span><h3 data-en="Daily statement" data-bn="দৈনিক হিসাব">Daily statement</h3><p data-en="Every day at 7 pm (Dhaka) your statement is ready in the dashboard." data-bn="প্রতিদিন সন্ধ্যা ৭টায় (ঢাকা) ড্যাশবোর্ডে আপনার হিসাব তৈরি হয়।">Every day at 7 pm (Dhaka) your statement is ready in the dashboard.</p></div><div class="fcard"><span class="ico"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2v20M17 5H9.5a3.5 3.5 0 000 7h5a3.5 3.5 0 010 7H6"/></svg></span><h3 data-en="Withdraw when you want" data-bn="যখন খুশি উত্তোলন">Withdraw when you want</h3><p data-en="Request a withdrawal from your dashboard with the methods your administrator enabled." data-bn="অ্যাডমিনের চালু করা মাধ্যমে ড্যাশবোর্ড থেকে উত্তোলনের অনুরোধ করুন।">Request a withdrawal from your dashboard with the methods your administrator enabled.</p></div></div>
+</div></section>
+<section class="sec band" id="how"><div class="wrap">
+  <div class="head2"><div><div class="eyebrow" data-en="How it works" data-bn="কীভাবে কাজ করে">How it works</div><h2 data-en="From sign-up to payout in three steps" data-bn="সাইন আপ থেকে পেআউট, তিন ধাপে">From sign-up to payout in three steps</h2></div><p class="sub" data-en="No setup fees and no hardware. Share your link and start getting paid." data-bn="কোনো সেটআপ খরচ বা হার্ডওয়্যার লাগে না। লিংক শেয়ার করে পেমেন্ট নেওয়া শুরু করুন।">No setup fees and no hardware. Share your link and start getting paid.</p></div>
+  <div class="steps"><div class="step"><div class="eyebrow">01</div><h3 data-en="Request an account" data-bn="অ্যাকাউন্টের অনুরোধ">Request an account</h3><p data-en="Sign up with your name, email, phone and Telegram." data-bn="নাম, ইমেইল, ফোন আর টেলিগ্রাম দিয়ে সাইন আপ করুন।">Sign up with your name, email, phone and Telegram.</p></div><div class="step"><div class="eyebrow">02</div><h3 data-en="Get approved and share" data-bn="অনুমোদনের পর শেয়ার">Get approved and share</h3><p data-en="An administrator activates your account. Then set up and share your link." data-bn="অ্যাডমিন অ্যাকাউন্ট চালু করবেন। তারপর লিংক সাজিয়ে শেয়ার করুন।">An administrator activates your account. Then set up and share your link.</p></div><div class="step"><div class="eyebrow">03</div><h3 data-en="Get paid and withdraw" data-bn="পেমেন্ট নিন ও উত্তোলন করুন">Get paid and withdraw</h3><p data-en="Follow payments and the 7 pm daily statement, then request a withdrawal." data-bn="পেমেন্ট আর সন্ধ্যা ৭টার দৈনিক হিসাব দেখুন, তারপর উত্তোলনের অনুরোধ করুন।">Follow payments and the 7 pm daily statement, then request a withdrawal.</p></div></div>
+</div></section>
+<section class="sec" id="access"><div class="wrap"><div class="panel">
+  <div><div class="eyebrow" data-en="Account access" data-bn="অ্যাকাউন্ট অ্যাক্সেস">Account access</div><h2 data-en="Accounts are reviewed by an administrator" data-bn="প্রতিটি অ্যাকাউন্ট অ্যাডমিন যাচাই করেন">Accounts are reviewed by an administrator</h2><p class="sub" data-en="Request an account, and you can sign in as soon as it is activated." data-bn="অ্যাকাউন্টের অনুরোধ করুন, চালু হলেই লগইন করতে পারবেন।">Request an account, and you can sign in as soon as it is activated.</p><a class="more" href="register.html"><span data-en="Request an account" data-bn="অ্যাকাউন্টের অনুরোধ করুন">Request an account</span><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M5 12h14M13 6l6 6-6 6"/></svg></a></div>
+  <ul class="checks"><li><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M5 12l5 5L20 7"/></svg><span data-en="Sign up with your name, email, phone and Telegram." data-bn="নাম, ইমেইল, ফোন আর টেলিগ্রাম দিয়ে সাইন আপ করুন।">Sign up with your name, email, phone and Telegram.</span></li><li><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M5 12l5 5L20 7"/></svg><span data-en="An administrator reviews and activates your account." data-bn="অ্যাডমিন যাচাই করে অ্যাকাউন্ট চালু করবেন।">An administrator reviews and activates your account.</span></li><li><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M5 12l5 5L20 7"/></svg><span data-en="Set up your link and start sharing it." data-bn="লিংক সাজিয়ে শেয়ার করা শুরু করুন।">Set up your link and start sharing it.</span></li></ul>
+</div></div></section>
+<section class="sec" id="faq" style="padding-top:0"><div class="wrap faq">
+  <div><div class="eyebrow" data-en="FAQ" data-bn="প্রশ্নোত্তর">FAQ</div><h2 data-en="Common questions" data-bn="সাধারণ প্রশ্ন">Common questions</h2><p class="sub" data-en="Still stuck? Contact support below." data-bn="আরও প্রশ্ন? নিচে সাপোর্টে যোগাযোগ করুন।">Still stuck? Contact support below.</p></div>
+  <div><details class="qa"><summary><span data-en="How do customers pay?" data-bn="কাস্টমার কীভাবে পেমেন্ট করবে?">How do customers pay?</span><svg class="chev" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M6 9l6 6 6-6"/></svg></summary><p data-en="They open your link, choose an amount and pay the Lightning invoice, for example with the "Open in Cash App" button or any Lightning wallet." data-bn="লিংক খুলে অ্যামাউন্ট বেছে লাইটনিং ইনভয়েস পরিশোধ করবে, যেমন "Open in Cash App" বাটন বা যেকোনো লাইটনিং ওয়ালেট দিয়ে।">They open your link, choose an amount and pay the Lightning invoice, for example with the "Open in Cash App" button or any Lightning wallet.</p></details><details class="qa"><summary><span data-en="When can I sign in?" data-bn="কখন লগইন করতে পারব?">When can I sign in?</span><svg class="chev" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M6 9l6 6 6-6"/></svg></summary><p data-en="After an administrator activates your account." data-bn="অ্যাডমিন অ্যাকাউন্ট চালু করার পর।">After an administrator activates your account.</p></details><details class="qa"><summary><span data-en="When is my balance settled?" data-bn="ব্যালান্স কখন হিসাব হয়?">When is my balance settled?</span><svg class="chev" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M6 9l6 6 6-6"/></svg></summary><p data-en="Every day at 7 pm (Dhaka time) a daily statement is created in your dashboard." data-bn="প্রতিদিন সন্ধ্যা ৭টায় (ঢাকা সময়) ড্যাশবোর্ডে দৈনিক হিসাব তৈরি হয়।">Every day at 7 pm (Dhaka time) a daily statement is created in your dashboard.</p></details><details class="qa"><summary><span data-en="How do I withdraw?" data-bn="কীভাবে উত্তোলন করব?">How do I withdraw?</span><svg class="chev" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M6 9l6 6 6-6"/></svg></summary><p data-en="Request a withdrawal from your dashboard using one of the methods your administrator has enabled." data-bn="অ্যাডমিনের চালু করা মাধ্যম দিয়ে ড্যাশবোর্ড থেকে উত্তোলনের অনুরোধ করুন।">Request a withdrawal from your dashboard using one of the methods your administrator has enabled.</p></details></div>
+</div></section>
+<section><div class="wrap">
+  <div class="cta"><h2 data-en="Start getting paid with Boltpay" data-bn="Boltpay দিয়ে পেমেন্ট নেওয়া শুরু করুন">Start getting paid with Boltpay</h2><a class="btn btn-p" href="register.html"><span data-en="Get started" data-bn="শুরু করুন">Get started</span><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M5 12h14M13 6l6 6-6 6"/></svg></a></div>
+  <div class="support" id="supportBlock"><div data-en="Need help?" data-bn="সাহায্য লাগবে?">Need help?</div><div class="support-links" id="supportLinks"></div></div>
+</div></section>
+</main>
+<footer><div class="wrap"><a class="logo" href="/"><span class="mark"><svg viewBox="0 0 24 24" width="16" height="16" fill="none"><path d="M13 2L4 14h6l-1 8 9-12h-6l1-8z" fill="currentColor"/></svg></span>Boltpay</a><nav><a href="login.html" data-en="Log in" data-bn="লগইন">Log in</a><a href="register.html" data-en="Register" data-bn="রেজিস্টার">Register</a><a href="#faq" data-en="FAQ" data-bn="প্রশ্নোত্তর">FAQ</a></nav><span>© Boltpay</span></div></footer>
           <script>
 // Domains registered as purpose='payment' exist only to host payment slugs.
 // Their root should send visitors to the primary site domain, where login
@@ -219,7 +201,7 @@ window.addEventListener('DOMContentLoaded', async () => {
   if (!session) return;
   const { data: profile } = await window.supabaseClient
     .from('profiles').select('role').eq('id', session.user.id).single();
-  window.location.href = profile?.role === 'admin' ? 'admin.html' : 'dashboard.html#income';
+  window.location.href = profile?.role === 'admin' ? 'admin.html' : profile?.role === 'moderator' ? 'moderator.html' : 'dashboard.html#income';
 });
 
 /* ============ Home page: support links ============ */
@@ -244,7 +226,7 @@ async function loadHomeExtras(){
     parts.push('<a href="mailto:' + esc(support.email) + '">\u2709 ' + esc(support.email) + '</a>');
   }
   if (support.group_url && /^https?:\/\//i.test(support.group_url)){
-    parts.push('<a href="' + esc(support.group_url) + '" target="_blank" rel="noopener noreferrer">\uD83D\uDCAC Support group</a>');
+    parts.push('<a href="' + esc(support.group_url) + '" target="_blank" rel="noopener noreferrer">Support group · সাপোর্ট গ্রুপ</a>');
   }
   if (parts.length) document.getElementById('supportLinks').innerHTML = parts.join('');
   else document.getElementById('supportBlock').style.display = 'none';
