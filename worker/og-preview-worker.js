@@ -6,7 +6,7 @@
 *
 * Per-model preview images: looks for assets/og/<slug>.png in the GitHub
 * repo with a HEAD request. If that file exists, it's used; otherwise it
-* falls back to og-default.png. The HEAD result is cached so repeat
+* falls back to og-default-v2.png. The HEAD result is cached so repeat
 * crawls of the same slug don't re-check.
 */
 const SUPABASE_URL = "https://ohwzmxwsphsfzudmlins.supabase.co";

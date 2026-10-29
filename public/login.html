@@ -90,7 +90,6 @@ async function redirectByRole(userId){
   // across to their own dashboard. Both are theirs; this just picks
   // which one opens first.
   const dest = profile?.role === 'admin' ? 'admin.html'
-             : profile?.role === 'moderator' ? 'moderator.html'
              : 'dashboard.html#income';
   window.location.href = dest;
 }

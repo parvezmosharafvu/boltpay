@@ -23,7 +23,6 @@ public/                          → static site root
   dashboard.html                 → creator dashboard
   invoice-boltpay-v2.html        → customer-facing payment/QR page
   admin.html                     → admin panel (approvals, stats, settings)
-  moderator.html                 → limited staff panel, scoped to assigned creators
   theme.js                       → per-domain LAYOUT switching (not colour —
                                    the brand palette is the same everywhere)
   config.example.js              → copy to config.js, fill in your keys
@@ -171,9 +170,6 @@ curl -H "x-cron-secret: $CRON_SECRET" \
 curl -H "x-cron-secret: $CRON_SECRET" \
   "$SUPABASE_URL/functions/v1/daily-report?days=30"
 ```
-
-`VERIFY-daily-stats.sql` in the repo root compares the archive against the
-live ledger and flags any row that has drifted.
 
 ## Continuous integration
 
