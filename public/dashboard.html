@@ -1289,6 +1289,13 @@ async function init(){
 
   currentUser = user;
   document.getElementById('userEmailDisplay').textContent = user.email;
+  if (profile?.role === 'moderator') {
+    const a = document.createElement('a');
+    a.href = 'moderator.html';
+    a.textContent = 'Moderator panel · মডারেটর প্যানেল';
+    a.style.cssText = 'display:inline-block;margin-left:10px;color:var(--amber,#FFB800);font-weight:700;text-decoration:none';
+    document.getElementById('userEmailDisplay').after(a);
+  }
 
   loadLocalMarks();
   await loadDomains();

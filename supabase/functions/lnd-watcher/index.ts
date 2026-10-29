@@ -2,7 +2,7 @@
 // x-cron-secret, like daily-report). Looks up every open LND invoice and
 // settles or expires it through the same idempotent SQL functions the
 // status endpoint uses. Fails closed without CRON_SECRET; does nothing
-// without the LND secrets. Not scheduled by this PR.
+// without the LND secrets. Scheduled every minute by pg_cron job "boltpay-lnd-watcher".
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 import { cronAuthorized } from "../_shared/cron.ts";
 import { LndClient, lndConfig } from "../_shared/lnd.ts";
