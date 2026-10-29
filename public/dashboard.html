@@ -1475,6 +1475,7 @@ function renderLinks(){
         <span class="domain-url">${escapeHtml(host)}/${escapeHtml(l.slug)}</span>
         ${shopSelect}
         <button class="btn-copy" data-copy="${escapeAttr(url)}">⧉</button>
+        <button class="btn-copy" title="Amount options" onclick="editAmountOptions('${escapeAttr(l.id)}')">$</button>
       </div>`;
     }).join('');
 
@@ -1490,6 +1491,33 @@ function renderLinks(){
       ${note}${rows}
     </div>`;
   }).join('');
+}
+
+// Amount options: min, max, up to 6 quick amounts and a short note shown
+// on the checkout page. Blank min/max = platform default.
+async function editAmountOptions(linkId){
+  const l = allLinks.find(x => x.id === linkId);
+  if (!l) return;
+  const num = v => { v = String(v ?? '').trim(); if (!v) return null; const n = Number(v); return isFinite(n) && n > 0 ? n : NaN; };
+  const min = prompt('Minimum amount in USD (blank = default)', l.min_usd ?? '');
+  if (min === null) return;
+  const max = prompt('Maximum amount in USD (blank = default)', l.max_usd ?? '');
+  if (max === null) return;
+  const quick = prompt('Quick amounts, comma separated (up to 6), e.g. 10, 25, 50', (l.quick_amounts || []).join(', '));
+  if (quick === null) return;
+  const note = prompt('Note shown to the payer (optional, 200 chars)', l.note ?? '');
+  if (note === null) return;
+  const pMin = num(min), pMax = num(max);
+  const pQuick = quick.split(',').map(s => s.trim()).filter(Boolean).map(Number);
+  if (Number.isNaN(pMin) || Number.isNaN(pMax) || pQuick.some(q => !isFinite(q) || q <= 0) || pQuick.length > 6){
+    showToast('Please enter valid positive amounts', 'err'); return;
+  }
+  const { error } = await window.supabaseClient.rpc('set_link_amount_options', {
+    p_link_id: linkId, p_min: pMin, p_max: pMax, p_quick: pQuick, p_note: note.slice(0, 200)
+  });
+  if (error){ showToast('Failed: ' + error.message, 'err'); return; }
+  showToast('Amount options saved', 'ok');
+  await fetchLinks();
 }
 
 function toggleLinkForm(){

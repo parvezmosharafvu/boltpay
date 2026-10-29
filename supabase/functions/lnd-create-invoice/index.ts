@@ -45,6 +45,14 @@ function cleanDevice(v: unknown): string | null {
   return /^[A-Za-z0-9-]{8,64}$/.test(s) ? s : null;
 }
 
+// A link's own min/max narrow the global limits; they never widen them.
+function linkLimits(link: { min_usd?: unknown; max_usd?: unknown }, s: { minUsd: number; maxUsd: number }) {
+  const lmin = Number(link.min_usd), lmax = Number(link.max_usd);
+  const min = link.min_usd != null && lmin > 0 ? Math.max(s.minUsd, lmin) : s.minUsd;
+  const max = link.max_usd != null && lmax > 0 ? Math.min(s.maxUsd, lmax) : s.maxUsd;
+  return { min, max: Math.max(min, max) };
+}
+
 // GET ?slug= -> { data: { displayName, minUsd, maxUsd } } for the /pay amount
 // page. Same gate as POST: 404 unless the flag is on and the link uses LND.
 async function linkInfo(slug: string) {
@@ -60,7 +68,10 @@ async function linkInfo(slug: string) {
   const link = Array.isArray(rows) ? rows[0] : rows;
   if (error || !link || link.checkout_backend !== "lnd") return err("Payment link not found", 404);
   if (!link.is_active) return err("This payment link is no longer active", 410);
-  return json({ data: { displayName: link.display_name ?? slug, minUsd: settings.minUsd, maxUsd: settings.maxUsd } });
+  const lim = linkLimits(link, settings);
+  const quick = (Array.isArray(link.quick_amounts) ? link.quick_amounts : [])
+    .map((q: unknown) => Number(q)).filter((q: number) => q >= lim.min && q <= lim.max);
+  return json({ data: { displayName: link.display_name ?? slug, minUsd: lim.min, maxUsd: lim.max, quickAmounts: quick, note: link.note ?? null } });
 }
 
 Deno.serve(async (req) => {
@@ -103,6 +114,9 @@ Deno.serve(async (req) => {
   if (linkErr || !link) return err("Payment link not found", 404);
   if (!link.is_active) return err("This payment link is no longer active", 410);
   if (link.checkout_backend !== "lnd") return err("This payment method is not available", 404);
+
+  const lim = linkLimits(link, settings);
+  if (!withinLimits(amount, lim.min, lim.max)) return err(`Amount must be between $${lim.min} and $${lim.max}`, 400);
 
   const charged = chargedAmount(amount, link.cost_percent);
   if (charged > settings.maxUsd * 11) return err("This link's current price is too high to invoice", 400);
