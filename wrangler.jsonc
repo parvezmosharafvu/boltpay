@@ -2,6 +2,11 @@
 "$schema": "node_modules/wrangler/config-schema.json",
 "name": "boltpay",
 "compatibility_date": "2026-08-20",
+// Builds public/assets/home-analytics.js (not committed) before every deploy;
+// without it the home page requested a missing file (404).
+"build": {
+"command": "npm install --no-audit --no-fund && npm run build"
+},
 "observability": {
 "enabled": true
 },
