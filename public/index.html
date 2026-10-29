@@ -4,7 +4,7 @@
     <meta charset="UTF-8">
       <meta name="viewport" content="width=device-width, initial-scale=1.0">
         <title>Boltpay — Lightning payments for creators</title>
-        <meta name="description" content="Get paid from Cash App. Share your payment link and they pay from their Cash balance — no crypto to buy, no signup needed to pay.">
+        <meta name="description" content="Boltpay: share one payment link and get paid over Lightning in seconds. Daily statements, low fees, fast payouts.">
 
         <!-- No og: tags here on purpose.
              They need absolute URLs, and a static file cannot know which
@@ -22,13 +22,13 @@
             <script src="assets/home-analytics.js"></script>
             <style>
 /* Same family as the payment page and the link previews: near-black with
-   Cash App green as the single accent. --amber keeps its name so every
+   Boltpay amber as the single accent. --amber keeps its name so every
    existing rule follows without being rewritten. */
 :root{
   --bg:#0B0F0C; --panel:#131916; --panel-hi:#1A221D; --line:rgba(255,255,255,0.07);
   --text:#F2F7F3; --text-dim:rgba(242,247,243,0.55); --text-faint:rgba(242,247,243,0.3);
-  --amber:#00D632; --violet:#00D632; --ok:#00D632; --alert:#FF5C7A;
-  --on-accent:#04240D;
+  --amber:#FFB800; --violet:#FFB800; --ok:#FFB800; --alert:#FF5C7A;
+  --on-accent:#2A1F00;
 }
 *{ margin:0; padding:0; box-sizing:border-box; -webkit-tap-highlight-color:transparent; }
 body{ font-family:var(--font-display,'Space Grotesk',sans-serif); background:var(--bg); color:var(--text); min-height:100vh;
@@ -95,7 +95,7 @@ h1 span{ color:var(--amber); }
               <div class="eyebrow">Lightning Network payments</div>
               <h1>Get paid instantly, <span>keep more of it</span>
             </h1>
-            <p class="hero-sub">Boltpay gives freelancers and shop owners a payment link customers can pay in seconds — low fees, fast settlement, withdraw to bKash, Nagad, or Binance whenever you're ready.</p>
+            <p class="hero-sub">Boltpay gives freelancers and shop owners a payment link customers can pay in seconds — low fees, fast settlement, and a clear daily statement of what you earned.</p>
             <div class="hero-actions">
               <a href="register.html" class="btn-cta primary">Create your link</a>
               <a href="login.html" class="btn-cta secondary">I already have an account</a>
@@ -115,7 +115,7 @@ h1 span{ color:var(--amber); }
             <div class="feature">
               <div class="feature-num mono">03</div>
               <h3>Cash out your way</h3>
-              <p>Request a withdrawal to bKash, Nagad, or Binance. Small amounts auto-approve; larger ones get a quick review.</p>
+              <p>Request a withdrawal from your dashboard whenever you like. Small amounts auto-approve; larger ones get a quick review.</p>
             </div>
           </div>
           <!-- Live payments. Hidden unless an admin turns the switch on.
@@ -148,27 +148,27 @@ h1 span{ color:var(--amber); }
           <div class="foot">© Boltpay</div>
           <style>
 /* Home-page sections, in the same palette as the link preview image:
-   Cash App green, black cards, white pills. */
+   Boltpay amber, black cards, white pills. */
 .cash-block{
   max-width:860px; margin:0 auto 40px; padding:28px 26px;
-  background:#00D632; border-radius:24px; color:#000;
+  background:#FFB800; border-radius:24px; color:#000;
 }
 .cash-block + .cash-block{ margin-top:-14px; }
 .cash-title{ font-size:26px; font-weight:800; letter-spacing:-0.8px; margin-bottom:6px; }
 .cash-sub{ font-size:14px; font-weight:500; color:#0A3D14; margin-bottom:18px; line-height:1.55; }
 .cash-head{ display:flex; align-items:center; justify-content:space-between; gap:12px; }
 .cash-dot{
-  background:#000; color:#00D632; border-radius:999px; padding:5px 14px;
+  background:#000; color:#FFB800; border-radius:999px; padding:5px 14px;
   font-size:11px; font-weight:800; letter-spacing:.1em; text-transform:uppercase;
 }
 .cash-dot::before{ content:''; display:inline-block; width:7px; height:7px; border-radius:50%;
-  background:#00D632; margin-right:7px; vertical-align:middle; animation:blip 1.6s infinite; }
+  background:#FFB800; margin-right:7px; vertical-align:middle; animation:blip 1.6s infinite; }
 @keyframes blip{ 0%,100%{opacity:1} 50%{opacity:.25} }
 
 .feed{ display:flex; flex-direction:column; gap:10px; }
 .feed-row{ background:#000; border-radius:16px; padding:14px 16px; color:#fff; }
 .feed-top{ display:flex; align-items:baseline; justify-content:space-between; gap:12px; }
-.feed-amt{ font-family:'JetBrains Mono',monospace; font-size:20px; font-weight:700; color:#00D632; }
+.feed-amt{ font-family:'JetBrains Mono',monospace; font-size:20px; font-weight:700; color:#FFB800; }
 .feed-when{ font-size:12px; color:rgba(255,255,255,.45); white-space:nowrap; }
 .feed-grid{ display:grid; grid-template-columns:repeat(auto-fit,minmax(140px,1fr)); gap:9px 16px; margin-top:11px; padding-top:11px; border-top:1px solid rgba(255,255,255,.12); }
 .feed-label{ font-size:9px; letter-spacing:.09em; text-transform:uppercase; color:rgba(255,255,255,.35); font-weight:700; margin-bottom:2px; }
@@ -179,7 +179,7 @@ h1 span{ color:var(--amber); }
 .lookup-row{ display:flex; gap:10px; flex-wrap:wrap; }
 .lookup-row input{ flex:1; min-width:200px; background:#000; color:#fff; border:none; border-radius:14px; padding:15px 17px; font-size:14px; font-family:inherit; outline:none; }
 .lookup-row input::placeholder{ color:rgba(255,255,255,.35); }
-.lookup-row button{ background:#000; color:#00D632; border:none; border-radius:14px; padding:15px 30px; font-size:14px; font-weight:800; cursor:pointer; font-family:inherit; }
+.lookup-row button{ background:#000; color:#FFB800; border:none; border-radius:14px; padding:15px 30px; font-size:14px; font-weight:800; cursor:pointer; font-family:inherit; }
 .lookup-row button:disabled{ opacity:.55; cursor:not-allowed; }
 .lookup-result{ margin-top:14px; display:none; }
 .lookup-result.show{ display:block; }
@@ -339,7 +339,7 @@ async function lookupPayment(){
     // The lookup RPC returns only payment status and timestamps. The exact
     // reference is already known to the visitor, so do not echo private
     // creator/link data that the backend intentionally omits.
-    const colour = r.status === 'settled' ? '#00D632'
+    const colour = r.status === 'settled' ? '#FFB800'
       : (r.status === 'expired' || r.status === 'invalid') ? '#FF8AA0' : '#F5A623';
     out.innerHTML = '<div class="feed-row">' +
       '<div class="feed-top">' +
