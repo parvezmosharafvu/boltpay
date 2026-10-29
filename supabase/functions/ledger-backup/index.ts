@@ -1,4 +1,5 @@
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
+import { cronAuthorized } from "../_shared/cron.ts";
 const SUPABASE_URL = Deno.env.get("SUPABASE_URL")!;
 const SERVICE_ROLE_KEY = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
 const GITHUB_TOKEN = Deno.env.get("GITHUB_TOKEN")!;
@@ -120,10 +121,9 @@ return count ?? 0;
 }
 
 Deno.serve(async (req) => {
-const cronSecret = Deno.env.get("CRON_SECRET") ?? "";
-// An unset CRON_SECRET used to make `undefined !== undefined` false, so a
-// misconfigured deploy left the whole-ledger export open to the internet.
-if (!cronSecret || req.headers.get("x-cron-secret") !== cronSecret) {
+// Env CRON_SECRET or Vault boltpay_cron_secret; constant-time, fails closed
+// (an unset secret once left the whole-ledger export open to the internet).
+if (!(await cronAuthorized(req, supabaseAdmin))) {
 return new Response("Unauthorized", { status: 401 });
 }
 // Pull EVERY record — this is a full ledger snapshot, not just today's.

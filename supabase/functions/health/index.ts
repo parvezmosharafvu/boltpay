@@ -1,4 +1,5 @@
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
+import { cronAuthorized } from "../_shared/cron.ts";
 
 /**
 * Boltpay — health monitor
@@ -73,9 +74,8 @@ type Check = {
 
 Deno.serve(async (req) => {
   const url = new URL(req.url);
-  const cronSecret = Deno.env.get("CRON_SECRET") ?? "";
-  const authorised = cronSecret && req.headers.get("x-cron-secret") === cronSecret;
-  if (!authorised) return new Response("Unauthorized", { status: 401 });
+  // Env CRON_SECRET or Vault boltpay_cron_secret; constant-time, fails closed.
+  if (!(await cronAuthorized(req, supabase))) return new Response("Unauthorized", { status: 401 });
 
   // Alerts are suppressed for manual runs unless explicitly asked for, so
   // checking the dashboard by hand does not spam the alert channel.
