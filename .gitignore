@@ -13,3 +13,4 @@ ledger-backups/
 # etc). .vscode/settings.json has already had one committed once — see
 # AUDIT.md. extensions.json has no secrets and is fine to share.
 .vscode/settings.json
+deno.lock
