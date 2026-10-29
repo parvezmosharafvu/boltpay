@@ -58,6 +58,12 @@ def check_dom_references() -> None:
         )
         handlers = set(re.findall(r'on(?:click|change|input|submit)="(\w+)\(', src))
         defined = set(re.findall(r"(?:async )?function (\w+)\(", src))
+        # Handlers may live in a local script the page loads (e.g. auth.js).
+        for js in re.findall(r'<script src="([\w.-]+\.js)"', src):
+            jp = os.path.join("public", js)
+            if os.path.exists(jp):
+                with open(jp, encoding="utf-8") as jf:
+                    defined |= set(re.findall(r"(?:async )?function (\w+)\(", jf.read()))
 
         for missing in sorted(used - ids):
             failures.append(f"{path}: references #{missing}, which is not in the markup")
