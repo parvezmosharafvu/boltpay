@@ -147,7 +147,10 @@ Deno.serve(async (req) => {
   // Upsert makes recomputation idempotent, so re-running a day is always
   // safe and a late settlement gets picked up on the next pass.
   const url = new URL(req.url);
-  const requested = Number(url.searchParams.get("days"));
+  // No ?days= means the default window. Number(null) is 0, which used to
+  // pass isFinite and clamp to 1 — so the cron only ever recomputed one day.
+  const daysParam = url.searchParams.get("days");
+  const requested = daysParam === null ? NaN : Number(daysParam);
   const days = Number.isFinite(requested)
     ? Math.min(Math.max(Math.trunc(requested), 1), 90)
     : 3;

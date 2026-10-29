@@ -188,7 +188,29 @@ Deno.serve(async (req) => {
   const hookAge = lastHookMs ? now - lastHookMs : Infinity;
   const payAge = lastPayMs ? now - lastPayMs : Infinity;
 
-  if (payAge > 6 * HOUR) {
+  if (!btcpayInUse) {
+    // LND checkout has no webhooks; lnd-watcher (every minute) settles or
+    // expires each open invoice. If an LND invoice is still open well past
+    // its expiry, the watcher is not doing its job.
+    const tenMinAgo = new Date(now - 10 * MIN).toISOString();
+    const dayAgoIso = new Date(now - 24 * HOUR).toISOString();
+    const { count: overdue, error: lndErr } = await supabase
+      .from("payments")
+      .select("*", { count: "exact", head: true })
+      .eq("backend", "lnd")
+      .in("status", ["new", "pending"])
+      .lt("expires_at", tenMinAgo)
+      .gte("expires_at", dayAgoIso);
+    checks.push({
+      name: "lnd_watcher",
+      ok: !lndErr && (overdue ?? 0) === 0,
+      detail: lndErr
+        ? `could not query LND invoices: ${lndErr.message}`
+        : (overdue ?? 0) === 0
+        ? "no LND invoice left open past expiry (webhook check skipped — no BTCPay-backed links)"
+        : `${overdue} LND invoice(s) still open >10m past expiry — lnd-watcher may be down`,
+    });
+  } else if (payAge > 6 * HOUR) {
     checks.push({
       name: "webhooks",
       ok: true,
