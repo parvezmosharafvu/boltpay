@@ -44,7 +44,7 @@ export async function sendSettledAlert(
 export async function notifyLndSettled(db: SupabaseClient, paymentId: string): Promise<void> {
   try {
     const { data: p } = await db.from("payments")
-      .select("amount_settled, payment_link_id").eq("id", paymentId).maybeSingle();
+      .select("amount_settled, payment_link_id, user_id").eq("id", paymentId).maybeSingle();
     if (!p) return;
     const amount = Number(p.amount_settled ?? 0);
     const { data: suppress, error } = await db.rpc("should_suppress_payment_alert", { p_amount: amount });
@@ -55,7 +55,35 @@ export async function notifyLndSettled(db: SupabaseClient, paymentId: string): P
       slug = l?.slug ?? slug;
     }
     await sendSettledAlert(settledAlertText(amount, slug, paymentId));
+    await notifyCreatorTelegram(db, p.user_id, `✅ Payment received: $${amount.toFixed(2)} via /${slug}`);
   } catch (e) {
     console.error("notifyLndSettled:", (e as Error).message);
+  }
+}
+
+
+/** Message the link owner's own Telegram chat, if they connected one. Never throws. */
+export async function notifyCreatorTelegram(
+  db: SupabaseClient,
+  userId: string | null | undefined,
+  text: string,
+  env: Env = (k) => Deno.env.get(k),
+  doFetch: typeof fetch = fetch,
+): Promise<boolean> {
+  try {
+    const token = env("ALERT_TELEGRAM_BOT_TOKEN");
+    if (!token || !userId) return false;
+    const { data } = await db.from("profiles").select("telegram_chat_id").eq("id", userId).maybeSingle();
+    const chat = data?.telegram_chat_id;
+    if (!chat) return false;
+    const r = await doFetch(`https://api.telegram.org/bot${token}/sendMessage`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ chat_id: chat, text }),
+    });
+    return r.ok;
+  } catch {
+    console.error("creator telegram delivery failed");
+    return false;
   }
 }
