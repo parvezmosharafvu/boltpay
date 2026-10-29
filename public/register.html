@@ -78,8 +78,13 @@ h1{ font-size:20px; font-weight:700; margin-bottom:4px; }
                   <div class="field">
                     <label>Password</label>
                     <input type="password" id="password" placeholder="At least 8 characters" autocomplete="new-password">
-                      <div class="field-hint">Use 8+ characters — a mix of letters and numbers is safest.</div>
+                      <div class="field-hint">8+ characters, including an uppercase letter and a number. · ৮+ অক্ষর, অন্তত একটি বড় হাতের অক্ষর ও একটি সংখ্যা।</div>
                     </div>
+                  <div class="field">
+                    <label>Confirm password · পাসওয়ার্ড আবার লিখুন</label>
+                    <input type="password" id="password2" autocomplete="new-password">
+                  </div>
+                  <div class="field-hint" style="margin-bottom:12px;">Administrator approval is required. You can sign in after your account is activated. · অ্যাডমিন অনুমোদন লাগবে; অ্যাকাউন্ট চালু হলে লগইন করতে পারবেন।</div>
                     <button class="btn-primary" id="submitBtn" onclick="doRegister()">Create account</button>
                     <div class="error-msg" id="errorMsg">
                     </div>
@@ -112,8 +117,13 @@ async function doRegister(){
     errEl.style.display = 'block';
     return;
   }
-  if (password.length < 8){
-    errEl.textContent = 'Password must be at least 8 characters.';
+  if (password.length < 8 || !/[A-Z]/.test(password) || !/[0-9]/.test(password)){
+    errEl.textContent = 'Password needs 8+ characters, an uppercase letter and a number. · পাসওয়ার্ডে ৮+ অক্ষর, একটি বড় হাতের অক্ষর ও একটি সংখ্যা লাগবে।';
+    errEl.style.display = 'block';
+    return;
+  }
+  if (password !== document.getElementById('password2').value){
+    errEl.textContent = 'Passwords do not match. · দুটি পাসওয়ার্ড মেলেনি।';
     errEl.style.display = 'block';
     return;
   }
@@ -139,7 +149,7 @@ async function doRegister(){
   }
 
   // Otherwise the project requires email confirmation before login.
-  okEl.textContent = 'Account created. Check your email to confirm, then log in.';
+  okEl.textContent = 'Account requested. Confirm your email; you can log in once an administrator activates it. · অনুরোধ পাঠানো হয়েছে। ইমেইল নিশ্চিত করুন; অ্যাডমিন চালু করলে লগইন করতে পারবেন।';
   okEl.style.display = 'block';
   btn.textContent = 'Account created';
 }

@@ -62,6 +62,17 @@ h1 span{ color:var(--amber); }
 .feature h3{ font-size:15px; font-weight:700; margin-bottom:8px; }
 .feature p{ font-size:13px; color:var(--text-dim); line-height:1.55; }
 
+.approval-note{ margin-top:16px; font-size:12px; color:var(--text-faint); }
+.info-block{ max-width:920px; margin:0 auto; padding:0 24px 50px; }
+.info-block h2{ font-size:20px; font-weight:800; margin-bottom:14px; }
+.steps{ display:grid; grid-template-columns:1fr; gap:12px; counter-reset:st; }
+@media (min-width:720px){ .steps{ grid-template-columns:repeat(4,1fr); } }
+.step{ background:var(--panel); border:1px solid var(--line); border-radius:14px; padding:16px; font-size:13px; color:var(--text-dim); line-height:1.5; }
+.step b{ display:block; color:var(--text); font-size:14px; margin-bottom:6px; }
+.faq details{ background:var(--panel); border:1px solid var(--line); border-radius:12px; padding:14px 16px; margin-bottom:10px; }
+.faq summary{ cursor:pointer; font-weight:700; font-size:14px; }
+.faq p{ margin-top:10px; font-size:13px; color:var(--text-dim); line-height:1.55; }
+.bn{ display:block; color:var(--text-faint); font-size:12px; margin-top:4px; font-weight:500; }
 .foot{ text-align:center; padding:20px 24px 40px; font-size:12px; color:var(--text-faint); }
 
 #redirectNotice{ display:none; position:fixed; inset:0; background:var(--bg); z-index:999;
@@ -100,6 +111,7 @@ h1 span{ color:var(--amber); }
               <a href="register.html" class="btn-cta primary">Create your link</a>
               <a href="login.html" class="btn-cta secondary">I already have an account</a>
             </div>
+            <p class="approval-note">Accounts are reviewed and activated by an administrator. · অ্যাডমিন যাচাই করে অ্যাকাউন্ট চালু করেন।</p>
           </div>
           <div class="features">
             <div class="feature">
@@ -117,6 +129,22 @@ h1 span{ color:var(--amber); }
               <h3>Cash out your way</h3>
               <p>Request a withdrawal from your dashboard whenever you like. Small amounts auto-approve; larger ones get a quick review.</p>
             </div>
+          </div>
+          <div class="info-block" id="how">
+            <h2>How it works <span class="bn">কীভাবে কাজ করে</span></h2>
+            <div class="steps">
+              <div class="step"><b>1. Request an account</b>Sign up with your name, email, phone and Telegram.<span class="bn">নাম, ইমেইল, ফোন আর Telegram দিয়ে অ্যাকাউন্টের অনুরোধ করুন।</span></div>
+              <div class="step"><b>2. Get approved</b>An administrator reviews and activates your account.<span class="bn">অ্যাডমিন যাচাই করে অ্যাকাউন্ট চালু করবেন।</span></div>
+              <div class="step"><b>3. Share your link</b>Set a display name, note, min/max and quick amounts.<span class="bn">নাম, নোট, সর্বনিম্ন/সর্বোচ্চ আর quick amount সেট করে লিংক শেয়ার করুন।</span></div>
+              <div class="step"><b>4. Get paid &amp; withdraw</b>Follow payments and the 7 pm daily statement, then request a withdrawal.<span class="bn">পেমেন্ট আর সন্ধ্যা ৭টার দৈনিক হিসাব দেখুন, তারপর withdraw করুন।</span></div>
+            </div>
+          </div>
+          <div class="info-block faq" id="faq">
+            <h2>FAQ <span class="bn">সাধারণ প্রশ্ন</span></h2>
+            <details><summary>How do customers pay? · কাস্টমার কীভাবে পেমেন্ট করবে?</summary><p>They open your link, choose an amount and pay the Lightning invoice — for example with the "Open in Cash App" button or any Lightning wallet.<span class="bn">লিংক খুলে amount বেছে Lightning invoice পরিশোধ করবে — "Open in Cash App" বাটন বা যেকোনো Lightning wallet দিয়ে।</span></p></details>
+            <details><summary>When can I sign in? · কখন লগইন করতে পারব?</summary><p>After an administrator activates your account.<span class="bn">অ্যাডমিন অ্যাকাউন্ট চালু করার পর।</span></p></details>
+            <details><summary>When is my balance settled? · ব্যালান্স কখন হিসাব হয়?</summary><p>Every day at 7 pm (Dhaka time) a daily statement is created in your dashboard.<span class="bn">প্রতিদিন সন্ধ্যা ৭টায় (ঢাকা সময়) ড্যাশবোর্ডে দৈনিক হিসাব তৈরি হয়।</span></p></details>
+            <details><summary>How do I withdraw? · কীভাবে withdraw করব?</summary><p>Request a withdrawal from your dashboard using one of the methods your administrator has enabled.<span class="bn">অ্যাডমিনের চালু করা method দিয়ে ড্যাশবোর্ড থেকে withdraw অনুরোধ করুন।</span></p></details>
           </div>
           <!-- Live payments. Hidden unless an admin turns the switch on.
                Every identifying field arrives from the server already
