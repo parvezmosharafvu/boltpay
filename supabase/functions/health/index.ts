@@ -84,8 +84,26 @@ Deno.serve(async (req) => {
   const checks: Check[] = [];
   const now = Date.now();
 
+  // Legacy BTCPay checks only matter while some active link still checks
+  // out through BTCPay. Once every link is on LND, a revoked key on an
+  // unused store (or a link with no shop) cannot affect any customer.
+  const { count: btcpayLinks } = await supabase
+    .from("payment_links")
+    .select("*", { count: "exact", head: true })
+    .eq("is_active", true)
+    .is("deleted_at", null)
+    .eq("checkout_backend", "btcpay");
+  const btcpayInUse = (btcpayLinks ?? 0) > 0;
+
   // ---------- 1. Is BTCPay answering? ----------
-  if (!BTCPAY_URL) {
+  if (!btcpayInUse) {
+    checks.push({
+      name: "btcpay",
+      ok: true,
+      informational: true,
+      detail: "skipped — no active link uses checkout_backend='btcpay'",
+    });
+  } else if (!BTCPAY_URL) {
     checks.push({ name: "btcpay", ok: false, detail: "BTCPAY_URL is not configured" });
   } else {
     // Every active shop, not just the default one. Previously this
@@ -253,17 +271,20 @@ Deno.serve(async (req) => {
   });
 
   // ---------- 5. Links with no shop cannot issue invoices ----------
+  // Only BTCPay-backed links need a shop; LND links mint invoices directly.
   const { count: orphanLinks } = await supabase
     .from("payment_links")
     .select("*", { count: "exact", head: true })
     .is("shop_id", null)
-    .eq("is_active", true);
+    .eq("is_active", true)
+    .is("deleted_at", null)
+    .eq("checkout_backend", "btcpay");
 
   checks.push({
     name: "links",
     ok: (orphanLinks ?? 0) === 0,
     detail: (orphanLinks ?? 0) === 0
-      ? "every active link has a shop"
+      ? "every active BTCPay-backed link has a shop"
       : `${orphanLinks} active link(s) have no shop — their invoices will fail`,
   });
 
