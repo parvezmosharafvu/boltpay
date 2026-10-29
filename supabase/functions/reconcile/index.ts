@@ -1,4 +1,5 @@
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
+import { cronAuthorized } from "../_shared/cron.ts";
 
 /**
 * Boltpay — daily reconciliation
@@ -140,8 +141,7 @@ async function fetchBtcpaySettled(
 }
 
 Deno.serve(async (req) => {
-  const cronSecret = Deno.env.get("CRON_SECRET") ?? "";
-  if (!cronSecret || req.headers.get("x-cron-secret") !== cronSecret) {
+  if (!(await cronAuthorized(req, supabase))) {
     return new Response("Unauthorized", { status: 401 });
   }
 
