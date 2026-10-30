@@ -2153,6 +2153,17 @@ document.getElementById('wdAmount').addEventListener('input', function(e) {
   }
 });
 
+// One key per filled-in form: a double tap or a retried request reuses it,
+// so the server can refuse a second withdrawal. Cleared after a real result.
+let wdRequestKey = null;
+function newRequestKey(){
+  if (window.crypto && crypto.randomUUID) return crypto.randomUUID();
+  return 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, c => {
+    const r = crypto.getRandomValues(new Uint8Array(1))[0] & 15;
+    return (c === 'x' ? r : (r & 3 | 8)).toString(16);
+  });
+}
+
 async function submitWithdrawal(){
   const amt = parseFloat(document.getElementById('wdAmount').value);
   const method = document.getElementById('wdMethod')?.value;
@@ -2173,6 +2184,8 @@ async function submitWithdrawal(){
     if (!destination) return showToast('Please save your wallet details first', 'err');
   }
 
+  if (!wdRequestKey) wdRequestKey = newRequestKey();
+  const requestKey = wdRequestKey;
   btn.disabled = true; btn.textContent = 'Processing...';
   const { data: { session } } = await window.supabaseClient.auth.getSession();
 
@@ -2180,12 +2193,13 @@ async function submitWithdrawal(){
     const res = await fetch(`${window.SUPABASE_URL}/functions/v1/user-withdraw`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${session.access_token}` },
-      body: JSON.stringify({ amount: amt, method: method, destination: destination })
+      body: JSON.stringify({ amount: amt, method: method, destination: destination, request_key: requestKey })
     });
     const result = await res.json();
-    if (!res.ok) showToast(result.error || 'Failed', 'err');
+    if (!res.ok) { showToast(result.error || 'Failed', 'err'); wdRequestKey = null; }
     else {
-      showToast(result.msg || 'Success', 'ok');
+      wdRequestKey = null;
+      showToast(result.duplicate ? 'Already submitted / ইতিমধ্যে জমা দেওয়া হয়েছে' : (result.msg || 'Success'), 'ok');
       document.getElementById('wdAmount').value = '';
       if(document.getElementById('wdInvoice')) document.getElementById('wdInvoice').value = '';
       await fetchWithdrawals();
