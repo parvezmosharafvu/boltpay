@@ -9,10 +9,11 @@
             <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
             <script src="config.js"></script>
             <script src="theme.js"></script>
+            <script src="i18n.js"></script>
             <style>
 :root{
   /* One palette for admin, dashboard and moderator — the same near-black
-     and Cash App green as the home page and the payment card. */
+     amber brand as the home page and the payment card. */
   --bg:#0B0A07; --panel:#15130D; --panel-hi:#1D1A12;
   --line:#2E2A1F; --line-strong:#3D3726;
   --text:#F5F3EE; --text-dim:#ADA690; --text-faint:rgba(245,243,238,0.32);
@@ -387,7 +388,8 @@ textarea.w-input{ padding:10px 12px !important; }
 .device-list{font-size:12px;margin-top:6px}
 .device-item{padding:4px 0;border-top:1px dashed rgba(0,0,0,.08)}
 </style>
-          </head>
+    <link rel="stylesheet" href="dash.css">
+  </head>
           <body>
             <div id="loginScreen">
               <div class="login-card">
@@ -589,19 +591,10 @@ textarea.w-input{ padding:10px 12px !important; }
                                   <div class="detail-stat-label">Models</div>
                                 </div>
                               </div>
-                              <div class="detail-section-title">Saved Wallets</div>
+                              <div class="detail-section-title" data-en="Saved wallets" data-bn="সেভ করা ওয়ালেট">Saved wallets</div>
                               <div style="background:var(--panel-hi); padding:14px; border-radius:10px; border:1px solid var(--line); margin-bottom:16px; font-size:12px; line-height:1.6;">
                                 <div style="margin-bottom:6px;">
-                                  <b>Binance ID:</b> <span id="wBinance">—</span>
-                                </div>
-                                <div style="margin-bottom:6px;">
                                   <b>USDT (BEP20):</b> <span id="wUsdt">—</span>
-                                </div>
-                                <div style="margin-bottom:6px;">
-                                  <b>bKash:</b> <span id="wBkash">—</span>
-                                </div>
-                                <div>
-                                  <b>Nagad:</b> <span id="wNagad">—</span>
                                 </div>
                               </div>
                               <div class="detail-section-title">Pricing markup for this user</div>
@@ -627,7 +620,7 @@ textarea.w-input{ padding:10px 12px !important; }
                                   </select>
                                   <button class="btn-primary" style="flex:0 0 auto;" onclick="saveDetailAmountDisplay()">Save</button>
                                 </div>
-                                <div class="hint" style="font-size:11px; color:var(--text-faint); margin-top:6px;">উপরের global switch-কে override করে, শুধু এই creator-এর জন্য। "Use global default" নির্বাচন করলে override মুছে যাবে।</div>
+                                <div class="hint" style="font-size:11px; color:var(--text-faint); margin-top:6px;" data-en="Overrides the global switch for this creator only. Choosing &quot;Use global default&quot; removes the override." data-bn="শুধু এই ক্রিয়েটরের জন্য গ্লোবাল সুইচ বদলায়। &quot;Use global default&quot; বাছলে ওভাররাইড মুছে যাবে।">.</div>
 
                                   <div class="detail-section-title">Payment link limit for this creator</div>
                                   <div class="w-row">
@@ -798,15 +791,15 @@ textarea.w-input{ padding:10px 12px !important; }
                                           </div>
                                           <div class="panel">
                                             <div class="panel-head">
-                                              <div class="panel-title">Platform notice</div>
+                                              <div class="panel-title" data-en="Platform notice" data-bn="প্ল্যাটফর্ম নোটিশ">Platform notice</div>
                                             </div>
                                             <div class="w-row" style="margin-bottom:12px;">
-                                              <input type="text" class="w-input" id="noticeInput" placeholder="Message shown on every creator's dashboard...">
+                                              <input type="text" class="w-input" id="noticeInput" placeholder="Message shown on every creator&#39;s dashboard…" data-ph-en="Message shown on every creator&#39;s dashboard…" data-ph-bn="প্রত্যেক ক্রিয়েটরের ড্যাশবোর্ডে যে বার্তা দেখাবে…">
                                               </div>
                                               <div class="toggle-row">
                                                 <div>
-                                                  <div class="toggle-label">Show notice on dashboards</div>
-                                                  <div class="toggle-sub">Appears in the balance card on every creator's dashboard.</div>
+                                                  <div class="toggle-label" data-en="Show notice on dashboards" data-bn="ড্যাশবোর্ডে নোটিশ দেখান">Show notice on dashboards</div>
+                                                  <div class="toggle-sub" data-en="Appears in the balance card on every creator&#39;s dashboard." data-bn="প্রত্যেক ক্রিয়েটরের ড্যাশবোর্ডে ব্যালেন্স কার্ডে দেখাবে।">Appears in the balance card on every creator's dashboard.</div>
                                                 </div>
                                                 <label class="switch">
                                                   <input type="checkbox" id="noticeActiveToggle">
@@ -814,17 +807,17 @@ textarea.w-input{ padding:10px 12px !important; }
                                                     </span>
                                                   </label>
                                                 </div>
-                                                <button class="btn-primary" style="max-width:200px;" onclick="saveNotice()">Save notice</button>
+                                                <button class="btn-primary" style="max-width:200px;" onclick="saveNotice()" data-en="Save notice" data-bn="নোটিশ সেভ করুন">Save notice</button>
                                               </div>
                                                 <div class="panel">
                                                   <div class="panel-head">
-                                                    <div class="panel-title">Default link limit for new creators</div>
+                                                    <div class="panel-title" data-en="Default link limit for new creators" data-bn="নতুন ক্রিয়েটরের ডিফল্ট লিংক সীমা">Default link limit for new creators</div>
                                                   </div>
                                                   <div class="w-row" style="margin-bottom:12px;">
                                                     <input type="number" step="1" min="1" max="500" class="w-input" id="defaultLinkLimitInput" placeholder="5">
                                                   </div>
-                                                  <button class="btn-primary" style="max-width:200px;" onclick="saveDefaultLinkLimit()">Save link limit</button>
-                                                  <div class="hint" style="font-size:11px; color:var(--text-faint); margin-top:8px;">One name counts as one link even when it produces several rate variants. Applies to accounts created from now on — edit existing creators from Customers.</div>
+                                                  <button class="btn-primary" style="max-width:200px;" onclick="saveDefaultLinkLimit()" data-en="Save link limit" data-bn="লিংক সীমা সেভ করুন">Save link limit</button>
+                                                  <div class="hint" style="font-size:11px; color:var(--text-faint); margin-top:8px;" data-en="One name counts as one link even when it produces several rate variants. Applies to accounts created from now on — edit existing creators from Customers." data-bn="একটি নাম একটি লিংক হিসেবে গণ্য হয়, যদিও তা থেকে কয়েকটি রেট ভ্যারিয়েন্ট তৈরি হয়। এখন থেকে তৈরি হওয়া অ্যাকাউন্টে প্রযোজ্য; পুরোনো ক্রিয়েটরদের Customers থেকে বদলান।">One name counts as one link even when it produces several rate variants. Applies to accounts created from now on — edit existing creators from Customers.</div>
                                                 </div>
                                                   <div class="panel" style="display:none">
                                                     <div class="panel-head">
@@ -847,42 +840,36 @@ textarea.w-input{ padding:10px 12px !important; }
 
                                                   <div class="panel">
                                                     <div class="panel-head">
-                                                      <div class="panel-title">Global switches</div>
+                                                      <div class="panel-title" data-en="Global switches" data-bn="গ্লোবাল সুইচ">Global switches</div>
                                                     </div>
                                                     <label class="toggle-row">
                                                       <input type="checkbox" id="globalManualWithdrawals" onchange="saveGlobalToggle('manual_withdrawals_enabled', this)">
-                                                      <span>Manual withdrawal requests (bKash / Nagad / Binance / USDT / bank)</span>
+                                                      <span data-en="Manual withdrawal requests (USDT)" data-bn="ম্যানুয়াল উত্তোলন রিকোয়েস্ট (USDT)">Manual withdrawal requests (USDT)</span>
                                                     </label>
-                                                    <div class="hint" style="font-size:11px; color:var(--text-faint); margin:4px 0 8px;">Off: nobody can submit a new withdrawal request of any kind &mdash; a full freeze on new submissions, independent of instant Lightning below. Already-queued requests are unaffected; you can still process them.</div>
-                                                    
-                                                    <label class="toggle-row" style="display:none">
-                                                      <input type="checkbox" id="globalPublicFeed" onchange="saveGlobalToggle('public_feed_enabled', this)">
-                                                      <span>Live payments on the home page</span>
-                                                    </label>
-                                                    <div class="hint" style="font-size:11px; color:var(--alert); margin:4px 0 0;">This is a public revenue log. Anyone can watch the total the platform takes in. Only the amount and the time are shown &mdash; never a creator, a link or an email &mdash; but leave it off unless you want that visible.</div>
+                                                    <div class="hint" style="font-size:11px; color:var(--text-faint); margin:4px 0 8px;" data-en="Off: nobody can submit a new USDT withdrawal request. Instant Lightning withdrawals are not affected. Requests already in the queue stay there and you can still process them." data-bn="বন্ধ থাকলে কেউ নতুন USDT উত্তোলন রিকোয়েস্ট জমা দিতে পারবে না। ইনস্ট্যান্ট Lightning উত্তোলনে এর কোনো প্রভাব নেই। আগে থেকে জমা থাকা রিকোয়েস্টগুলো থাকবে, আপনি সেগুলো প্রসেস করতে পারবেন।">.</div>
 
                                                     <label class="toggle-row" style="margin-top:14px;">
                                                       <input type="checkbox" id="globalHideSmall" onchange="saveGlobalToggle('hide_small_payments_enabled', this)">
-                                                      <span>Hide small settled payments from creators &amp; moderators</span>
+                                                      <span data-en="Hide small settled payments from creators &amp; moderators" data-bn="ছোট সফল পেমেন্ট ক্রিয়েটর ও মডারেটরদের থেকে লুকান">Hide small settled payments from creators &amp; moderators</span>
                                                     </label>
-                                                    <div class="hint" style="font-size:11px; color:var(--text-faint); margin:4px 0 8px;">On: a settled payment strictly under the threshold ($10.00 itself still counts) disappears from the creator dashboard, the moderator panel and the public home-page feed entirely &mdash; the payment list, the settled count, "Total earned", the daily settled figures, and the withdrawable balance. You still see it here, correctly, always.</div>
+                                                    <div class="hint" style="font-size:11px; color:var(--text-faint); margin:4px 0 8px;" data-en="On: a settled payment below the threshold (the threshold amount itself still counts) is hidden from the creator dashboard and the moderator view: the payment list, the settled count, total earned, the daily figures and the withdrawable balance. You always see it here." data-bn="চালু থাকলে নির্ধারিত সীমার নিচের সফল পেমেন্ট (সীমার সমান অ্যামাউন্ট গণনায় থাকবে) ক্রিয়েটর ড্যাশবোর্ড ও মডারেটর ভিউ থেকে লুকানো থাকবে: পেমেন্ট লিস্ট, সফল সংখ্যা, মোট আয়, দৈনিক হিসাব এবং উত্তোলনযোগ্য ব্যালেন্স। আপনি এখানে সবসময় দেখতে পাবেন।">.</div>
                                                     <div class="w-row" style="max-width:200px;">
                                                       <span style="display:flex; align-items:center; gap:8px; font-size:12px; color:var(--text-dim);">$
                                                         <input type="number" class="w-input mono" id="hideSmallThreshold" min="0" step="0.01" style="width:100px;" placeholder="10.00">
-                                                        <button class="btn-ghost" style="padding:8px 12px; font-size:11px;" onclick="saveHideSmallThreshold()">Save</button>
+                                                        <button class="btn-ghost" style="padding:8px 12px; font-size:11px;" onclick="saveHideSmallThreshold()" data-en="Save" data-bn="সেভ">Save</button>
                                                       </span>
                                                     </div>
 
                                                     <label class="toggle-row" style="margin-top:14px;">
                                                       <input type="checkbox" id="globalShowBuyerAmount" onchange="saveGlobalToggle('show_buyer_amount_enabled', this)">
-                                                      <span>Show buyer-typed amount (not the fee-included total)</span>
+                                                      <span data-en="Show buyer-typed amount (not the fee-included total)" data-bn="ক্রেতার লেখা অ্যামাউন্ট দেখান (ফি-সহ মোট নয়)">Show buyer-typed amount (not the fee-included total)</span>
                                                     </label>
-                                                    <div class="hint" style="font-size:11px; color:var(--text-faint); margin:4px 0 0;">On (default): সব জায়গায় (receipt, dashboard, admin panel, moderator panel, home feed) buyer যে amount টাইপ করেছে সেটাই দেখাবে। Fee/markup পূর্ণভাবে চার্জ হচ্ছে এবং balance-এ যুক্ত হচ্ছে, শুধু headline amount হিসেবে দেখানো হচ্ছে না। Off: সব জায়গায় fee-সহ পূর্ণ amount দেখাবে। নির্দিষ্ট কোনো creator-এর জন্য এটা override করতে চাইলে Customers থেকে করুন।</div>
+                                                    <div class="hint" style="font-size:11px; color:var(--text-faint); margin:4px 0 0;" data-en="On (default): receipts, dashboards, the admin panel and the moderator view show the amount the buyer typed. The fee is still charged in full and added to the balance; it is just not the headline amount. Off: the full fee-included amount is shown everywhere. To override this for one creator, use Customers." data-bn="চালু (ডিফল্ট): রিসিট, ড্যাশবোর্ড, অ্যাডমিন প্যানেল ও মডারেটর ভিউতে ক্রেতা যে অ্যামাউন্ট লিখেছে সেটাই দেখাবে। ফি পুরোপুরি চার্জ হয় এবং ব্যালেন্সে যোগ হয়, শুধু মূল অ্যামাউন্ট হিসেবে দেখায় না। বন্ধ: সব জায়গায় ফি-সহ পুরো অ্যামাউন্ট দেখাবে। কোনো একজন ক্রিয়েটরের জন্য বদলাতে Customers থেকে করুন।">.</div>
                                                   </div>
 
                                                   <div class="panel">
                                                     <div class="panel-head">
-                                                      <div class="panel-title">Support links on the home page</div>
+                                                      <div class="panel-title" data-en="Support links on the home page" data-bn="হোম পেজের সাপোর্ট লিংক">Support links on the home page</div>
                                                     </div>
                                                     <div class="w-row" style="margin-bottom:10px;">
                                                       <input type="email" class="w-input" id="supportEmailInput" placeholder="support@example.com">
@@ -890,8 +877,8 @@ textarea.w-input{ padding:10px 12px !important; }
                                                     <div class="w-row" style="margin-bottom:12px;">
                                                       <input type="url" class="w-input" id="supportGroupInput" placeholder="https://m.me/j/... (group invite, optional)">
                                                     </div>
-                                                    <button class="btn-primary" style="max-width:220px;" onclick="saveSupportLinks()">Save support links</button>
-                                                    <div class="hint" style="font-size:11px; color:var(--text-faint); margin-top:8px;">The email is always shown on the home page. The group link only appears when you fill it in &mdash; clear the field to hide it.</div>
+                                                    <button class="btn-primary" style="max-width:220px;" onclick="saveSupportLinks()" data-en="Save support links" data-bn="সাপোর্ট লিংক সেভ করুন">Save support links</button>
+                                                    <div class="hint" style="font-size:11px; color:var(--text-faint); margin-top:8px;" data-en="The email is always shown on the home page. The group link only appears when you fill it in &mdash; clear the field to hide it." data-bn="ইমেইল সবসময় হোম পেজে দেখায়। গ্রুপ লিংক শুধু দিলে দেখাবে; লুকাতে ঘরটি খালি করুন।">The email is always shown on the home page. The group link only appears when you fill it in &mdash; clear the field to hide it.</div>
                                                   </div>
 
                                                   <div class="panel">
@@ -1370,12 +1357,15 @@ async function adminCreateUser(btn){
     loadCustomers();
   } finally { btn.disabled = false; }
 }
+// Withdrawals are Lightning and USDT (BEP20) only. The old bKash / Nagad /
+// Binance / bank rows stay disabled in the database and are not listed.
+const LIVE_METHODS = ['lightning', 'usdt_bep20'];
 async function loadWithdrawalMethods(){
   const el = document.getElementById('methodsList'); if (!el) return;
   const { data, error } = await window.supabaseClient.rpc('admin_list_withdrawal_methods');
   if (error){ el.textContent = 'Could not load methods. · মেথড লোড হয়নি।'; return; }
   el.innerHTML = '<table style="width:100%;font-size:13px"><tr><th align="left">Method</th><th align="left">Code</th><th>Status</th><th>Currency · মুদ্রা</th><th></th></tr>'
-    + data.map(r => `<tr><td>${escAcc(r.label_en)} · ${escAcc(r.label_bn)}</td><td class="mono">${escAcc(r.code)}</td><td align="center">${r.enabled ? 'Enabled · চালু' : 'Disabled · বন্ধ'}</td><td align="center"><select class="btn-sm" aria-label="Currency · মুদ্রা" onchange="setMethodCurrency('${escAcc(r.code)}', this.value)">${['USD','BDT'].map(c => `<option value="${c}"${r.currency === c ? ' selected' : ''}>${c}</option>`).join('')}</select></td>`
+    + data.filter(r => LIVE_METHODS.includes(r.code)).map(r => `<tr><td>${escAcc(r.label_en)} · ${escAcc(r.label_bn)}</td><td class="mono">${escAcc(r.code)}</td><td align="center">${r.enabled ? 'Enabled · চালু' : 'Disabled · বন্ধ'}</td><td align="center"><select class="btn-sm" aria-label="Currency · মুদ্রা" onchange="setMethodCurrency('${escAcc(r.code)}', this.value)">${['USD','BDT'].map(c => `<option value="${c}"${r.currency === c ? ' selected' : ''}>${c}</option>`).join('')}</select></td>`
       + `<td><button class="btn-sm" onclick="setWithdrawalMethod('${escAcc(r.code)}', ${!r.enabled})">${r.enabled ? 'Disable · বন্ধ করুন' : 'Enable · চালু করুন'}</button></td></tr>`).join('') + '</table>';
 }
 async function setMethodCurrency(code, currency){
@@ -1442,10 +1432,7 @@ async function openCustomerDetail(creatorId){
   // `!== false` treated null/undefined as enabled, so a creator who had never
   // been granted instant Lightning showed up in the panel as already granted.
   
-  document.getElementById('wBinance').textContent = cu.w_binance || '—';
   document.getElementById('wUsdt').textContent = cu.w_usdt || '—';
-  document.getElementById('wBkash').textContent = cu.w_bkash || '—';
-  document.getElementById('wNagad').textContent = cu.w_nagad || '—';
 
   const { data: profileRow } = await window.supabaseClient.from('profiles').select('withdrawal_fee_percent, cost_percent, show_buyer_amount_override, bdt_rate').eq('id', creatorId).single();
   document.getElementById('detailCostInput').value = profileRow?.cost_percent ?? 0;

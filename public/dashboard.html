@@ -9,10 +9,11 @@
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <script src="config.js"></script>
     <script src="theme.js"></script>
+    <script src="i18n.js"></script>
     <style>
 :root{
   /* One palette for admin, dashboard and moderator — the same near-black
-     and Cash App green as the home page and the payment card. */
+     amber brand as the home page and the payment card. */
   --bg:#0B0A07; --panel:#15130D; --panel-hi:#1D1A12;
   --line:#2E2A1F; --line-strong:#3D3726;
   --text:#F5F3EE; --text-dim:#ADA690; --text-faint:rgba(245,243,238,0.32);
@@ -572,6 +573,7 @@ textarea.w-input{ padding:10px 12px !important; }
 .page-sub, .stat-sub, .hint{ color:var(--text-dim); }
 @media (min-width:1024px){ .content{ max-width:1280px !important; padding-left:32px !important; padding-right:32px !important; } }
 </style>
+    <link rel="stylesheet" href="dash.css">
   </head>
   <body>
     <div id="appShell">
@@ -959,7 +961,7 @@ textarea.w-input{ padding:10px 12px !important; }
                 <div class="meter-figures">
                   <div class="meter-label-top">Available balance</div>
                   <div class="meter-amount mono" id="statAvailableUSD">$0.00</div>
-                  <div class="meter-sub">Withdraw anytime — no withdrawal fee (যেকোনো সময় উত্তোলন — কোনো ফি নেই)</div>
+                  <div class="meter-sub">Withdraw anytime — no withdrawal fee · যেকোনো সময় উত্তোলন — কোনো ফি নেই</div>
                   <div class="meter-badges">
                     <div class="chip">Total earned&nbsp;<b id="statEarned_b">$0.00</b></div>
                     <div class="chip">Payments&nbsp;<b id="statEarnedCount_b">0</b></div>
@@ -1019,10 +1021,7 @@ textarea.w-input{ padding:10px 12px !important; }
                   <b>Wallets that give you one:</b> Wallet of Satoshi, Alby, Phoenix, Zeus, Coinos, Primal, Bitkit.
                   Open your wallet, find "Lightning Address" or "Receive &rarr; Address", copy it, paste it here.
                 </div>
-                <input type="text" class="w-input" id="wallet_binance_id" placeholder="Binance Pay ID">
                 <input type="text" class="w-input" id="wallet_usdt_bep20" placeholder="USDT (BEP20) Address">
-                <input type="text" class="w-input" id="wallet_bkash" placeholder="bKash Number">
-                <input type="text" class="w-input" id="wallet_nagad" placeholder="Nagad Number">
               </div>
               <button class="btn-secondary" onclick="saveWallets()" style="width:100%; margin-top:10px;">💾 Save Wallet Details</button>
               <div class="saved-tag" id="walletSavedTag">✓ Saved successfully</div>
@@ -1038,10 +1037,7 @@ textarea.w-input{ padding:10px 12px !important; }
               </div>
               <div class="w-row">
                 <select class="w-select" id="wdMethod" onchange="toggleInvoiceInput()">
-                  <option value="binance">Binance Pay ID</option>
                   <option value="usdt_bep20">USDT BEP20</option>
-                  <option value="bkash">bKash</option>
-                  <option value="nagad">Nagad</option>
                 </select>
               </div>
               <div class="w-row">
@@ -1381,12 +1377,12 @@ async function fetchProfile(){
   // If every payout field is empty, the creator has nowhere to be paid.
   // Surfacing that on the overview beats letting them discover it at the
   // moment they first try to withdraw.
-  const hasPayout = ['wallet_lightning_address','wallet_binance_id','wallet_usdt_bep20','wallet_bkash','wallet_nagad']
+  const hasPayout = ['wallet_lightning_address','wallet_usdt_bep20']
     .some(k => (data?.[k] || '').trim() !== '');
   const banner = document.getElementById('setupBanner');
   if (banner) banner.style.display = hasPayout ? 'none' : '';
 
-  ['wallet_lightning_address', 'wallet_binance_id', 'wallet_usdt_bep20', 'wallet_bkash', 'wallet_nagad'].forEach(id => {
+  ['wallet_lightning_address', 'wallet_usdt_bep20'].forEach(id => {
     if(data?.[id]) document.getElementById(id).value = data[id];
   });
 
@@ -1414,7 +1410,7 @@ async function saveMyCost(){
 
 async function saveWallets(){
   const updates = {};
-  ['wallet_lightning_address', 'wallet_binance_id', 'wallet_usdt_bep20', 'wallet_bkash', 'wallet_nagad'].forEach(id => {
+  ['wallet_lightning_address', 'wallet_usdt_bep20'].forEach(id => {
     updates[id] = document.getElementById(id).value.trim();
   });
   // The column has a format CHECK, so an empty string would be rejected
@@ -1897,7 +1893,9 @@ function updateBdtPreview(){
   box.textContent = `Your rate ৳${MY_BDT_RATE} / USD · You receive ≈ ৳${bdt} (আপনার রেট ৳${MY_BDT_RATE} / USD · আপনি পাবেন ≈ ৳${bdt})`;
   box.style.display = 'block';
 }
-const WALLET_FIELD_METHOD = { wallet_binance_id:'binance', wallet_usdt_bep20:'usdt_bep20', wallet_bkash:'bkash', wallet_nagad:'nagad' };
+const WALLET_FIELD_METHOD = { wallet_usdt_bep20:'usdt_bep20' };
+// Withdrawals are Lightning and USDT (BEP20) only.
+const LIVE_METHODS = ['lightning', 'usdt_bep20'];
 async function applyEnabledWithdrawalMethods(){
   const { data, error } = await window.supabaseClient.rpc('list_enabled_withdrawal_methods');
   if (error || !Array.isArray(data)) return;
@@ -1907,6 +1905,7 @@ async function applyEnabledWithdrawalMethods(){
   const dd = document.getElementById('wdMethod');
   Array.from(dd.options).forEach(o => { if (!enabled.has(o.value)) o.remove(); });
   data.forEach(r => {
+    if (!LIVE_METHODS.includes(r.code)) return;
     if (r.code === 'lightning') return; // Lightning appears only with auto-withdraw (above)
     if (!Array.from(dd.options).some(o => o.value === r.code)){
       const o = document.createElement('option'); o.value = r.code; o.text = r.label_en + ' · ' + r.label_bn; dd.appendChild(o);
