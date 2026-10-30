@@ -418,6 +418,16 @@ textarea.w-input{ padding:10px 12px !important; }
 @media (max-width:680px){ #allPaymentsList .pay-grid{ grid-template-columns:repeat(2,minmax(0,1fr)); } }
 .device-item{padding:4px 0;border-top:1px dashed rgba(0,0,0,.08)}
 #allPaymentsList .pay-details{ font-size:11.5px; line-height:16px; }
+#allPaymentsList .px-grid{ display:grid; grid-template-columns:1fr 1fr; gap:6px 12px; margin-top:8px; padding:8px 10px; border-radius:10px; background:rgba(255,212,102,.04); border:1px solid var(--line); }
+#allPaymentsList .px-kv{ min-width:0; display:flex; flex-direction:column; gap:1px; }
+#allPaymentsList .px-wide{ grid-column:1 / -1; }
+#allPaymentsList .px-lab{ font-size:9.5px; font-weight:600; letter-spacing:.05em; text-transform:uppercase; color:var(--text-dim); opacity:.8; }
+#allPaymentsList .px-val{ font-size:11.5px; line-height:15px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+#allPaymentsList .px-code{ display:flex; align-items:center; gap:8px; margin-top:6px; padding:5px 6px 5px 10px; border-radius:8px; background:rgba(255,255,255,.025); border:1px solid var(--line); min-width:0; }
+#allPaymentsList .px-code .px-lab{ width:18px; flex:none; }
+#allPaymentsList .px-copy{ flex:none; margin-left:auto; display:grid; place-items:center; width:24px; height:22px; border-radius:6px; border:1px solid var(--line); background:transparent; color:var(--text-dim); cursor:pointer; }
+#allPaymentsList .px-copy:hover{ color:var(--violet); border-color:var(--violet); }
+#allPaymentsList .px-look{ font:inherit; font-size:10.5px; padding:1px 7px; border-radius:6px; border:1px solid rgba(255,212,102,.35); background:rgba(255,212,102,.08); color:var(--violet); cursor:pointer; }
 #allPaymentsList .px-meta{ margin-top:6px; padding-top:6px; border-top:1px solid var(--line); color:var(--text-dim); font-size:11px; line-height:15px; }
 #allPaymentsList .px-line{ display:flex; align-items:center; gap:5px; margin-top:5px; min-width:0; white-space:nowrap; }
 #allPaymentsList .px-k{ font-size:9.5px; font-weight:700; color:var(--text-dim); letter-spacing:.06em; flex:none; width:16px; }
@@ -1658,11 +1668,6 @@ function renderAllPayments(){
 
   if (!filtered.length){ c.innerHTML = `<div class="empty-state">${allPaymentsAdmin.length ? 'No matching payments found' : 'No payments yet'}</div>`; return; }
   c.innerHTML = filtered.map(p => {
-    let actions = '';
-    if (p.status === 'new' || p.status === 'pending'){
-      actions = `<button class="act-btn act-approve" onclick="markPayment('${escapeAttr(p.id)}','settled',this)">Approve</button>
-                 <button class="act-btn act-reject" onclick="markPayment('${escapeAttr(p.id)}','expired',this)">Mark expired</button>`;
-    }
     const inv = p.id || '\u2014';
     const shortInv = inv.length > 15 ? inv.slice(0, 8) + '...' + inv.slice(-7) : inv;
     const ln = p.lightning_invoice || '';
@@ -1691,16 +1696,6 @@ function renderAllPayments(){
     const confLabels = { '': 'Unset / নির্ধারিত নয়', confirmed: 'Confirmed / নিশ্চিত', held: 'Held / আটকে রাখা', rejected: 'Rejected / বাতিল' };
     const confBadge = conf
       ? ` <span class="conf-chip conf-${escapeAttr(conf)}">${escapeHtml(confLabels[conf])}</span>` : '';
-    const confField = `<div class="pay-field">
-          <div class="pay-field-label">Confirmation / নিশ্চিতকরণ</div>
-          <div class="pay-field-value">
-            <select class="conf-select" onchange="setConfirmation('${escapeAttr(p.id)}', this)">
-              ${Object.keys(confLabels).map(k => `<option value="${k}"${k === conf ? ' selected' : ''}>${confLabels[k]}</option>`).join('')}
-            </select>
-            ${conf === 'held' || conf === 'rejected' ? `<div class="conf-hint">Not withdrawable / উত্তোলনযোগ্য নয়</div>` : ''}
-            ${p.confirmation_note ? `<div class="conf-hint">${escapeHtml(p.confirmation_note)}</div>` : ''}
-          </div>
-        </div>`;
     const dev = p.device_id || '';
     const devField = `<div class="pay-field">
           <div class="pay-field-label">Device / ডিভাইস</div>
@@ -1727,24 +1722,25 @@ function renderAllPayments(){
     // single lines with copy inline. Nothing removed, just denser.
     const meta = [safeText(p.link_slug), safeMethod(p.method), fmtDate(p.created_at), escapeHtml(location)];
     if (p.amount_settled != null && p.status === 'settled') meta.push(`<span style="color:var(--ok);">Settled / সেটেলড $${parseFloat(p.amount_settled).toFixed(2)}${p.settled_at ? ' · ' + fmtDate(p.settled_at) : ''}</span>`);
+    const cp = (v) => `<button class="px-copy" data-copy="${escapeAttr(v)}" title="Copy / কপি" aria-label="Copy / কপি"><svg viewBox="0 0 24 24" width="12" height="12" fill="none" stroke="currentColor" stroke-width="2"><rect x="9" y="9" width="11" height="11" rx="2"/><path d="M5 15V5a2 2 0 0 1 2-2h10"/></svg></button>`;
+    const kv = (k, v, wide) => `<div class="px-kv${wide ? ' px-wide' : ''}"><span class="px-lab">${k}</span><span class="px-val">${v}</span></div>`;
+    const devVal = dev
+      ? `<span class="mono" title="${escapeAttr(dev)}">${escapeHtml(dev.slice(0, 8))}…</span> <span class="dev-chip${Number(p.device_payments) > 1 ? ' dev-multi' : ''}">${Number(p.device_payments || 0)} pay · ${Number(p.device_creators || 0)} cr</span> <button class="px-look" onclick="lookupDevice('${escapeAttr(dev)}', this, '${escapeAttr(p.id)}')">Look up · খুঁজুন</button>`
+      : `<span class="px-dim">Unknown · অজানা</span>`;
     const detailsInner = `
-      <div class="px-meta">${meta.join(' · ')}</div>
-      <div class="px-line">
-        <select class="conf-select" aria-label="Confirmation / নিশ্চিতকরণ" onchange="setConfirmation('${escapeAttr(p.id)}', this)">
-          ${Object.keys(confLabels).map(k => `<option value="${k}"${k === conf ? ' selected' : ''}>${confLabels[k]}</option>`).join('')}
-        </select>
-        ${dev ? `<span class="mono px-dev" title="${escapeAttr(dev)}">${escapeHtml(dev.slice(0, 8))}…</span>
-          <span class="dev-chip${Number(p.device_payments) > 1 ? ' dev-multi' : ''}">${Number(p.device_payments || 0)} pay · ${Number(p.device_creators || 0)} cr</span>
-          <button class="copy-mini" onclick="lookupDevice('${escapeAttr(dev)}', this, '${escapeAttr(p.id)}')">Look up / খুঁজুন</button>`
-          : `<span class="px-dim">Device unknown / ডিভাইস অজানা</span>`}
+      <div class="px-grid">
+        ${kv('Link · লিংক', safeText(p.link_slug))}
+        ${kv('Method · মাধ্যম', safeMethod(p.method))}
+        ${kv('Time · সময়', fmtDate(p.created_at))}
+        ${kv('Location · অবস্থান', escapeHtml(location))}
+        ${(p.amount_settled != null && p.status === 'settled') ? kv('Settled · সেটেলড', `<span style="color:var(--ok)">$${parseFloat(p.amount_settled).toFixed(2)}${p.settled_at ? ' · ' + fmtDate(p.settled_at) : ''}</span>`, true) : ''}
+        ${kv('Device · ডিভাইস', devVal, true)}
       </div>
-      ${conf === 'held' || conf === 'rejected' ? `<div class="conf-hint">Not withdrawable / উত্তোলনযোগ্য নয়</div>` : ''}
-      ${p.confirmation_note ? `<div class="conf-hint">${escapeHtml(p.confirmation_note)}</div>` : ''}
       <div class="device-list"${deviceLookups.has(p.id) ? ' data-open="1"' : ''}>${deviceLookups.get(p.id) || ''}</div>
-      <div class="px-line"><span class="px-k">ID</span><span class="mono px-v">${escapeHtml(shortInv)}</span>${inv !== '\u2014' ? `<button class="copy-mini" data-copy="${escapeAttr(inv)}">copy</button>` : ''}</div>
-      ${ln ? `<div class="px-line"><span class="px-k">LN</span><span class="mono px-v ln-value">${escapeHtml(shortLn)}</span><button class="copy-mini" data-copy="${escapeAttr(ln)}">copy</button></div>` : ''}
+      <div class="px-code"><span class="px-lab">ID</span><span class="mono px-v">${escapeHtml(shortInv)}</span>${inv !== '\u2014' ? cp(inv) : ''}</div>
+      ${ln ? `<div class="px-code"><span class="px-lab">LN</span><span class="mono px-v ln-value">${escapeHtml(shortLn)}</span>${cp(ln)}</div>` : ''}
       ${markLine}
-      ${(actions || markBtn) ? `<div class="pay-actions">${actions}${markBtn}</div>` : ''}`;
+      ${markBtn ? `<div class="pay-actions">${markBtn}</div>` : ''}`;
 
     // Collapsed summary: amount + creator email + status badge + caret.
     // onclick toggles .open on the row itself; a tap that starts on a
