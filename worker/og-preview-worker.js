@@ -345,7 +345,26 @@ async function servePayPage(request, url) {
 const page = await fetch(new Request(`${url.origin}/lnd-pay`, { headers: request.headers }));
 const parts = url.pathname.replace(/^\/+|\/+$/g, "").split("/");
 let missing = false;
-if (parts.length === 2 && parts[1] !== "i") {
+const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+if (parts.length === 2 && parts[1].toLowerCase() === "expired") {
+// Generic "invoice expired" landing page, like /pay/expired elsewhere.
+return page;
+} else if (parts[1] === "i") {
+// /pay/i/<uuid>[/success|/expired] is an invoice; anything else is missing.
+const tail = parts[3];
+if (parts.length < 3 || parts.length > 4 || !UUID_RE.test(parts[2]) || (tail && tail !== "success" && tail !== "expired")) {
+missing = true;
+} else {
+const api = new URL(`${url.origin}/api/lnd/status?id=${encodeURIComponent(parts[2])}`);
+try {
+const res = await proxyLnd(new Request(api.toString(), { headers: request.headers }), api, LND_API["api/lnd/status"]);
+missing = res.status === 404 || res.status === 400;
+} catch (e) { missing = false; }
+}
+} else if (parts.length !== 2) {
+// /pay/invoice/<x>, /pay/a/b/c ... are not routes.
+missing = true;
+} else {
 const api = new URL(`${url.origin}/api/lnd/link?slug=${encodeURIComponent(parts[1])}`);
 try {
 const res = await proxyLnd(new Request(api.toString(), { headers: request.headers }), api, LND_API["api/lnd/link"]);

@@ -284,7 +284,11 @@ document.addEventListener('visibilitychange', function () {
 (function boot() {
   el('brand').textContent = location.hostname;
   const parts = location.pathname.replace(/^\/+|\/+$/g, '').split('/');
-  if (parts[0] === 'pay' && parts[1] === 'i' && UUID.test(parts[2] || '')) {
+  if (parts[0] === 'pay' && parts.length === 2 && (parts[1] || '').toLowerCase() === 'expired') {
+    fail(['Invoice expired', 'ইনভয়েসের মেয়াদ শেষ'], ['This invoice has expired. Go back and create a new one.', 'এই ইনভয়েসের মেয়াদ শেষ হয়ে গেছে। ফিরে গিয়ে নতুন একটি তৈরি করুন।']);
+  } else if (parts[0] === 'pay' && (parts[1] === 'i' || parts[1] === 'invoice') && !(parts[1] === 'i' && UUID.test(parts[2] || ''))) {
+    fail(['Invoice not found', 'ইনভয়েস পাওয়া যায়নি'], ['Check the link and try again.', 'লিংকটি দেখে আবার চেষ্টা করুন।']);
+  } else if (parts[0] === 'pay' && parts[1] === 'i' && UUID.test(parts[2] || '')) {
     paymentId = parts[2];
     openInvoice();
   } else if (parts[0] === 'pay' && SLUG.test(parts[1] || '') && parts.length === 2) {

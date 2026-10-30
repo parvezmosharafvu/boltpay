@@ -7,14 +7,19 @@
 <link rel="stylesheet" href="/auth.css">
 <script>
 // Legacy BTCPay links were /<slug>. Send them to the Lightning pay page,
-// which shows its own "Link not found" when the slug does not exist.
+// but only if the slug exists (checked against /api/lnd/link).
 // Kept in sync with validate_link_slug() and worker/og-preview-worker.js.
 const RESERVED = ['index','login','register','dashboard','admin','404','config','theme',
   'assets','favicon','invoice-boltpay-v2','api','u','static','public',
   'well-known','robots','sitemap','moderator'];
 (function(){
   var s = location.pathname.replace(/^\/|\/$/g, '');
-  if (/^[A-Za-z0-9_-]{2,64}$/.test(s) && RESERVED.indexOf(s.toLowerCase()) < 0) location.replace('/pay/' + encodeURIComponent(s) + location.search);
+  // Only redirect when the link really exists; otherwise this stays a plain 404.
+  if (/^[A-Za-z0-9_-]{2,64}$/.test(s) && RESERVED.indexOf(s.toLowerCase()) < 0) {
+    fetch('/api/lnd/link?slug=' + encodeURIComponent(s), { cache: 'no-store' })
+      .then(function (r) { if (r.ok) location.replace('/pay/' + encodeURIComponent(s) + location.search); })
+      .catch(function () {});
+  }
 })();
 </script>
 </head>
