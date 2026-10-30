@@ -1,6 +1,6 @@
 # Boltpay
 
-Lightning Network payment links for freelancers and online shop owners.
+Lightning Network payment links for freelancers and online sellers.
 Generate a payment link, share it, get paid — withdrawals to bKash,
 Nagad, or Binance with an admin-reviewed payout flow.
 
@@ -8,7 +8,7 @@ Nagad, or Binance with an admin-reviewed payout flow.
 
 - **Frontend:** Vanilla HTML/CSS/JS + Supabase JS v2 (no build step)
 - **Backend:** Supabase — Postgres, Row Level Security, Edge Functions
-- **Payments:** BTCPay Server (Lightning Network only)
+- **Payments:** our own LND Lightning node (Lightning Network only)
 - **Edge routing:** Cloudflare Worker — renders correct link-preview
   metadata for WhatsApp/Telegram/Facebook when a payment link is shared
 
@@ -21,7 +21,7 @@ public/                          → static site root
   404.html                       → not-found page AND the payment page:
                                    any unmatched path is treated as a slug
   dashboard.html                 → creator dashboard
-  invoice-boltpay-v2.html        → customer-facing payment/QR page
+  lnd-pay.html                   → customer-facing payment/QR page
   admin.html                     → admin panel (approvals, stats, settings)
   theme.js                       → per-domain LAYOUT switching (not colour —
                                    the brand palette is the same everywhere)
@@ -30,13 +30,14 @@ public/                          → static site root
 supabase/
   migrations/                    → run in numeric order, 0001 → 0050
   functions/
-    create-invoice/              → creates a BTCPay invoice for a slug
-    btcpay-webhook/              → BTCPay webhook + admin withdrawal actions
+    lnd-create-invoice/          → creates a Lightning invoice for a slug
+    lnd-watcher/                 → settles or expires open invoices
+    payment-status/              → payer-side status polling
+    admin-actions/               → admin: mark settled, close withdrawals
     user-withdraw/               → creator-initiated withdrawal
     daily-report/                → nightly rollup into daily_stats
     ledger-backup/               → nightly ledger snapshot to a private repo
     og-image/                    → generated link-preview images
-    reconcile/                   → daily BTCPay vs ledger comparison
     health/                      → system health checks + alerting
 
 ci/
@@ -86,8 +87,7 @@ slightly different balance formulas is how the same money gets paid out twice.
   run `update profiles set role = 'admin'` on their own row, insert
   withdrawals directly, and read every payment in the system.
 - Migration **0033** is not optional either. It adds the `webhook_events`
-  table that makes BTCPay webhook deliveries idempotent (without it,
-  concurrent retries of the same event can be processed twice) and CHECK
+  table (historical delivery log) and CHECK
   constraints that make negative or zero amounts unwritable no matter which
   code path tries.
 - The `/process-withdrawal` and `/admin-mark-settled` routes use the service
@@ -112,13 +112,12 @@ See `SECURITY.md` for the full trust-boundary write-up.
 
 ## Scheduled jobs
 
-All five run through `pg_cron` + `pg_net`, reading their secrets from Vault.
+All of them run through `pg_cron` + `pg_net`, reading their secrets from Vault.
 
 | Job | When (UTC) | What it does |
 |---|---|---|
-| `boltpay-health` | every 15 min | BTCPay reachable, webhooks arriving, cron alive, withdrawals not stuck, links have shops. Alerts on failure. |
+| `boltpay-health` | every 15 min | lnd-watcher settling invoices, cron alive, withdrawals not stuck. Alerts on failure. |
 | `prune-webhook-events` | 03:20 | 90-day retention on `webhook_events` |
-| `boltpay-reconcile` | 04:10 | Compares BTCPay's settled invoices with the ledger; alerts on any gap |
 | `ledger-backup-trigger` | 11:05 | Full ledger snapshot committed to the ledger repo |
 | `daily-report-trigger` | 18:10 | Writes the `daily_stats` archive |
 
@@ -148,7 +147,7 @@ ALERT_TELEGRAM_BOT_TOKEN     Telegram bot token
 ALERT_TELEGRAM_CHAT_ID       Telegram chat to post into
 ```
 
-`health` and `reconcile` both use these. With neither set they log a
+`health` uses these. With neither set they log a
 warning and carry on — nothing breaks, but nobody is told.
 
 ## Checking things by hand
@@ -157,10 +156,6 @@ warning and carry on — nothing breaks, but nobody is told.
 # Is everything alive? (?alert=0 keeps it out of the alert channel)
 curl -H "x-cron-secret: $CRON_SECRET" \
   "$SUPABASE_URL/functions/v1/health?alert=0"
-
-# Does BTCPay agree with the ledger for the last week?
-curl -H "x-cron-secret: $CRON_SECRET" \
-  "$SUPABASE_URL/functions/v1/reconcile?days=7"
 
 # Force a ledger snapshot and verify it is complete
 curl -H "x-cron-secret: $CRON_SECRET" \
