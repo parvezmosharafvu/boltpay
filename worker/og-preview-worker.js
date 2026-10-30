@@ -133,7 +133,7 @@ return fallback;
 // iMessage and WhatsApp builds refuse to scrape an og:image that is
 // cross-origin or carries no image extension.
 function generatedImage(origin, slug) {
-return `${origin}/og-image/${encodeURIComponent(slug)}.png`;
+return `${origin}/og-image/${encodeURIComponent(slug)}.png?v=3`;
 }
 
 /**
@@ -168,32 +168,39 @@ out.headers.set("Content-Type", "image/png");
 await cache.put(cacheKey, out.clone());
 return out;
 }
-function renderOgHtml(origin, slug, data, ogImage) {
+function renderOgHtml(origin, slug, data, ogImage, pagePath) {
 const siteName = escapeHtml(new URL(origin).hostname);
-const title = data?.display_name
-? `Pay ${escapeHtml(data.display_name)}`
-: "Pay with Boltpay";
-const description =
-"Secure Lightning checkout. Paid in seconds.";
-const url = `${origin}/${encodeURIComponent(slug)}`;
+const name = escapeHtml(data?.display_name || slug);
+// Same pattern as the reference card (owner pt312u), neutral wording.
+const title = `Pay to ${name}`;
+const description = `Send money to ${name} instantly.`;
+const alt = "Pay any amount, instantly";
+const url = `${origin}${pagePath || "/" + encodeURIComponent(slug)}`;
 
 return `<!DOCTYPE html>
 <html lang="en">
 <head>
 <meta charset="UTF-8">
 <title>${title}</title>
+<meta name="description" content="${description}">
 <meta property="og:site_name" content="${siteName}">
 <meta property="og:title" content="${title}">
 <meta property="og:description" content="${description}">
 <meta property="og:image" content="${ogImage}">
 <meta property="og:image:width" content="1200">
 <meta property="og:image:height" content="630">
+<meta property="og:image:type" content="image/png">
+<meta property="og:image:alt" content="${alt}">
 <meta property="og:url" content="${url}">
 <meta property="og:type" content="website">
 <meta name="twitter:card" content="summary_large_image">
 <meta name="twitter:title" content="${title}">
 <meta name="twitter:description" content="${description}">
 <meta name="twitter:image" content="${ogImage}">
+<meta name="twitter:image:width" content="1200">
+<meta name="twitter:image:height" content="630">
+<meta name="twitter:image:type" content="image/png">
+<meta name="twitter:image:alt" content="${alt}">
 <meta http-equiv="refresh" content="0; url=${url}">
 </head>
 <body>
@@ -429,7 +436,20 @@ return path.startsWith("pay/")
 
 if (LND_API[path]) return proxyLnd(request, url, LND_API[path]);
 // Bare /pay stays an ordinary slug; only /pay/... is the checkout.
-if (path.startsWith("pay/")) return servePayPage(request, url);
+if (path.startsWith("pay/")) {
+// Link previews for /pay/<slug>: crawlers get the OG card, people get the page.
+const seg = path.split("/");
+if (seg.length === 2 && seg[1] && seg[1].toLowerCase() !== "expired" && seg[1] !== "i" && isCrawler(request.headers.get("User-Agent") || "")) {
+const data = await fetchLinkPreviewData(seg[1]).catch(() => null);
+if (data && data.is_active !== false) {
+const ogImage = await resolveOgImage(url.origin, seg[1], data.og_image);
+return new Response(renderOgHtml(url.origin, seg[1], data, ogImage, `/pay/${encodeURIComponent(seg[1])}`), {
+headers: { "Content-Type": "text/html; charset=UTF-8", "Cache-Control": "no-store" },
+});
+}
+}
+return servePayPage(request, url);
+}
 
 // Generated preview images.
 if (path.startsWith("og-image/") && path.endsWith(".png")) {
