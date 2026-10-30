@@ -106,6 +106,11 @@ jobs:
           PGPASSWORD: postgres
         run: psql -h localhost -U postgres -v ON_ERROR_STOP=1 -f ci/withdrawal_request_key_regression.sql
 
+      - name: Runtime regression — daily run report (0090)
+        env:
+          PGPASSWORD: postgres
+        run: psql -h localhost -U postgres -v ON_ERROR_STOP=1 -f ci/daily_run_report_regression.sql
+
   functions:
     name: Edge functions type-check
     runs-on: ubuntu-latest
