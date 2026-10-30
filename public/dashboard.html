@@ -1534,6 +1534,7 @@ async function editAmountOptions(linkId){
 // Per-link markup (0103): admin range, shown as a hint and checked here;
 // the server enforces it again.
 let linkMarkupRange = { min: 0, max: 50 };
+function mkRawPeek(){ return (document.getElementById('newLinkMarkup')?.value || '').trim() !== ''; }
 async function loadLinkMarkupRange(){
   const { data } = await window.supabaseClient.rpc('link_markup_range');
   const r = Array.isArray(data) ? data[0] : data;
@@ -1619,6 +1620,8 @@ async function createPaymentLink(){
   btn.disabled = true;
 
   try {
+    // Always validate against the admin-configured range (server re-checks).
+    if (mkRawPeek()) await loadLinkMarkupRange();
     const mkRaw = (document.getElementById('newLinkMarkup')?.value || '').trim();
     const mk = mkRaw === '' ? null : Number(mkRaw);
     if (mk !== null && !(isFinite(mk) && mk >= linkMarkupRange.min && mk <= linkMarkupRange.max)){
