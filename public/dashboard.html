@@ -611,6 +611,7 @@ textarea.w-input{ padding:10px 12px !important; }
           <button class="tab-btn" data-sec="messages" onclick="showSection('messages', this)">💬 Messages <span class="tab-badge" id="msgBadge">0</span></button>
         </div>
 
+          <div class="hint" id="convFeeNote" style="display:none;margin:0 0 12px;padding:10px 12px;border:1px solid var(--line);border-radius:10px;font-size:12px;line-height:1.5;" data-en="" data-bn=""></div>
           <!-- ===== STAT CARDS ===== -->
             <div class="stats-grid">
               <div class="stat-card">
@@ -1222,7 +1223,7 @@ function refreshMarkTotals(){
   const markedSet = new Set(ids);
   localMarkTotals = allPayments
     .filter(p => markedSet.has(p.id))
-    .reduce((s,p) => s + parseFloat(p.amount_settled || p.amount_requested || 0), 0);
+    .reduce((s,p) => s + payNet(p), 0);
   const verifiedCount = allPayments.filter(p => paymentMarks[p.id]).length;
   const elCount = document.getElementById('markCountLocal'); if (elCount) elCount.textContent = ids.length;
   const elVer = document.getElementById('markCountVerified'); if (elVer) elVer.textContent = verifiedCount;
@@ -1285,6 +1286,7 @@ async function init(){
   await applyDomainTheme();
   const { data: { user } } = await window.supabaseClient.auth.getUser();
   if (!user){ window.location.href = 'login.html'; return; }
+  loadConvFee();
 
   const { data: profile } = await window.supabaseClient
     .from('profiles').select('role, account_status').eq('id', user.id).single();
@@ -1450,6 +1452,22 @@ async function fetchLinks(){
 
 
 // Item 11: one-off invoice for a fixed amount, link copied to the clipboard.
+// 0104: creator nets amount minus the conversion fee snapshotted on the payment.
+function payNet(p){
+  if (p.net_amount != null) return Number(p.net_amount);
+  return parseFloat(p.amount_settled || p.amount_requested || 0);
+}
+async function loadConvFee(){
+  const el = document.getElementById('convFeeNote');
+  if (!el) return;
+  const { data, error } = await window.supabaseClient.rpc('conversion_fee_percent');
+  const pct = Number(data);
+  if (error || !(pct > 0)) { el.style.display = 'none'; return; }
+  el.dataset.en = 'Conversion fee ' + pct + '% \u2014 deducted from each payment you receive. It covers BTC\u2192USDT conversion and BTC price movement. Your balance and invoices show the amount after this fee.';
+  el.dataset.bn = 'কনভার্সন ফি ' + pct + '% \u2014 প্রতিটি প্রাপ্ত পেমেন্ট থেকে কাটা হয়। এটি BTC\u2192USDT কনভার্সন ও BTC দামের ওঠানামা কভার করে। আপনার ব্যালেন্স ও ইনভয়েসে ফি বাদে পরিমাণ দেখানো হয়।';
+  el.style.display = '';
+  if (window.applyUiLang) window.applyUiLang();
+}
 function qiT(en, bn){ return (localStorage.getItem('boltpay_lang') === 'bn') ? bn : en; }
 function fillQuickInvoiceLinks(){
   const sel = document.getElementById('qiLink'); if (!sel) return;
@@ -2003,7 +2021,7 @@ function renderRecentActivity(){
   el.innerHTML = recent.map(p => `
     <div class="mini-pay-row" onclick="showSection('income', document.querySelector('.tab-btn[data-sec=income]'))">
       <div style="min-width:0;">
-        <div class="mini-pay-amt">$${parseFloat(p.amount_requested || 0).toFixed(2)}</div>
+        <div class="mini-pay-amt">$${payNet(p).toFixed(2)}</div>
         <div class="mini-pay-meta">${escapeHtml((p.method || 'lightning').toUpperCase())} \u00b7 ${fmtDate(p.created_at)}</div>
       </div>
       <span class="mini-pay-badge ${escapeAttr(p.status)}">${escapeHtml(p.status)}</span>
@@ -2102,7 +2120,8 @@ function renderPayments(){
       <div class="pay-row${openPayRows.has(p.id) ? ' open' : ''}${isMarked ? ' is-marked' : ''}" ${p.status === 'new' || p.status === 'pending' ? `data-expires="${escapeAttr(p.expires_at)}"` : ''} data-pid="${escapeAttr(p.id)}" onclick="togglePayRow(this, event)">
         <div class="pay-summary">
           <div style="min-width:0;">
-            <div class="pay-amt">$${parseFloat(p.amount_requested||0).toFixed(2)}</div>
+            <div class="pay-amt">$${payNet(p).toFixed(2)}</div>
+            ${Number(p.fee_percent) > 0 ? `<div class="pay-meta">${qiT('Paid', 'পরিশোধ')} $${parseFloat(p.amount_settled ?? p.amount_requested ?? 0).toFixed(2)} \u2212 $${Number(p.fee_usd || 0).toFixed(2)} ${qiT('conversion fee', 'কনভার্সন ফি')} (${Number(p.fee_percent)}%)</div>` : ''}
             <div class="pay-meta">${escapeHtml((p.method||'lightning').toUpperCase())} \u00b7 ${fmtDate(p.created_at)}</div>
           </div>
           <div class="pay-summary-right">
@@ -2379,7 +2398,7 @@ async function loadInvoicesTab(){
     : '<div style="opacity:.7">No payments yet.</div>');
   const il = document.getElementById('invList');
   il.innerHTML = inv.error ? 'Could not load invoices.' : (inv.data.length
-    ? '<table style="width:100%;font-size:13px"><tr><th align="left">Day</th><th>Payments</th><th align="right">Gross</th><th align="right">Commission</th><th align="right">Net</th></tr>'
+    ? '<table style="width:100%;font-size:13px"><tr><th align="left">Day</th><th>Payments</th><th align="right">Gross</th><th align="right">${qiT('Conversion fee', 'কনভার্সন ফি')}</th><th align="right">Net</th></tr>'
       + inv.data.map(r => `<tr><td>${esc(r.cycle_date)}</td><td align="center">${r.payment_count}</td><td align="right">${m(r.gross_usd)}</td><td align="right">${m(r.commission_usd)}</td><td align="right">${m(r.net_usd)}</td></tr>`).join('') + '</table>'
     : '<div style="opacity:.7">No invoices yet.</div>');
   const mi = await window.supabaseClient.rpc('my_manual_invoices');

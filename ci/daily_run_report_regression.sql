@@ -1,6 +1,8 @@
 -- Daily run report (0090). Runs inside BEGIN/ROLLBACK.
 \set ON_ERROR_STOP on
 begin;
+-- 0104: isolate from the conversion fee (own test: conversion_fee_regression.sql)
+update app_settings set value = '0'::jsonb where key = 'conversion_fee_percent';
 create or replace function auth.uid() returns uuid language sql stable as $f$ select nullif(current_setting('test.uid', true), '')::uuid $f$;
 do $$
 declare a uuid := gen_random_uuid(); u uuid := gen_random_uuid(); pid uuid; r1 jsonb; r2 jsonb;

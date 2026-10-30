@@ -1,6 +1,8 @@
 -- Confirmation hold (0087). Runs inside BEGIN/ROLLBACK.
 \set ON_ERROR_STOP on
 begin;
+-- 0104: isolate from the conversion fee (own test: conversion_fee_regression.sql)
+update app_settings set value = '0'::jsonb where key = 'conversion_fee_percent';
 do $$
 declare u uuid := gen_random_uuid(); pid uuid; b0 numeric; b1 numeric;
 begin

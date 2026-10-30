@@ -32,19 +32,19 @@ export interface MarkupInputs {
   linkMarkupEnabled: boolean;
   linkMarkupMin: number;
   linkMarkupMax: number;
-  markupPercent: number;
 }
 
 /**
- * Markup % for one invoice (0103). Flag OFF: the global markup, exactly as
- * before. Flag ON: link % -> profile % (when > 0) -> global, with the link
- * or profile value clamped server-side to the admin range.
+ * Buyer markup % for one invoice. Since 0104 there is no global buyer
+ * markup (the old 2.5% is now the creator-side conversion fee), so every
+ * fallback is 0. Flag ON: link % -> profile % (when > 0) -> 0, clamped
+ * server-side to the admin range.
  */
 export function resolveMarkup(
   link: { link_cost_percent?: unknown; profile_cost_percent?: unknown },
   s: MarkupInputs,
 ): number {
-  if (!s.linkMarkupEnabled) return s.markupPercent;
+  if (!s.linkMarkupEnabled) return 0;
   const lo = Math.max(0, s.linkMarkupMin), hi = Math.max(lo, s.linkMarkupMax);
   const clamp = (n: number) => Math.min(Math.max(n, lo), hi);
   const num = (v: unknown) => (v == null || v === "" ? NaN : Number(v));
@@ -52,5 +52,5 @@ export function resolveMarkup(
   if (Number.isFinite(l)) return clamp(l);
   const p = num(link.profile_cost_percent);
   if (Number.isFinite(p) && p > 0) return clamp(p);
-  return s.markupPercent;
+  return 0;
 }

@@ -1,6 +1,8 @@
 -- Withdrawal request key (0088). Runs inside BEGIN/ROLLBACK.
 \set ON_ERROR_STOP on
 begin;
+-- 0104: isolate from the conversion fee (own test: conversion_fee_regression.sql)
+update app_settings set value = '0'::jsonb where key = 'conversion_fee_percent';
 -- Inside the rolled-back transaction only: let auth.uid() see a test user.
 create or replace function auth.uid() returns uuid
   language sql stable as $fn$ select nullif(current_setting('test.uid', true), '')::uuid $fn$;
