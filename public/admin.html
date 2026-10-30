@@ -377,6 +377,15 @@ textarea.w-input{ padding:10px 12px !important; }
 .detail-section-title, .w-label{ font-size:14px !important; font-weight:500 !important; text-transform:none !important; letter-spacing:0 !important; color:var(--text) !important; margin:20px 0 8px !important; }
 .page-sub, .stat-sub, .hint{ color:var(--text-dim); }
 @media (min-width:1024px){ .content{ max-width:1280px !important; padding-left:32px !important; padding-right:32px !important; } }
+.conf-chip{display:inline-block;margin-left:6px;padding:2px 8px;border-radius:999px;font-size:11px;font-weight:600;background:rgba(245,158,11,.15);color:#b45309}
+.conf-chip.conf-confirmed{background:rgba(245,158,11,.10);color:#92400e}
+.conf-chip.conf-rejected{background:rgba(220,38,38,.12);color:#b91c1c}
+.conf-select{font:inherit;padding:6px 8px;border-radius:8px;border:1px solid rgba(0,0,0,.15);background:#fff}
+.conf-hint{font-size:12px;opacity:.75;margin-top:4px}
+.dev-chip{font-size:11px;padding:2px 8px;border-radius:999px;background:rgba(0,0,0,.06);margin:0 6px}
+.dev-chip.dev-multi{background:rgba(245,158,11,.18);color:#b45309;font-weight:600}
+.device-list{font-size:12px;margin-top:6px}
+.device-item{padding:4px 0;border-top:1px dashed rgba(0,0,0,.08)}
 </style>
           </head>
           <body>
@@ -1195,6 +1204,7 @@ async function loadAllPayments(mode = 'reset'){
     return;
   }
 
+  await attachPaymentMeta(allPaymentsAdmin);
   adminPayOffset = allPaymentsAdmin.length;
 
   // The badge now shows how many exist, not how many happened to load.
@@ -1617,6 +1627,31 @@ function renderAllPayments(){
          </div>`
       : '';
 
+    const conf = p.confirmation || '';
+    const confLabels = { '': 'Unset / নির্ধারিত নয়', confirmed: 'Confirmed / নিশ্চিত', held: 'Held / আটকে রাখা', rejected: 'Rejected / বাতিল' };
+    const confBadge = conf
+      ? ` <span class="conf-chip conf-${escapeAttr(conf)}">${escapeHtml(confLabels[conf])}</span>` : '';
+    const confField = `<div class="pay-field">
+          <div class="pay-field-label">Confirmation / নিশ্চিতকরণ</div>
+          <div class="pay-field-value">
+            <select class="conf-select" onchange="setConfirmation('${escapeAttr(p.id)}', this)">
+              ${Object.keys(confLabels).map(k => `<option value="${k}"${k === conf ? ' selected' : ''}>${confLabels[k]}</option>`).join('')}
+            </select>
+            ${conf === 'held' || conf === 'rejected' ? `<div class="conf-hint">Not withdrawable / উত্তোলনযোগ্য নয়</div>` : ''}
+            ${p.confirmation_note ? `<div class="conf-hint">${escapeHtml(p.confirmation_note)}</div>` : ''}
+          </div>
+        </div>`;
+    const dev = p.device_id || '';
+    const devField = `<div class="pay-field wide">
+          <div class="pay-field-label">Device / ডিভাইস</div>
+          <div class="pay-field-value with-copy">
+            ${dev ? `<span class="mono">${escapeHtml(dev.slice(0, 8))}…</span>
+              <span class="dev-chip${Number(p.device_payments) > 1 ? ' dev-multi' : ''}">${Number(p.device_payments || 0)} payments / পেমেন্ট · ${Number(p.device_creators || 0)} creators / ক্রিয়েটর</span>
+              <button class="copy-mini" onclick="lookupDevice('${escapeAttr(dev)}', this)">Look up / খুঁজুন</button>`
+              : `<span>Unknown / অজানা</span>`}
+          </div>
+          <div class="device-list"></div>
+        </div>`;
     const marked = !!p.marked_at;
     const markLine = marked
       ? `<div class="mark-line">&#10003; Checked by ${safeText(p.marked_by_name, 'staff')} &middot; ${fmtDate(p.marked_at)}${p.mark_note ? ' &mdash; ' + escapeHtml(p.mark_note) : ''}</div>`
@@ -1650,6 +1685,8 @@ function renderAllPayments(){
         </div>
         ${settledField}
         ${settledAtField}
+        ${confField}
+        ${devField}
         <div class="pay-field wide">
           <div class="pay-field-label">Invoice ID</div>
           <div class="pay-field-value with-copy">
@@ -1682,7 +1719,7 @@ function renderAllPayments(){
           </div>
           <div class="pay-summary-right">
             <div class="pay-status">
-              <span class="badge ${escapeAttr(p.status)}"><span class="badge-dot"></span>${escapeHtml(p.status)}</span>
+              <span class="badge ${escapeAttr(p.status)}"><span class="badge-dot"></span>${escapeHtml(p.status)}</span>${confBadge}
               ${timerBlock}
             </div>
             <div class="pay-caret">\u203a</div>
@@ -1698,8 +1735,57 @@ function renderAllPayments(){
 // button or the copy-mini chip, so Approve / Mark checked / copy still
 // work without also collapsing the row they live in.
 function togglePayRow(row, ev){
-  if (ev.target.closest('button')) return;
+  if (ev.target.closest('button, select, .device-list')) return;
   row.classList.toggle('open');
+}
+
+// Confirmation hold + device lookup (0087).
+async function attachPaymentMeta(rows){
+  const ids = rows.map(r => r.id).filter(Boolean);
+  if (!ids.length) return;
+  try {
+    const { data, error } = await window.supabaseClient.rpc('admin_payment_meta', { p_ids: ids });
+    if (error) throw error;
+    const by = new Map((data || []).map(m => [m.id, m]));
+    rows.forEach(r => { const m = by.get(r.id); if (m) Object.assign(r, m); });
+  } catch (e) { console.warn('payment meta', e); }
+}
+
+async function setConfirmation(paymentId, sel){
+  const value = sel.value || null;
+  let note = '';
+  if (value === 'held' || value === 'rejected') {
+    note = prompt('Reason (optional) / কারণ (ঐচ্ছিক):') ?? '';
+  }
+  sel.disabled = true;
+  try {
+    const { error } = await window.supabaseClient.rpc('admin_set_payment_confirmation', {
+      p_payment_id: paymentId, p_confirmation: value, p_note: note || null });
+    if (error) throw error;
+    const row = allPaymentsAdmin.find(r => r.id === paymentId);
+    if (row) { row.confirmation = value; row.confirmation_note = note || null; }
+    showToast('Confirmation saved / নিশ্চিতকরণ সংরক্ষিত', 'ok');
+    renderAllPayments();
+  } catch (e) {
+    showToast('Failed / ব্যর্থ: ' + e.message, 'err');
+    sel.disabled = false;
+  }
+}
+
+async function lookupDevice(deviceId, btn){
+  const box = btn.closest('.pay-field').querySelector('.device-list');
+  if (box.dataset.open === '1') { box.innerHTML = ''; box.dataset.open = ''; return; }
+  btn.disabled = true;
+  try {
+    const { data, error } = await window.supabaseClient.rpc('admin_payments_by_device', { p_device_id: deviceId, p_limit: 50 });
+    if (error) throw error;
+    box.innerHTML = (data || []).length
+      ? (data || []).map(d => `<div class="device-item"><span>${fmtDate(d.created_at)}</span> <b>$${parseFloat(d.amount_requested).toFixed(2)}</b> <span class="badge ${escapeAttr(d.status)}">${escapeHtml(d.status)}</span> ${safeText(d.creator_email)} · ${safeText(d.link_slug)}${d.confirmation ? ' · ' + escapeHtml(d.confirmation) : ''}</div>`).join('')
+      : '<div class="device-item">No payments / কোনো পেমেন্ট নেই</div>';
+    box.dataset.open = '1';
+  } catch (e) {
+    showToast('Lookup failed / খোঁজা ব্যর্থ: ' + e.message, 'err');
+  } finally { btn.disabled = false; }
 }
 
 async function markChecked(paymentId, btn){
