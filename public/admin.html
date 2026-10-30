@@ -756,6 +756,15 @@ textarea.w-input{ padding:10px 12px !important; }
                                         </div>
                                         <!-- SETTINGS TAB -->
                                         <div id="tab-settings" style="display:none;">
+                                          <div class="panel" id="tgAdminPanel">
+                                            <div class="panel-head"><div class="panel-title">Telegram bot · টেলিগ্রাম বট</div></div>
+                                            <div id="tgAdminStatus" style="font-size:13px;opacity:.85;margin-bottom:12px">—</div>
+                                            <div class="w-row" style="gap:8px;flex-wrap:wrap">
+                                              <button class="btn-ghost" onclick="tgAdmin('status', this)">Check status · অবস্থা দেখুন</button>
+                                              <button class="btn-ghost" onclick="tgAdmin('resync', this)">Re-register webhook · ওয়েবহুক আবার নিবন্ধন</button>
+                                              <button class="btn-ghost" onclick="tgAdmin('test', this)">Send test message · পরীক্ষামূলক বার্তা পাঠান</button>
+                                            </div>
+                                          </div>
                                           <div class="panel">
                                             <div class="panel-head">
                                               <div class="panel-title">Platform notice</div>
@@ -2199,12 +2208,35 @@ function switchTab(tab, btn){
   if (tab === 'earnings') loadEarnings();
   if (tab === 'messages') loadCreatorList();
   if (tab === 'domains') loadDomains();
-  if (tab === 'settings') loadStaff();
+  if (tab === 'settings') { loadStaff(); tgAdmin('status'); }
   if (tab === 'methods') loadWithdrawalMethods();
   if (tab === 'customers') closeCustomerDetail();
 }
 
 function showToast(msg, type){ const t = document.getElementById('toast'); t.textContent = msg; t.className = 'toast ' + type; t.style.display = 'block'; setTimeout(() => { t.style.display = 'none'; }, 3500); }
+
+// Telegram bot admin tools (telegram-admin edge function).
+async function tgAdmin(action, btn){
+  if (btn) btn.disabled = true;
+  try {
+    const { data: { session } } = await window.supabaseClient.auth.getSession();
+    const res = await fetch(`${window.SUPABASE_URL}/functions/v1/telegram-admin`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${session.access_token}` },
+      body: JSON.stringify({ action })
+    });
+    const r = await res.json();
+    if (!res.ok) { showToast(r.error || 'Failed / ব্যর্থ', 'err'); if (action === 'status') document.getElementById('tgAdminStatus').textContent = r.error || '—'; return; }
+    if (action === 'status') {
+      const st = document.getElementById('tgAdminStatus');
+      st.textContent = `Bot: ${r.bot ? '@' + r.bot : '—'} · Webhook / ওয়েবহুক: ${r.webhook_points_here ? 'OK' : (r.webhook_set ? 'other URL / অন্য URL' : 'not set / সেট নেই')} · Pending / অপেক্ষমাণ: ${Number(r.pending_updates || 0)} · Linked users / যুক্ত ইউজার: ${Number(r.linked_users || 0)}${r.last_error ? ' · Last error / শেষ ত্রুটি: ' + r.last_error : ''}`;
+    } else {
+      showToast(r.msg || 'Done', 'ok');
+      tgAdmin('status');
+    }
+  } catch (e) { showToast('Network error / নেটওয়ার্ক ত্রুটি', 'err'); }
+  finally { if (btn) btn.disabled = false; }
+}
 </script>
                                               </body>
                                             </html>
