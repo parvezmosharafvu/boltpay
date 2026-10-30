@@ -2051,7 +2051,7 @@ function renderPayments(){
       <div class="pay-actions">${localToggle}${markBtn}</div>`;
 
     return `
-      <div class="pay-row${isMarked ? ' is-marked' : ''}" ${p.status === 'new' || p.status === 'pending' ? `data-expires="${escapeAttr(p.expires_at)}"` : ''} onclick="togglePayRow(this, event)">
+      <div class="pay-row${openPayRows.has(p.id) ? ' open' : ''}${isMarked ? ' is-marked' : ''}" ${p.status === 'new' || p.status === 'pending' ? `data-expires="${escapeAttr(p.expires_at)}"` : ''} data-pid="${escapeAttr(p.id)}" onclick="togglePayRow(this, event)">
         <div class="pay-summary">
           <div style="min-width:0;">
             <div class="pay-amt">$${parseFloat(p.amount_requested||0).toFixed(2)}</div>
@@ -2077,9 +2077,14 @@ function renderPayments(){
 // Tap the summary to expand/collapse. Ignores taps that started inside a
 // button, the copy chip, or the local-mark toggle, so those still work
 // without also collapsing the row they live in.
+// Remember which rows are open (by payment id) so the live refresh,
+// which re-renders the list, does not snap them shut (owner pt304u).
+const openPayRows = new Set();
 function togglePayRow(row, ev){
   if (ev.target.closest('button, .mark-box')) return;
-  row.classList.toggle('open');
+  const open = row.classList.toggle('open');
+  const id = row.dataset.pid;
+  if (id) { if (open) openPayRows.add(id); else openPayRows.delete(id); }
 }
 
 async function loadDailySettled(){
