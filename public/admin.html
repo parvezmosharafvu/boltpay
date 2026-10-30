@@ -744,6 +744,21 @@ textarea.w-input{ padding:10px 12px !important; }
                                               Adding it here only registers it in the app. You must also attach the domain in Cloudflare (Pages custom domain + Worker route) for it to actually resolve.
                                             </div>
                                           </div>
+                                          <div class="panel" id="customDomainsPanel">
+                                            <div class="panel-head">
+                                              <div class="panel-title" data-en="Custom domains (white-label)" data-bn="কাস্টম ডোমেইন (হোয়াইট-লেবেল)">Custom domains (white-label)</div>
+                                              <span class="badge-count" id="customDomainsCount">0</span>
+                                            </div>
+                                            <div class="hint" id="customDomainsFlag" style="font-size:12px; color:var(--text-dim); margin-bottom:10px;"></div>
+                                            <div class="w-row" style="margin-bottom:10px;">
+                                              <input type="text" class="w-input" id="cdHost" placeholder="pay.userdomain.com">
+                                              <input type="email" class="w-input" id="cdOwner" placeholder="user@email.com" style="max-width:220px;">
+                                              <input type="text" class="w-input" id="cdBrand" placeholder="Brand name (optional)" style="max-width:200px;">
+                                            </div>
+                                            <button class="btn-primary" style="max-width:220px;" id="cdAddBtn" onclick="addCustomDomain(this)" data-en="Add &amp; provision" data-bn="যোগ ও প্রভিশন করুন">Add &amp; provision</button>
+                                            <div class="hint" style="font-size:11px; color:var(--text-faint); margin-top:10px; line-height:1.6;" data-en="The user points a CNAME from their hostname to the target shown below. Cloudflare issues HTTPS automatically; the status updates on its own." data-bn="ইউজার তার হোস্টনেম থেকে নিচের টার্গেটে একটি CNAME দেবেন। Cloudflare নিজে থেকেই HTTPS দেবে; স্ট্যাটাস নিজে আপডেট হবে।">The user points a CNAME from their hostname to the target shown below. Cloudflare issues HTTPS automatically; the status updates on its own.</div>
+                                            <div id="customDomainsList" style="margin-top:12px;"><div class="empty-state">No custom domains</div></div>
+                                          </div>
                                           <div class="panel">
                                             <div class="panel-head">
                                               <div class="panel-title">Registered domains</div>
@@ -1916,7 +1931,9 @@ async function handleAction(withdrawalId, action, btnEl){
 async function loadDomains(){
   const { data, error } = await window.supabaseClient.rpc('admin_list_domains');
   if (error){ console.error(error); return; }
-  const domains = data || [];
+  const all = data || [];
+  renderCustomDomains(all.filter(d => d.kind === 'custom'));
+  const domains = all.filter(d => (d.kind || 'platform') === 'platform');
   document.getElementById('domainsCount').textContent = domains.length;
   const c = document.getElementById('domainsList');
   if (!domains.length){ c.innerHTML = '<div class="empty-state">No domains registered</div>'; return; }
@@ -1948,6 +1965,82 @@ async function loadDomains(){
         <button class="act-btn act-reject" onclick="deleteDomain('${d.id}', this)">Remove</button>
       </div>
     </div>`).join('');
+}
+
+// ---- Custom (white-label) domains: Cloudflare for SaaS -------------------
+let cdPollTimer = null;
+const CD_STATUS = {
+  pending: ['Pending', 'অপেক্ষমাণ', 'pending'], provisioning: ['Provisioning', 'প্রভিশন হচ্ছে', 'pending'],
+  active: ['Active', 'সক্রিয়', 'active'], failed: ['Failed', 'ব্যর্থ', 'inactive'], disabled: ['Disabled', 'বন্ধ', 'inactive'],
+};
+async function renderCustomDomains(rows){
+  const { data: flagRow } = await window.supabaseClient.from('app_settings').select('value').eq('key', 'custom_domains_enabled').maybeSingle();
+  const on = flagRow && flagRow.value === true;
+  document.getElementById('customDomainsFlag').innerHTML = on
+    ? '<span style="color:var(--accent);">● On · চালু</span>'
+    : 'Off — Cloudflare for SaaS is not enabled on the zone yet. · বন্ধ — জোনে এখনো Cloudflare for SaaS চালু হয়নি।';
+  document.getElementById('cdAddBtn').disabled = !on;
+  document.getElementById('customDomainsCount').textContent = rows.length;
+  const c = document.getElementById('customDomainsList');
+  c.innerHTML = rows.length ? rows.map(d => {
+    const st = CD_STATUS[d.status] || [d.status, d.status, 'inactive'];
+    const v = d.verification || {};
+    const target = v.cname_target ? `CNAME ${escapeHtml(d.hostname)} → ${escapeHtml(v.cname_target)}` : '';
+    return `<div class="link-row">
+      <div class="link-top"><div>
+        <div class="link-slug">${escapeHtml(d.hostname)}</div>
+        <div class="link-owner">${escapeHtml(d.owner_email || '—')}${d.brand_name ? ' · ' + escapeHtml(d.brand_name) : ''}</div>
+        <div class="link-stats">SSL: ${escapeHtml(d.ssl_status || '—')}${target ? ' · ' + target : ''}</div>
+        ${d.last_error ? `<div class="link-stats" style="color:var(--danger, #e5484d);">${escapeHtml(d.last_error)}</div>` : ''}
+      </div>
+      <span class="badge ${st[2]}"><span class="badge-dot"></span>${st[0]} · ${st[1]}</span></div>
+      <div class="pay-actions">
+        <button class="act-btn act-paid" onclick="cdAction('check','${d.id}',this)">Check now · এখন দেখুন</button>
+        <button class="act-btn act-paid" onclick="cdAction('reprovision','${d.id}',this)">Reprovision · আবার প্রভিশন</button>
+        ${d.status === 'disabled'
+          ? `<button class="act-btn act-approve" onclick="cdAction('set_status','${d.id}',this,{status:'active'})">Enable · চালু</button>`
+          : `<button class="act-btn act-reject" onclick="cdAction('set_status','${d.id}',this,{status:'disabled'})">Disable · বন্ধ</button>`}
+        <button class="act-btn act-reject" onclick="if(confirm('Remove this domain? / ডোমেইনটি সরাবেন?')) cdAction('remove','${d.id}',this)">Remove · সরান</button>
+      </div></div>`;
+  }).join('') : '<div class="empty-state">No custom domains · কোনো কাস্টম ডোমেইন নেই</div>';
+  // Poll every 4 s while anything is still provisioning (like paycashapp.site).
+  clearTimeout(cdPollTimer);
+  const waiting = rows.filter(d => d.status === 'pending' || d.status === 'provisioning');
+  if (on && waiting.length && document.getElementById('tab-domains').style.display !== 'none'){
+    cdPollTimer = setTimeout(async () => {
+      for (const d of waiting) await cdCall({ action: 'check', id: d.id }).catch(() => {});
+      loadDomains();
+    }, 4000);
+  }
+}
+async function cdCall(payload){
+  const { data: { session } } = await window.supabaseClient.auth.getSession();
+  const res = await fetch(`${window.SUPABASE_URL}/functions/v1/custom-domain`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${session.access_token}` },
+    body: JSON.stringify(payload)
+  });
+  const r = await res.json().catch(() => ({}));
+  if (!res.ok) throw new Error(r.error || 'Failed / ব্যর্থ');
+  return r;
+}
+async function cdAction(action, id, btn, extra){
+  if (btn) btn.disabled = true;
+  try { await cdCall({ action, id, ...(extra || {}) }); showToast('Done · সম্পন্ন', 'ok'); }
+  catch (e){ showToast(e.message, 'err'); }
+  await loadDomains();
+}
+async function addCustomDomain(btn){
+  const hostname = document.getElementById('cdHost').value.trim().toLowerCase().replace(/^https?:\/\//, '').replace(/\/.*$/, '');
+  const owner_email = document.getElementById('cdOwner').value.trim();
+  const brand_name = document.getElementById('cdBrand').value.trim();
+  if (!hostname.includes('.') || !owner_email){ showToast('Enter hostname and user email · হোস্টনেম ও ইমেইল দিন', 'err'); return; }
+  btn.disabled = true;
+  try { await cdCall({ action: 'add', hostname, owner_email, brand_name }); showToast('Added — provisioning · যোগ হয়েছে', 'ok');
+    ['cdHost','cdOwner','cdBrand'].forEach(i => document.getElementById(i).value = ''); }
+  catch (e){ showToast(e.message, 'err'); }
+  btn.disabled = false;
+  await loadDomains();
 }
 
 async function addDomain(){
