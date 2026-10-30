@@ -1,6 +1,8 @@
 -- Runtime checks for 0101 (on-chain fallback settle). Runs inside BEGIN/ROLLBACK.
 \set ON_ERROR_STOP on
 begin;
+-- 0104: isolate from the conversion fee (own test: conversion_fee_regression.sql)
+update app_settings set value = '0'::jsonb where key = 'conversion_fee_percent';
 insert into auth.users(id, email) values ('44444444-4444-4444-4444-444444444444', 'oc@test.invalid');
 do $$
 declare v_id uuid; v_id2 uuid; v_ok boolean; v_tx text := repeat('cd', 32); r payments;

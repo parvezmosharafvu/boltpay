@@ -117,7 +117,7 @@ Deno.serve(async (req) => {
   const lim = linkLimits(link, settings);
   if (!withinLimits(amount, lim.min, lim.max)) return err(`Amount must be between $${lim.min} and $${lim.max}`, 400);
 
-  // Flag OFF: one global markup. Flag ON: link -> profile -> global (0103).
+  // Buyer pays base + link markup only (0104: no global buyer markup).
   const charged = chargedAmount(amount, resolveMarkup(link, settings));
   if (charged > settings.maxUsd * 11) return err("This link's current price is too high to invoice", 400);
 

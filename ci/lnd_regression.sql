@@ -1,6 +1,8 @@
 -- Runtime checks for 0067 (LND backend). Runs inside BEGIN/ROLLBACK.
 \set ON_ERROR_STOP on
 begin;
+-- 0104: isolate from the conversion fee (own test: conversion_fee_regression.sql)
+update app_settings set value = '0'::jsonb where key = 'conversion_fee_percent';
 select '33333333-3333-3333-3333-333333333333'::uuid as creator_id \gset
 insert into auth.users(id, email) values (:'creator_id', 'lnd-creator@test.invalid');
 update profiles set email = 'lnd-creator@test.invalid', role = 'creator' where id = :'creator_id';

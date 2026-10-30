@@ -81,6 +81,11 @@ jobs:
           PGPASSWORD: postgres
         run: psql -h localhost -U postgres -v ON_ERROR_STOP=1 -f ci/lnd_regression.sql
 
+      - name: Runtime regression — conversion fee (0104)
+        env:
+          PGPASSWORD: postgres
+        run: psql -h localhost -U postgres -v ON_ERROR_STOP=1 -f ci/conversion_fee_regression.sql
+
       - name: Runtime regression — per-link markup (0103)
         env:
           PGPASSWORD: postgres

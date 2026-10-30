@@ -822,12 +822,12 @@ textarea.w-input{ padding:10px 12px !important; }
                                             </div>
                                           </div>
                                           <div class="panel" id="markupPanel">
-                                            <div class="panel-head"><div class="panel-title">Customer fee · কাস্টমার ফি</div></div>
+                                            <div class="panel-head"><div class="panel-title">Conversion fee · কনভার্সন ফি</div></div>
                                             <div class="w-row" style="gap:10px;flex-wrap:wrap;align-items:flex-end">
-                                              <label style="font-size:12px">Fee added to payer (%) · পেয়ারের উপর ফি (%)<br><input id="markupPct" class="w-input" type="number" min="0" max="50" step="0.01"></label>
+                                              <label style="font-size:12px">Conversion fee (%) · কনভার্সন ফি (%)<br><input id="markupPct" class="w-input" type="number" min="0" max="50" step="0.01"></label>
                                               <button class="btn-sm" onclick="saveMarkup(this)">Save · সংরক্ষণ</button>
                                             </div>
-                                            <div class="hint" style="font-size:11px; color:var(--text-faint); margin-top:8px;" id="markupHint">Applies to new invoices. $10 is charged as $11.00 at 10%. · নতুন ইনভয়েসে প্রযোজ্য।</div>
+                                            <div class="hint" style="font-size:11px; color:var(--text-faint); margin-top:8px;" id="markupHint">Deducted from the creator's amount on new payments. · নতুন পেমেন্টে ক্রিয়েটরের পরিমাণ থেকে কাটা হয়।</div>
                                           </div>
                                           <div class="panel" id="linkMarkupPanel">
                                             <div class="panel-head"><div class="panel-title">Per-link markup · লিংক অনুযায়ী মার্কআপ</div></div>
@@ -2266,14 +2266,14 @@ async function loadCheckoutLimits(){
   document.getElementById('ckMax').value = m.lnd_pay_max_usd ?? 1000;
 }
 async function loadMarkup(){
-  const { data } = await window.supabaseClient.from('app_settings').select('value').eq('key', 'lnd_customer_markup_percent').maybeSingle();
+  const { data } = await window.supabaseClient.from('app_settings').select('value').eq('key', 'conversion_fee_percent').maybeSingle();
   const v = data && data.value != null ? Number(data.value) : 10;
   document.getElementById('markupPct').value = v;
   markupHint(v);
 }
 function markupHint(v){
-  const charged = (10 * (1 + v / 100)).toFixed(2);
-  document.getElementById('markupHint').textContent = 'Applies to new invoices. $10 is charged as $' + charged + ' at ' + v + '%. · নতুন ইনভয়েসে প্রযোজ্য। ' + v + '% এ $10 এর জন্য $' + charged + ' নেওয়া হবে।';
+  const net = (100 * (1 - v / 100)).toFixed(2);
+  document.getElementById('markupHint').textContent = 'Buyer pays the base amount; the creator nets $' + net + ' of $100 at ' + v + '%. Applies to new payments. · ক্রেতা মূল পরিমাণ দেন; ' + v + '% এ $100 থেকে ক্রিয়েটর পান $' + net + '। নতুন পেমেন্টে প্রযোজ্য।';
 }
 async function loadLinkMarkup(){
   const { data } = await window.supabaseClient.from('app_settings').select('key, value')
@@ -2309,7 +2309,7 @@ async function saveMarkup(btn){
   btn.disabled = false;
   if (error) { showToast('Failed · ব্যর্থ: ' + error.message, 'err'); return; }
   markupHint(Number(data));
-  showToast('Fee saved · ফি সংরক্ষিত: ' + Number(data) + '%', 'ok');
+  showToast('Conversion fee saved · কনভার্সন ফি সংরক্ষিত: ' + Number(data) + '%', 'ok');
 }
 async function saveCheckoutLimits(btn){
   const ex = Math.round(Number(document.getElementById('ckExpiry').value));

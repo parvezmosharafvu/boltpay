@@ -2,20 +2,21 @@ import { assertEquals } from "jsr:@std/assert@1";
 import { chargedAmount, resolveMarkup } from "./pricing.ts";
 import { parseLndSettings } from "./settings.ts";
 
-const base = { linkMarkupEnabled: true, linkMarkupMin: 0, linkMarkupMax: 50, markupPercent: 2.5 };
+const base = { linkMarkupEnabled: true, linkMarkupMin: 0, linkMarkupMax: 50 };
 
-Deno.test("flag off: always the global markup", () => {
+Deno.test("flag off: no buyer markup (global markup removed in 0104)", () => {
   const s = { ...base, linkMarkupEnabled: false };
-  assertEquals(resolveMarkup({ link_cost_percent: 20, profile_cost_percent: 7 }, s), 2.5);
-  assertEquals(resolveMarkup({}, s), 2.5);
+  assertEquals(resolveMarkup({ link_cost_percent: 20, profile_cost_percent: 7 }, s), 0);
+  assertEquals(resolveMarkup({}, s), 0);
+  assertEquals(chargedAmount(100, resolveMarkup({}, s)), 100);
 });
 
-Deno.test("flag on: link, then profile (>0), then global", () => {
+Deno.test("flag on: link, then profile (>0), then 0", () => {
   assertEquals(resolveMarkup({ link_cost_percent: 20, profile_cost_percent: 7 }, base), 20);
   assertEquals(resolveMarkup({ link_cost_percent: "0", profile_cost_percent: 7 }, base), 0);
   assertEquals(resolveMarkup({ link_cost_percent: null, profile_cost_percent: "7" }, base), 7);
-  assertEquals(resolveMarkup({ link_cost_percent: null, profile_cost_percent: 0 }, base), 2.5);
-  assertEquals(resolveMarkup({}, base), 2.5);
+  assertEquals(resolveMarkup({ link_cost_percent: null, profile_cost_percent: 0 }, base), 0);
+  assertEquals(resolveMarkup({}, base), 0);
 });
 
 Deno.test("flag on: link/profile clamped to the admin range", () => {

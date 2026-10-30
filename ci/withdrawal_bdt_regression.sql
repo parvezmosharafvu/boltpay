@@ -1,6 +1,8 @@
 -- BDT withdrawal pricing regression (0083). BEGIN/ROLLBACK.
 \set ON_ERROR_STOP on
 begin;
+-- 0104: isolate from the conversion fee (own test: conversion_fee_regression.sql)
+update app_settings set value = '0'::jsonb where key = 'conversion_fee_percent';
 set local session_replication_role = default;
 do $$
 declare u uuid := gen_random_uuid(); w withdrawals%rowtype;
