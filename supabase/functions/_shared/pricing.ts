@@ -35,22 +35,18 @@ export interface MarkupInputs {
 }
 
 /**
- * Buyer markup % for one invoice. Since 0104 there is no global buyer
- * markup (the old 2.5% is now the creator-side conversion fee), so every
- * fallback is 0. Flag ON: link % -> profile % (when > 0) -> 0, clamped
- * server-side to the admin range.
+ * Buyer markup % for one invoice (0105): the link's own "extra fee",
+ * fixed at creation, clamped to the admin range; otherwise 0. No profile
+ * or global fallback. `linkMarkupEnabled` is kept for compatibility but no
+ * longer gates the link's own fee.
  */
 export function resolveMarkup(
   link: { link_cost_percent?: unknown; profile_cost_percent?: unknown },
   s: MarkupInputs,
 ): number {
-  if (!s.linkMarkupEnabled) return 0;
   const lo = Math.max(0, s.linkMarkupMin), hi = Math.max(lo, s.linkMarkupMax);
-  const clamp = (n: number) => Math.min(Math.max(n, lo), hi);
-  const num = (v: unknown) => (v == null || v === "" ? NaN : Number(v));
-  const l = num(link.link_cost_percent);
-  if (Number.isFinite(l)) return clamp(l);
-  const p = num(link.profile_cost_percent);
-  if (Number.isFinite(p) && p > 0) return clamp(p);
-  return 0;
+  const v = link.link_cost_percent;
+  const l = v == null || v === "" ? NaN : Number(v);
+  if (!Number.isFinite(l) || l <= 0) return 0;
+  return Math.min(Math.max(l, lo), hi);
 }

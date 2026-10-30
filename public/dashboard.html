@@ -753,7 +753,7 @@ textarea.w-input{ padding:10px 12px !important; }
                   <input type="text" class="w-input" id="newSlug" placeholder="Name — e.g. Sophia or Taylor James">
                 </div>
                 <div class="w-row">
-                  <input type="number" class="w-input" id="newLinkMarkup" min="0" max="100" step="0.01" inputmode="decimal" placeholder="Markup % (optional)" data-ph-en="Markup % (optional)" data-ph-bn="মার্কআপ % (ঐচ্ছিক)">
+                  <input type="number" class="w-input" id="newLinkMarkup" min="0" max="100" step="0.01" inputmode="decimal" placeholder="Add extra fee (%) — optional" data-ph-en="Add extra fee (%) — optional" data-ph-bn="অতিরিক্ত ফি যোগ করুন (%) — ঐচ্ছিক">
                 </div>
                 <div class="hint" id="linkMarkupHint" style="margin:-4px 0 10px;"></div>
                 <button class="btn-primary" onclick="openStylePicker()" style="width:100%;">Choose link style</button>
@@ -997,23 +997,7 @@ textarea.w-input{ padding:10px 12px !important; }
               </div>
               <div id="tgCode" style="display:none;margin-top:10px;font-size:13px"></div>
             </div>
-            <div class="panel">
-              <div class="panel-head">
-                <div class="panel-title">Your pricing</div>
-              </div>
-              <div class="hint" style="font-size:11.5px; color:var(--text-dim); margin-bottom:10px;">
-                Adds a percentage on top of every payment link you own, at whatever rate you choose.
-                Set 3% and someone paying a $100 link is invoiced $103.00 &mdash; you are credited
-                the full $103.00. Your customer sees only the final amount.
-                <b>This is your own pricing</b>.
-              </div>
-              <div class="w-row" style="align-items:center; gap:10px;">
-                <input type="number" class="w-input mono" id="myCostPercent" min="0" step="0.001" placeholder="0" style="max-width:130px;">
-                <span style="font-size:13px; color:var(--text-dim);">%</span>
-                <button class="btn-secondary" onclick="saveMyCost()" style="flex:1;">Save</button>
-              </div>
-              <div class="hint" id="costCeilingHint" style="font-size:11px; color:var(--text-faint); margin-top:6px;"></div>
-            </div>
+            <!-- 0105: profile-wide pricing removed; extra fee is set per link at creation -->
 
             <div class="panel">
               <div class="panel-head">
@@ -1374,26 +1358,6 @@ async function fetchProfile(){
     if(data?.[id]) document.getElementById(id).value = data[id];
   });
 
-  const costEl = document.getElementById('myCostPercent');
-  if (costEl) costEl.value = data?.cost_percent ?? 0;
-  // There is no admin ceiling on this any more (migration 0060), so the
-  // useful thing to show here is the user's own withdrawal fee — the
-  // other percentage in their account, and the one they do NOT control.
-  // Showing them side by side is what stops the two being confused.
-  const feeHint = document.getElementById('costCeilingHint');
-  if (feeHint) {
-    feeHint.textContent = '';
-  }
-}
-
-async function saveMyCost(){
-  const raw = document.getElementById('myCostPercent').value;
-  const pct = parseFloat(raw);
-  if (raw === '' || isNaN(pct) || pct < 0) return showToast('Enter 0 or more', 'err');
-  const { data, error } = await window.supabaseClient.rpc('set_my_cost_percent', { p_percent: pct });
-  if (error) return showToast(error.message, 'err');
-  document.getElementById('myCostPercent').value = data;
-  showToast(Number(data) === 0 ? 'Pricing markup turned off' : `Links now add ${data}%`, 'ok');
 }
 
 async function saveWallets(){
@@ -1532,8 +1496,7 @@ function renderLinks(){
     return `<div class="model-card">
       <div class="model-head">
         <div><div class="model-name">🌐 ${escapeHtml(head.display_name || head.slug)}</div>
-          <div class="variant-note" style="margin:2px 0 0;">${qiT('Markup', 'মার্কআপ')}: ${head.cost_percent == null ? qiT('default', 'ডিফল্ট') : escapeHtml(String(Number(head.cost_percent))) + '%'}
-            <button class="btn-copy" title="${qiT('Edit markup', 'মার্কআপ এডিট')}" onclick="editLinkMarkup('${escapeAttr(head.id)}')">%</button></div></div>
+          <div class="variant-note" style="margin:2px 0 0;">${qiT('Extra fee', 'অতিরিক্ত ফি')}: ${escapeHtml(String(Number(head.cost_percent || 0)))}% 🔒</div></div>
         <span class="badge ${anyActive ? 'settled' : 'expired'}"><span class="badge-dot"></span>${anyActive ? 'active' : 'disabled'}</span>
       </div>
       ${note}${rows}
@@ -1577,27 +1540,8 @@ async function loadLinkMarkupRange(){
   if (r) linkMarkupRange = { min: Number(r.min_pct), max: Number(r.max_pct) };
   const h = document.getElementById('linkMarkupHint');
   if (h) h.textContent = qiT(
-    `Extra % the payer pays on this link (${linkMarkupRange.min}–${linkMarkupRange.max}%). Blank = your default.`,
-    `এই লিংকে পেয়ার অতিরিক্ত যত % দেবে (${linkMarkupRange.min}–${linkMarkupRange.max}%)। খালি রাখলে ডিফল্ট।`);
-}
-
-async function editLinkMarkup(linkId){
-  const l = allLinks.find(x => x.id === linkId);
-  if (!l) return;
-  const v = prompt(qiT(
-    `Markup % for this link and its styles (${linkMarkupRange.min}–${linkMarkupRange.max}). Blank = default.`,
-    `এই লিংক ও এর সব স্টাইলের মার্কআপ % (${linkMarkupRange.min}–${linkMarkupRange.max})। খালি = ডিফল্ট।`),
-    l.cost_percent ?? '');
-  if (v === null) return;
-  const raw = v.trim();
-  const pct = raw === '' ? null : Number(raw);
-  if (pct !== null && !(isFinite(pct) && pct >= linkMarkupRange.min && pct <= linkMarkupRange.max)){
-    showToast(qiT(`Markup must be ${linkMarkupRange.min}–${linkMarkupRange.max}%`, `মার্কআপ ${linkMarkupRange.min}–${linkMarkupRange.max}% হতে হবে`), 'err'); return;
-  }
-  const { error } = await window.supabaseClient.rpc('set_link_markup', { p_link_id: linkId, p_percent: pct });
-  if (error){ showToast(qiT('Failed: ', 'ব্যর্থ: ') + error.message, 'err'); return; }
-  showToast(qiT('Markup saved', 'মার্কআপ সংরক্ষিত'), 'ok');
-  await fetchLinks();
+    `Optional extra % the payer pays on this link (${linkMarkupRange.min}–${linkMarkupRange.max}%), shown to them only as part of the total. You receive it. Blank = 0%. It can't be changed after the link is created.`,
+    `এই লিংকে পেয়ার যে ঐচ্ছিক অতিরিক্ত % দেবে (${linkMarkupRange.min}–${linkMarkupRange.max}%), শুধু মোট পরিমাণের অংশ হিসেবে দেখানো হবে। এটি আপনি পাবেন। খালি = 0%। লিংক তৈরির পর পরিবর্তন করা যাবে না।`);
 }
 
 function toggleLinkForm(){
@@ -1678,7 +1622,7 @@ async function createPaymentLink(){
     const mkRaw = (document.getElementById('newLinkMarkup')?.value || '').trim();
     const mk = mkRaw === '' ? null : Number(mkRaw);
     if (mk !== null && !(isFinite(mk) && mk >= linkMarkupRange.min && mk <= linkMarkupRange.max)){
-      msgEl.textContent = qiT(`Markup must be ${linkMarkupRange.min}–${linkMarkupRange.max}%`, `মার্কআপ ${linkMarkupRange.min}–${linkMarkupRange.max}% হতে হবে`);
+      msgEl.textContent = qiT(`Extra fee must be ${linkMarkupRange.min}–${linkMarkupRange.max}%`, `অতিরিক্ত ফি ${linkMarkupRange.min}–${linkMarkupRange.max}% হতে হবে`);
       msgEl.style.color = 'var(--alert)'; msgEl.style.display = 'block'; btn.disabled = false; return;
     }
     const { data, error } = await window.supabaseClient.rpc('create_link_variants', {
