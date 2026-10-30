@@ -1,5 +1,4 @@
-// Same markup maths as create-invoice (kept in sync deliberately; the
-// BTCPay function is not refactored so its behaviour cannot change).
+// Checkout markup maths.
 
 export function clampCostPercent(raw: unknown): number {
   const n = Number(raw ?? 0);

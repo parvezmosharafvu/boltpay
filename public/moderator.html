@@ -631,7 +631,7 @@ function render(){
   // disagree about the same payment.
   el('paymentsList').innerHTML = rows.map(p => {
     const marked = !!p.marked_at;
-    const inv = p.btcpay_invoice_id || '';
+    const inv = p.id || '';
     const shortInv = inv ? (inv.length > 20 ? inv.slice(0,8) + '\u2026' + inv.slice(-8) : inv) : '\u2014';
     const ln = p.lightning_invoice || '';
     const shortLn = ln.length > 26 ? ln.slice(0,16) + '\u2026' + ln.slice(-10) : ln;

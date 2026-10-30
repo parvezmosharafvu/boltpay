@@ -58,7 +58,7 @@ Deno.test("limits $10–$1000", () => {
   assertEquals(parseUsd("abc"), null);
 });
 
-Deno.test("pricing matches create-invoice maths", () => {
+Deno.test("pricing maths", () => {
   assertEquals(chargedAmount(10, 5), 10.5);
   assertEquals(chargedAmount(10, -5), 10);
   assertEquals(chargedAmount(10, 5000), 110);

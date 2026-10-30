@@ -1016,7 +1016,7 @@ textarea.w-input{ padding:10px 12px !important; }
                 <div class="hint" style="font-size:11px; color:var(--text-faint); margin:-4px 0 2px;">
                   Set this and Lightning payouts can be sent automatically &mdash; no pasting a fresh invoice each time.
                   A Lightning Address looks like an email and never expires.
-                  <b>Wallets that give you one:</b> Wallet of Satoshi, Blink, Alby, Phoenix, Zeus, Coinos, Primal, Bitkit.
+                  <b>Wallets that give you one:</b> Wallet of Satoshi, Alby, Phoenix, Zeus, Coinos, Primal, Bitkit.
                   Open your wallet, find "Lightning Address" or "Receive &rarr; Address", copy it, paste it here.
                 </div>
                 <input type="text" class="w-input" id="wallet_binance_id" placeholder="Binance Pay ID">
@@ -1138,7 +1138,7 @@ let serverPendingCount = 0;
 // Named RESERVED so ci/check_frontend.py can diff it against
 // validate_link_slug() in the database — the authoritative copy.
 const RESERVED = ['index','login','register','dashboard','admin','404','config','theme',
-  'assets','favicon','invoice-boltpay-v2','api','u','static','public',
+  'assets','favicon','api','u','static','public',
   'well-known','robots','sitemap','moderator','expired'];
 const RESERVED_SLUGS = RESERVED;
 
@@ -1237,7 +1237,7 @@ function markAllVisible(){
     if (statusFilter && p.status !== statusFilter) return;
     if (!withinTimeFilter(p.created_at, timeFilter)) return;
     if (search){
-      const ln = (p.lightning_invoice || '').toLowerCase(); const inv = (p.btcpay_invoice_id || '').toLowerCase();
+      const ln = (p.lightning_invoice || '').toLowerCase(); const inv = (p.id || '').toLowerCase();
       if (!ln.includes(search) && !inv.includes(search)) return;
     }
     if (!localMarks[p.id]){ localMarks[p.id] = { at: new Date().toISOString(), note:'bulk' }; count++; }
@@ -1254,7 +1254,7 @@ function unmarkAllVisible(){
     if (statusFilter && p.status !== statusFilter) return;
     if (!withinTimeFilter(p.created_at, timeFilter)) return;
     if (search){
-      const ln = (p.lightning_invoice || '').toLowerCase(); const inv = (p.btcpay_invoice_id || '').toLowerCase();
+      const ln = (p.lightning_invoice || '').toLowerCase(); const inv = (p.id || '').toLowerCase();
       if (!ln.includes(search) && !inv.includes(search)) return;
     }
     if (localMarks[p.id]){ delete localMarks[p.id]; count++; }
@@ -1810,7 +1810,7 @@ async function exportPayments(btn){
         r.surcharge_percent ?? '',
         r.method,
         [r.customer_city, r.customer_country].filter(Boolean).join(' '),
-        r.btcpay_invoice_id || '', r.lightning_invoice || '',
+        r.id || '', r.lightning_invoice || '',
         r.marked_at ? 'yes' : 'no',
       ].map(esc).join(','));
     }
@@ -1998,7 +1998,7 @@ function renderPayments(){
     if (markFilter === 'unmarked' && isMarked) return false;
     if (!withinTimeFilter(p.created_at, timeFilter)) return false;
     if (search){
-      const ln = (p.lightning_invoice || '').toLowerCase(); const inv = (p.btcpay_invoice_id || '').toLowerCase();
+      const ln = (p.lightning_invoice || '').toLowerCase(); const inv = (p.id || '').toLowerCase();
       if (!ln.includes(search) && !inv.includes(search)) return false;
     }
     return true;
@@ -2007,7 +2007,7 @@ function renderPayments(){
   if (!filtered.length){ container.innerHTML = `<div class="empty-state">No payment records found</div>`; return; }
   container.innerHTML = filtered.map(p => {
     const location = [p.customer_city, p.customer_country].filter(Boolean).join(', ') || 'Unknown location';
-    const inv = p.btcpay_invoice_id || '\u2014';
+    const inv = p.id || '\u2014';
     const shortInv = inv.length > 15 ? inv.slice(0, 8) + '...' + inv.slice(-7) : (inv || '\u2014');
     const ln = p.lightning_invoice || '';
     const shortLn = ln.length > 25 ? ln.slice(0, 16) + '...' + ln.slice(-10) : ln;
