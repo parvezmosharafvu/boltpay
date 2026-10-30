@@ -116,7 +116,8 @@ $$;
 
 -- The old-engine reconciliation job is retired with its function.
 do $$ begin
-  if to_regclass('cron.job') is not null then
-    perform cron.unschedule(jobid) from cron.job where jobname = 'boltpay-reconcile';
+  if to_regprocedure('cron.unschedule(text)') is not null
+     and exists (select 1 from cron.job where jobname = 'boltpay-reconcile') then
+    perform cron.unschedule('boltpay-reconcile');
   end if;
 end $$;
