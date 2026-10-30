@@ -1,0 +1,32 @@
+/* Shared polish for the creator dashboard, moderator view and admin panel.
+   Loaded after each page's own <style>, so these rules win. */
+:root{
+  --text-faint:rgba(245,243,238,0.58);   /* was 0.32: too dim to read */
+  --radius-card:14px;
+}
+body{ -webkit-text-size-adjust:100%; overflow-x:hidden; }
+.panel, .stat-card, .insight-card, .card{ border-radius:var(--radius-card); }
+.hint, .toggle-sub, .panel-sub, .stat-sub{ line-height:1.5; }
+
+/* Tables never push the page sideways: they scroll inside their box. */
+table{ max-width:100%; }
+.table-wrap, .panel > table, #methodsList{ overflow-x:auto; -webkit-overflow-scrolling:touch; }
+#methodsList table{ min-width:520px; }
+td, th{ overflow-wrap:anywhere; }
+.mono, code{ overflow-wrap:anywhere; }
+
+/* EN / BN switch added by i18n.js */
+.lang-btn{
+  display:inline-flex; align-items:center; justify-content:center;
+  height:32px; min-width:44px; padding:0 10px; border-radius:999px;
+  border:1px solid var(--line-strong, #3D3726); background:transparent;
+  color:var(--amber, #FFB800); font:700 12px/1 'Inter', system-ui, sans-serif;
+  letter-spacing:.04em; cursor:pointer; flex-shrink:0;
+}
+.lang-btn:hover{ background:var(--accent-wash, rgba(255,184,0,.1)); border-color:var(--amber, #FFB800); }
+
+@media (max-width:480px){
+  .panel{ padding-left:14px; padding-right:14px; }
+  input, select, textarea{ max-width:100%; font-size:16px; }
+  .header-actions, .header-right{ gap:6px; flex-wrap:wrap; }
+}
