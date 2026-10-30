@@ -512,6 +512,11 @@ textarea.w-input{ padding:10px 12px !important; }
                         <div class="stat-val ok" id="statAvgPayment">$0.00</div>
                         <div class="stat-sub">Per settled payment · প্রতি পেমেন্টে</div>
                       </div>
+                      <div class="stat-card">
+                        <div class="stat-label">Fee earned · ফি আয়</div>
+                        <div class="stat-val ok" id="statFeeEarned">$0.00</div>
+                        <div class="stat-sub" id="statCreatorNet">Creators net $0.00 · ক্রিয়েটর নেট</div>
+                      </div>
                     </div>
                     <div class="tabs">
                       <button class="tab-btn active" data-tab="transactions" onclick="switchTab('transactions', this)">
@@ -1173,6 +1178,12 @@ async function loadStats(){
   const cnt = Number(row.payment_count) || 0;
   document.getElementById('statAvgPayment').textContent = '$' + (cnt ? parseFloat(row.total_settled) / cnt : 0).toFixed(2);
   
+  const fs = await window.supabaseClient.rpc('admin_fee_stats', { p_start: start, p_end: end });
+  const f = Array.isArray(fs.data) ? fs.data[0] : fs.data;
+  if (!fs.error && f){
+    document.getElementById('statFeeEarned').textContent = '$' + parseFloat(f.fee_earned).toFixed(2);
+    document.getElementById('statCreatorNet').textContent = 'Creators net $' + parseFloat(f.creator_net).toFixed(2) + ' · buyer-paid fees $' + parseFloat(f.buyer_fees).toFixed(2);
+  }
   // Show profit
   // Show calculated node balance
 }
