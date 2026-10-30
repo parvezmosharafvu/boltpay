@@ -763,6 +763,15 @@ textarea.w-input{ padding:10px 12px !important; }
                   </div>
                 </div>
               </div>
+              <div class="card" id="quickInvoiceCard" style="margin-bottom:14px;padding:14px;">
+                <div class="model-name" data-en="Create an invoice and copy its link" data-bn="ইনভয়েস তৈরি করে লিংক কপি করুন">Create an invoice and copy its link</div>
+                <div style="display:flex;gap:8px;flex-wrap:wrap;margin-top:8px;align-items:center;">
+                  <select id="qiLink" class="filter-select" style="max-width:220px;"></select>
+                  <input id="qiAmount" class="w-input" type="number" min="1" step="0.01" inputmode="decimal" placeholder="Amount (USD)" style="max-width:140px;">
+                  <button class="btn-primary" id="qiBtn" onclick="quickInvoice()" data-en="Create &amp; copy link" data-bn="তৈরি করুন ও লিংক কপি করুন">Create &amp; copy link</button>
+                </div>
+                <div class="hint" id="qiOut" style="display:none;margin-top:8px;word-break:break-all;"></div>
+              </div>
               <div id="linksList">
                 <div class="empty-state">No payment links yet</div>
               </div>
@@ -1457,7 +1466,37 @@ async function fetchLinks(){
   renderLinks();
 }
 
+
+// Item 11: one-off invoice for a fixed amount, link copied to the clipboard.
+function qiT(en, bn){ return (localStorage.getItem('boltpay_lang') === 'bn') ? bn : en; }
+function fillQuickInvoiceLinks(){
+  const sel = document.getElementById('qiLink'); if (!sel) return;
+  const act = (allLinks || []).filter(l => l.is_active);
+  sel.innerHTML = act.map(l => `<option value="${escapeHtml(l.slug)}">/${escapeHtml(l.slug)}</option>`).join('');
+  document.getElementById('quickInvoiceCard').style.display = act.length ? '' : 'none';
+}
+async function quickInvoice(){
+  const slug = document.getElementById('qiLink').value;
+  const v = document.getElementById('qiAmount').value.trim();
+  if (!slug || !/^\d+(\.\d{1,2})?$/.test(v) || Number(v) <= 0){ showToast(qiT('Enter an amount', 'পরিমাণ লিখুন'), 'err'); return; }
+  const btn = document.getElementById('qiBtn'); btn.disabled = true;
+  try {
+    const res = await fetch('/api/lnd/invoice', { method: 'POST', headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ slug: slug, amountUSD: Number(v) }) });
+    const j = await res.json().catch(() => null);
+    if (!res.ok || !j || !j.data || !j.data.paymentId) throw new Error((j && j.error && j.error.message) || 'failed');
+    const host = paymentDomains[0]?.hostname || window.location.host;
+    const url = `https://${host}/pay/i/${j.data.paymentId}`;
+    const out = document.getElementById('qiOut'); out.style.display = ''; out.textContent = url;
+    try { await navigator.clipboard.writeText(url); showToast(qiT('Invoice created — link copied', 'ইনভয়েস তৈরি — লিংক কপি হয়েছে'), 'ok'); }
+    catch (e) { showToast(qiT('Invoice created — copy the link below', 'ইনভয়েস তৈরি — নিচের লিংক কপি করুন'), 'ok'); }
+  } catch (e) {
+    showToast(qiT('Could not create invoice: ', 'ইনভয়েস তৈরি করা যায়নি: ') + e.message, 'err');
+  } finally { btn.disabled = false; }
+}
+
 function renderLinks(){
+  fillQuickInvoiceLinks();
   const list = document.getElementById('linksList');
   if (!allLinks.length){ list.innerHTML = '<div class="empty-state">No payment links yet</div>'; return; }
 
