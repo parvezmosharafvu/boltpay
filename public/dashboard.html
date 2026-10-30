@@ -467,6 +467,38 @@ body{
 .msg-edit-input{ width:100%; background:var(--panel-hi); border:1px solid var(--line); color:var(--text);
   padding:8px 10px; border-radius:8px; font-family:inherit; font-size:13px; outline:none; margin-bottom:6px; }
 
+/* ===== MESSAGES SECTION (msg-*) — scoped to #sec-messages ===== */
+#sec-messages{ --msg-g:#00D632; --msg-g-soft:rgba(0,214,50,.12); --msg-g-line:rgba(0,214,50,.32);
+  --msg-bg:#0f1311; --msg-bg-hi:#161b18; --msg-line:rgba(255,255,255,.08); --msg-dim:rgba(255,255,255,.55); }
+#sec-messages .msg-card{ background:var(--msg-bg); border:1px solid var(--msg-line); border-radius:20px; overflow:hidden; margin-bottom:14px; box-shadow:0 10px 30px rgba(0,0,0,.35); }
+#sec-messages .msg-head{ display:flex; align-items:center; gap:12px; padding:14px 14px 12px; border-bottom:1px solid var(--msg-line); background:linear-gradient(180deg, rgba(0,214,50,.07), transparent); }
+#sec-messages .msg-avatar{ width:40px; height:40px; flex:0 0 40px; border-radius:50%; display:grid; place-items:center; background:var(--msg-g); color:#04140a; font-weight:800; font-size:17px; }
+#sec-messages .msg-head-text{ flex:1; min-width:0; }
+#sec-messages .msg-head-title{ font-weight:700; font-size:15px; color:#fff; }
+#sec-messages .msg-head-sub{ display:flex; align-items:center; gap:6px; font-size:12px; color:var(--msg-dim); margin-top:2px; line-height:1.35; }
+#sec-messages .msg-dot{ width:7px; height:7px; border-radius:50%; background:var(--msg-g); box-shadow:0 0 0 3px var(--msg-g-soft); flex:0 0 7px; }
+#sec-messages .msg-tools{ display:flex; gap:6px; }
+#sec-messages .msg-tool{ min-width:40px; height:40px; padding:0 12px; border-radius:12px; border:1px solid var(--msg-line); background:var(--msg-bg-hi); color:#fff; font-weight:600; font-size:13px; font-family:inherit; cursor:pointer; }
+#sec-messages .msg-tool-danger{ color:#ff6b6b; }
+#sec-messages .msg-tool:active, #sec-messages .msg-send:active, #sec-messages .msg-tg-btn:active{ transform:scale(.96); }
+#sec-messages .msg-thread{ height:min(56vh, 460px); overflow-y:auto; padding:16px 14px; display:flex; flex-direction:column; overscroll-behavior:contain; }
+#sec-messages .msg-thread > .empty-state{ margin:auto; }
+#sec-messages .msg-bubble{ max-width:82%; padding:10px 13px !important; margin-bottom:8px !important; font-size:14px !important; line-height:1.45; border-radius:18px; color:#fff; word-wrap:break-word; }
+#sec-messages .msg-bubble.admin{ background:var(--msg-bg-hi); border:1px solid var(--msg-line); border-bottom-left-radius:6px; align-self:flex-start; }
+#sec-messages .msg-bubble.creator{ background:var(--msg-g); color:#04140a; border:none; border-bottom-right-radius:6px; align-self:flex-end; margin-left:0; }
+#sec-messages .msg-from{ color:var(--msg-g); font-size:10px; letter-spacing:.5px; }
+#sec-messages .msg-bubble.creator .msg-from{ display:none; }
+#sec-messages .msg-time{ color:var(--msg-dim); font-size:11px; }
+#sec-messages .msg-bubble.creator .msg-time, #sec-messages .msg-bubble.creator .msg-act{ color:rgba(4,20,10,.65); }
+#sec-messages .msg-act{ font-size:12px; padding:4px 0; }
+#sec-messages .msg-bubble.creator .msg-act:hover{ color:#04140a; }
+#sec-messages .msg-edit-input{ background:#fff; color:#04140a; border:none; }
+#sec-messages .msg-composer{ display:flex; gap:8px; align-items:center; padding:10px 10px 12px; border-top:1px solid var(--msg-line); background:var(--msg-bg); margin:0; }
+#sec-messages .msg-input{ flex:1; min-width:0; height:46px; padding:0 16px; border-radius:999px; border:1px solid var(--msg-line); background:var(--msg-bg-hi); color:#fff; font-family:inherit; font-size:15px; outline:none; }
+#sec-messages .msg-input:focus{ border-color:var(--msg-g-line); box-shadow:0 0 0 3px var(--msg-g-soft); }
+#sec-messages .msg-send{ width:46px; height:46px; flex:0 0 46px; border-radius:50%; border:none; background:var(--msg-g); color:#04140a; display:grid; place-items:center; cursor:pointer; }
+@media (min-width:768px){ #sec-messages .msg-bubble{ max-width:70%; } }
+
 /* Was background:var(--text) with color:#fff — a near-white bubble with
    white text, so "Copied" (and every other toast) was unreadable the
    instant it appeared. Matches admin.html's toast now: a dark panel
@@ -860,17 +892,70 @@ textarea.w-input{ padding:10px 12px !important; }
                rather than midnight-to-midnight. Nothing here is a cron
                job or a backup — reload the page and it recomputes. -->
           <div class="section" id="sec-invoices">
-            <div class="page-header">
-              <div>
-                <div class="page-title">Invoices</div>
-                <div class="page-sub">One invoice per day, 7pm–7pm (Asia/Dhaka)</div>
+            <style>
+              /* Invoices section redesign, scoped: every rule is under #sec-invoices and uses inv- classes. */
+              #sec-invoices{--inv-g:#00D632;--inv-bg:#0E1110;--inv-card:#151917;--inv-line:rgba(255,255,255,.07);--inv-mut:rgba(236,242,238,.58);--inv-tx:#ECF2EE}
+              #sec-invoices .inv-wrap{display:flex;flex-direction:column;gap:14px;color:var(--inv-tx)}
+              #sec-invoices .inv-head{display:flex;align-items:flex-start;justify-content:space-between;gap:12px}
+              #sec-invoices .inv-title{font-size:24px;font-weight:800;letter-spacing:-.02em;line-height:1.15}
+              #sec-invoices .inv-sub{margin-top:4px;font-size:12.5px;color:var(--inv-mut)}
+              #sec-invoices .inv-refresh{flex:none;display:inline-flex;align-items:center;gap:6px;height:36px;padding:0 14px;border-radius:999px;border:1px solid rgba(0,214,50,.35);background:rgba(0,214,50,.08);color:var(--inv-g);font-weight:700;font-size:13px;cursor:pointer}
+              #sec-invoices .inv-refresh:active{transform:scale(.97)}
+              #sec-invoices .inv-card{background:linear-gradient(180deg,#171C19,var(--inv-card));border:1px solid var(--inv-line);border-radius:20px;padding:16px;box-shadow:0 10px 30px rgba(0,0,0,.25)}
+              #sec-invoices .inv-card-h{display:flex;align-items:baseline;justify-content:space-between;gap:8px;margin-bottom:12px}
+              #sec-invoices .inv-card-t{font-size:15px;font-weight:750}
+              #sec-invoices .inv-card-k{font-size:11px;letter-spacing:.06em;text-transform:uppercase;color:var(--inv-mut)}
+              #sec-invoices .inv-hero{display:flex;align-items:flex-end;justify-content:space-between;gap:10px;margin-bottom:12px}
+              #sec-invoices .inv-hero-v{font-size:30px;font-weight:800;letter-spacing:-.02em;font-variant-numeric:tabular-nums}
+              #sec-invoices .inv-hero-l{font-size:12px;color:var(--inv-mut)}
+              #sec-invoices .inv-chip{display:inline-flex;align-items:center;gap:5px;padding:4px 10px;border-radius:999px;background:rgba(0,214,50,.12);color:var(--inv-g);font-size:12px;font-weight:700}
+              #sec-invoices .inv-chart svg{display:block;width:100%;height:auto}
+              #sec-invoices .inv-axis{display:flex;justify-content:space-between;margin-top:6px;font-size:11px;color:var(--inv-mut);font-variant-numeric:tabular-nums}
+              #sec-invoices .inv-row{display:flex;align-items:center;gap:12px;padding:12px 0;border-top:1px solid var(--inv-line)}
+              #sec-invoices .inv-row:first-child{border-top:0;padding-top:2px}
+              #sec-invoices .inv-rank{flex:none;width:30px;height:30px;border-radius:10px;display:grid;place-items:center;background:rgba(0,214,50,.1);color:var(--inv-g);font-weight:800;font-size:13px}
+              #sec-invoices .inv-main{flex:1;min-width:0}
+              #sec-invoices .inv-name{font-weight:650;font-size:14.5px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+              #sec-invoices .inv-meta{margin-top:2px;font-size:12px;color:var(--inv-mut);font-variant-numeric:tabular-nums}
+              #sec-invoices .inv-amt{flex:none;text-align:right;font-weight:800;font-size:15px;font-variant-numeric:tabular-nums}
+              #sec-invoices .inv-amt-s{display:block;font-size:11.5px;font-weight:500;color:var(--inv-mut)}
+              #sec-invoices .inv-pos{color:var(--inv-g)}
+              #sec-invoices .inv-day{padding:12px 0;border-top:1px solid var(--inv-line)}
+              #sec-invoices .inv-day:first-child{border-top:0;padding-top:2px}
+              #sec-invoices .inv-day-top{display:flex;justify-content:space-between;align-items:baseline;gap:10px}
+              #sec-invoices .inv-break{display:grid;grid-template-columns:repeat(3,1fr);gap:6px;margin-top:8px}
+              #sec-invoices .inv-cell{background:rgba(255,255,255,.03);border:1px solid var(--inv-line);border-radius:12px;padding:7px 9px}
+              #sec-invoices .inv-cell-l{font-size:10.5px;color:var(--inv-mut);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+              #sec-invoices .inv-cell-v{font-size:13px;font-weight:700;font-variant-numeric:tabular-nums;margin-top:1px}
+              #sec-invoices .inv-status{display:inline-block;margin-top:4px;padding:2px 8px;border-radius:999px;font-size:11px;font-weight:700;text-transform:capitalize;background:rgba(255,255,255,.06);color:var(--inv-mut)}
+              #sec-invoices .inv-status.inv-paid{background:rgba(0,214,50,.12);color:var(--inv-g)}
+              #sec-invoices .inv-empty{padding:18px 4px;text-align:center;font-size:13px;color:var(--inv-mut)}
+            </style>
+            <div class="inv-wrap">
+              <div class="inv-head">
+                <div>
+                  <div class="inv-title" data-en="Invoices" data-bn="ইনভয়েস">Invoices</div>
+                  <div class="inv-sub" data-en="One invoice per day, 7pm–7pm (Asia/Dhaka)" data-bn="প্রতিদিন একটি ইনভয়েস, সন্ধ্যা ৭টা–সন্ধ্যা ৭টা (এশিয়া/ঢাকা)">One invoice per day, 7pm–7pm (Asia/Dhaka)</div>
+                </div>
+                <button class="inv-refresh" onclick="loadInvoicesTab()" data-en="↻ Refresh" data-bn="↻ রিফ্রেশ">↻ Refresh</button>
               </div>
-              <button class="btn-ghost" onclick="loadInvoicesTab()">Refresh</button>
+              <div class="inv-card">
+                <div class="inv-card-h"><div class="inv-card-t" data-en="Last 30 days" data-bn="গত ৩০ দিন">Last 30 days</div><div class="inv-card-k" data-en="Settled" data-bn="সেটেলড">Settled</div></div>
+                <div id="invChart" class="inv-chart"></div>
+              </div>
+              <div class="inv-card">
+                <div class="inv-card-h"><div class="inv-card-t" data-en="Top links" data-bn="শীর্ষ লিংক">Top links</div><div class="inv-card-k" data-en="30 days" data-bn="৩০ দিন">30 days</div></div>
+                <div id="invTopLinks"></div>
+              </div>
+              <div class="inv-card">
+                <div class="inv-card-h"><div class="inv-card-t" data-en="Daily invoices" data-bn="দৈনিক ইনভয়েস">Daily invoices</div><div class="inv-card-k" data-en="Net after fee" data-bn="ফি বাদে নিট">Net after fee</div></div>
+                <div id="invList"></div>
+              </div>
+              <div class="inv-card">
+                <div class="inv-card-h"><div class="inv-card-t" data-en="Other invoices" data-bn="অন্যান্য ইনভয়েস">Other invoices</div></div>
+                <div id="manualInvList"></div>
+              </div>
             </div>
-            <div class="card" style="margin-bottom:14px"><div style="font-weight:700;margin-bottom:8px">Last 30 days</div><div id="invChart"></div></div>
-            <div class="card" style="margin-bottom:14px"><div style="font-weight:700;margin-bottom:8px">Top links (30 days)</div><div id="invTopLinks"></div></div>
-            <div class="card" style="overflow-x:auto"><div id="invList"></div></div>
-            <div class="card" style="overflow-x:auto;margin-top:14px"><div style="font-weight:700;margin-bottom:8px">Other invoices · অন্যান্য ইনভয়েস</div><div id="manualInvList"></div></div>
           </div>
           <div class="section" id="sec-daily">
             <div class="page-header">
@@ -1101,26 +1186,34 @@ textarea.w-input{ padding:10px 12px !important; }
           <div class="section" id="sec-messages">
             <div class="page-header">
               <div>
-                <div class="page-title">Messages</div>
-                <div class="page-sub">Thread with the Boltpay support team</div>
+                <div class="page-title" data-en="Messages" data-bn="বার্তা">Messages</div>
+                <div class="page-sub" data-en="Talk to the Boltpay support team" data-bn="Boltpay সাপোর্ট টিমের সাথে কথা বলুন">Talk to the Boltpay support team</div>
               </div>
             </div>
-            <div class="panel">
-              <div class="panel-head">
-                <div class="panel-title">Messages with Boltpay</div>
-                <div style="display:flex; gap:8px;">
-                  <button class="btn-icon" onclick="loadMessages()" title="Refresh">⟳</button>
-                  <button class="btn-danger" onclick="clearMyThread()">Clear history</button>
+
+            <div class="msg-card">
+              <div class="msg-head">
+                <div class="msg-avatar" aria-hidden="true">B</div>
+                <div class="msg-head-text">
+                  <div class="msg-head-title" data-en="Boltpay Support" data-bn="Boltpay সাপোর্ট">Boltpay Support</div>
+                  <div class="msg-head-sub"><span class="msg-dot"></span><span data-en="Payouts, links and account help" data-bn="পেআউট, লিংক ও অ্যাকাউন্ট সহায়তা">Payouts, links and account help</span></div>
+                </div>
+                <div class="msg-tools">
+                  <button class="msg-tool" onclick="loadMessages()" title="Refresh · রিফ্রেশ" aria-label="Refresh · রিফ্রেশ">⟳</button>
+                  <button class="msg-tool msg-tool-danger" onclick="clearMyThread()" data-en="Clear" data-bn="মুছুন" title="Clear history · ইতিহাস মুছুন">Clear</button>
                 </div>
               </div>
-              <div id="messagesList" style="max-height:420px; overflow-y:auto; margin-bottom:14px;">
-                <div class="empty-state">No messages yet</div>
+              <div id="messagesList" class="msg-thread">
+                <div class="empty-state">No messages yet · এখনো কোনো বার্তা নেই</div>
               </div>
-              <div class="w-row">
-                <input type="text" class="w-input" id="replyInput" placeholder="Send feedback or a question...">
-              </div>
-              <button class="btn-primary" onclick="sendReply()" style="width:100%;">Send</button>
+              <form class="msg-composer" onsubmit="event.preventDefault(); sendReply();">
+                <input type="text" class="msg-input" id="replyInput" autocomplete="off" placeholder="Write a message…" data-ph-en="Write a message…" data-ph-bn="বার্তা লিখুন…">
+                <button type="submit" class="msg-send" aria-label="Send · পাঠান" title="Send · পাঠান">
+                  <svg viewBox="0 0 24 24" width="20" height="20" aria-hidden="true"><path fill="currentColor" d="M3.4 20.4 21 12 3.4 3.6 3.4 10l12.6 2-12.6 2z"/></svg>
+                </button>
+              </form>
             </div>
+
           </div>
         </div>
       </div>
@@ -2311,14 +2404,14 @@ async function loadMessages(){
   const unread = (data || []).filter(m => m.sender === 'admin' && !m.read_by_creator).length;
   const badge = document.getElementById('msgBadge');
   badge.textContent = unread; badge.classList.toggle('show', unread > 0);
-  if (!data || !data.length){ list.innerHTML = '<div class="empty-state">No messages yet</div>'; return; }
+  if (!data || !data.length){ list.innerHTML = '<div class="empty-state">' + t('No messages yet', 'এখনো কোনো বার্তা নেই') + '</div>'; return; }
   list.innerHTML = data.map(m => {
     const isMine = m.sender === 'creator'; const editing = editingMessageId === m.id;
-    return `<div class="msg-bubble ${m.sender}"><div class="msg-from">${m.sender === 'admin' ? 'Boltpay Team' : 'You'}</div>
+    return `<div class="msg-bubble ${m.sender}"><div class="msg-from">${m.sender === 'admin' ? t('Boltpay Team', 'Boltpay টিম') : t('You', 'আপনি')}</div>
       ${editing ? `<input class="msg-edit-input" id="editInput_${m.id}" value="${escapeAttr(m.message)}">
-        <div class="msg-actions"><button class="msg-act" onclick="saveMessageEdit('${m.id}')">Save</button><button class="msg-act" onclick="cancelEdit()">Cancel</button></div>`
-      : `${escapeHtml(m.message)}<div class="msg-time">${fmtDate(m.created_at)}${m.edited_at ? ' · edited' : ''}</div>
-        ${isMine ? `<div class="msg-actions"><button class="msg-act" onclick="startEdit('${m.id}')">Edit</button><button class="msg-act danger" onclick="deleteMessage('${m.id}')">Delete</button></div>` : ''}`}</div>`;
+        <div class="msg-actions"><button class="msg-act" onclick="saveMessageEdit('${m.id}')">${t('Save', 'সেভ')}</button><button class="msg-act" onclick="cancelEdit()">${t('Cancel', 'বাতিল')}</button></div>`
+      : `${escapeHtml(m.message)}<div class="msg-time">${fmtDate(m.created_at)}${m.edited_at ? ' • ' + t('edited', 'সম্পাদিত') : ''}</div>
+        ${isMine ? `<div class="msg-actions"><button class="msg-act" onclick="startEdit('${m.id}')">${t('Edit', 'এডিট')}</button><button class="msg-act danger" onclick="deleteMessage('${m.id}')">${t('Delete', 'মুছুন')}</button></div>` : ''}`}</div>`;
   }).join('');
   list.scrollTop = list.scrollHeight;
   // Mark-as-read: shudhu unread admin message thakle-i UPDATE chalay, ar
@@ -2372,37 +2465,42 @@ async function sendReply(){
 async function loadInvoicesTab(){
   const esc = s => String(s ?? '').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
   const m = n => '$' + Number(n || 0).toFixed(2);
+  const T = qiT;
+  const empty = (en, bn) => `<div class="inv-empty">${T(en, bn)}</div>`;
   const [days, inv, top] = await Promise.all([
     window.supabaseClient.rpc('my_daily_settled', { p_days: 30 }),
     window.supabaseClient.rpc('my_daily_invoices', { p_days: 30 }),
     window.supabaseClient.rpc('my_top_links', { p_days: 30 }),
   ]);
   const chart = document.getElementById('invChart');
-  if (days.error) chart.textContent = 'Could not load chart.';
+  if (days.error) chart.innerHTML = empty('Could not load chart.', 'চার্ট লোড হয়নি।');
   else {
     const rows = [...days.data].reverse();
+    // Display-only sum of the same per-day settled values the bars show.
+    const total = rows.reduce((a, r) => a + Number(r.settled || 0), 0);
+    const active = rows.filter(r => Number(r.settled) > 0).length;
     const max = Math.max(1, ...rows.map(r => Number(r.settled)));
     const w = 600, h = 140, bw = w / Math.max(rows.length, 1);
-    chart.innerHTML = `<svg viewBox="0 0 ${w} ${h + 16}" style="width:100%;height:auto">` + rows.map((r, i) => {
-      const bh = Math.round(Number(r.settled) / max * h);
-      return `<rect x="${i * bw + 1}" y="${h - bh}" width="${Math.max(bw - 2, 1)}" height="${bh}" fill="var(--accent, #6c5ce7)"><title>${esc(r.cycle_date)}: ${m(r.settled)}</title></rect>`;
-    }).join('') + `<text x="0" y="${h + 14}" font-size="11" fill="currentColor">${esc(rows[0]?.cycle_date)}</text><text x="${w}" y="${h + 14}" font-size="11" text-anchor="end" fill="currentColor">${esc(rows[rows.length - 1]?.cycle_date)}</text></svg>`;
+    chart.innerHTML = `<div class="inv-hero"><div><div class="inv-hero-v">${m(total)}</div><div class="inv-hero-l">${T('Settled in the last 30 days', 'গত ৩০ দিনে সেটেলড')}</div></div><span class="inv-chip">${active} ${T('active days', 'সক্রিয় দিন')}</span></div>`
+      + `<svg viewBox="0 0 ${w} ${h}" preserveAspectRatio="none" style="height:120px"><defs><linearGradient id="invBarGrad" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#00D632"/><stop offset="1" stop-color="#00D632" stop-opacity=".35"/></linearGradient></defs>` + rows.map((r, i) => {
+      const bh = Math.max(Math.round(Number(r.settled) / max * h), Number(r.settled) > 0 ? 3 : 2);
+      return `<rect x="${i * bw + 2}" y="${h - bh}" width="${Math.max(bw - 4, 1)}" height="${bh}" rx="3" fill="${Number(r.settled) > 0 ? 'url(#invBarGrad)' : 'rgba(255,255,255,.08)'}"><title>${esc(r.cycle_date)}: ${m(r.settled)}</title></rect>`;
+    }).join('') + `</svg><div class="inv-axis"><span>${esc(rows[0]?.cycle_date)}</span><span>${esc(rows[rows.length - 1]?.cycle_date)}</span></div>`;
   }
   const tl = document.getElementById('invTopLinks');
-  tl.innerHTML = top.error ? 'Could not load top links.' : (top.data.length
-    ? top.data.map(r => `<div style="display:flex;justify-content:space-between;padding:4px 0"><span>${esc(r.display_name || r.slug)}</span><span>${r.payment_count} · ${m(r.settled_usd)}</span></div>`).join('')
-    : '<div style="opacity:.7">No payments yet.</div>');
+  tl.innerHTML = top.error ? empty('Could not load top links.', 'শীর্ষ লিংক লোড হয়নি।') : (top.data.length
+    ? top.data.map((r, i) => `<div class="inv-row"><div class="inv-rank">${i + 1}</div><div class="inv-main"><div class="inv-name">${esc(r.display_name || r.slug)}</div><div class="inv-meta">${r.payment_count} ${T('payments', 'পেমেন্ট')}</div></div><div class="inv-amt">${m(r.settled_usd)}</div></div>`).join('')
+    : empty('No payments yet.', 'এখনো কোনো পেমেন্ট নেই।'));
   const il = document.getElementById('invList');
-  il.innerHTML = inv.error ? 'Could not load invoices.' : (inv.data.length
-    ? '<table style="width:100%;font-size:13px"><tr><th align="left">Day</th><th>Payments</th><th align="right">Gross</th><th align="right">' + qiT('Conversion fee', 'কনভার্সন ফি') + '</th><th align="right">Net</th></tr>'
-      + inv.data.map(r => `<tr><td>${esc(r.cycle_date)}</td><td align="center">${r.payment_count}</td><td align="right">${m(r.gross_usd)}</td><td align="right">${m(r.commission_usd)}</td><td align="right">${m(r.net_usd)}</td></tr>`).join('') + '</table>'
-    : '<div style="opacity:.7">No invoices yet.</div>');
+  il.innerHTML = inv.error ? empty('Could not load invoices.', 'ইনভয়েস লোড হয়নি।') : (inv.data.length
+    ? inv.data.map(r => `<div class="inv-day"><div class="inv-day-top"><div><div class="inv-name">${esc(r.cycle_date)}</div><div class="inv-meta">${r.payment_count} ${T('payments', 'পেমেন্ট')}</div></div><div class="inv-amt inv-pos">${m(r.net_usd)}<span class="inv-amt-s">${T('Net', 'নিট')}</span></div></div>`
+      + `<div class="inv-break"><div class="inv-cell"><div class="inv-cell-l">${T('Gross', 'মোট')}</div><div class="inv-cell-v">${m(r.gross_usd)}</div></div><div class="inv-cell"><div class="inv-cell-l">${T('Conversion fee', 'কনভার্সন ফি')}</div><div class="inv-cell-v">${m(r.commission_usd)}</div></div><div class="inv-cell"><div class="inv-cell-l">${T('Net', 'নিট')}</div><div class="inv-cell-v inv-pos">${m(r.net_usd)}</div></div></div></div>`).join('')
+    : empty('No invoices yet.', 'এখনো কোনো ইনভয়েস নেই।'));
   const mi = await window.supabaseClient.rpc('my_manual_invoices');
   const ml = document.getElementById('manualInvList');
-  if (ml) ml.innerHTML = mi.error ? 'Could not load invoices. · ইনভয়েস লোড হয়নি।' : (mi.data.length
-    ? '<table style="width:100%;font-size:13px"><tr><th align="left">Date</th><th align="left">Description</th><th align="right">Amount</th><th>Status</th></tr>'
-      + mi.data.map(r => `<tr><td>${esc(r.invoice_date)}</td><td>${esc(r.description)}</td><td align="right">${m(r.amount_usd)}</td><td align="center">${esc(r.status)}</td></tr>`).join('') + '</table>'
-    : '<div style="opacity:.7">No other invoices. · কোনো ইনভয়েস নেই।</div>');
+  if (ml) ml.innerHTML = mi.error ? empty('Could not load invoices.', 'ইনভয়েস লোড হয়নি।') : (mi.data.length
+    ? mi.data.map(r => `<div class="inv-row"><div class="inv-main"><div class="inv-name">${esc(r.description)}</div><div class="inv-meta">${esc(r.invoice_date)}</div></div><div class="inv-amt">${m(r.amount_usd)}<br><span class="inv-status${String(r.status) === 'paid' ? ' inv-paid' : ''}">${esc(r.status)}</span></div></div>`).join('')
+    : empty('No other invoices.', 'কোনো ইনভয়েস নেই।'));
 }
 
 let tgPollTimer = null, tgTickTimer = null;
