@@ -258,6 +258,48 @@ body{
 }
 .tier-card.unlocked .tier-check{ display:flex; }
 
+/* ===== EARNINGS (scoped to #sec-earnings) ===== */
+#sec-earnings{ --earnings-green:#00D632; --earnings-card:#111513; --earnings-line:rgba(255,255,255,0.07); }
+#sec-earnings .earnings-hero{ background:radial-gradient(120% 140% at 0% 0%,rgba(0,214,50,0.16),rgba(0,214,50,0) 55%),var(--earnings-card);
+  border:1px solid rgba(0,214,50,0.22); border-radius:20px; padding:20px; margin-bottom:12px; box-shadow:none; }
+.earnings-hero-top{ display:flex; justify-content:space-between; gap:12px; align-items:flex-start; }
+.earnings-eyebrow,.earnings-stat-label{ font-size:11px; letter-spacing:.9px; text-transform:uppercase; font-weight:700; color:rgba(255,255,255,0.55); }
+.earnings-hero-amount{ font-family:'Geist Mono'; font-size:38px; font-weight:800; letter-spacing:-1.2px; color:#fff; margin-top:6px; line-height:1.05; }
+.earnings-hero-note{ font-size:11.5px; color:rgba(255,255,255,0.55); margin-top:6px; }
+.earnings-gauge{ position:relative; width:96px; flex-shrink:0; text-align:center; }
+.earnings-gauge-pct{ position:absolute; left:0; right:0; bottom:0; font-family:'Geist Mono'; font-size:14px; font-weight:800; color:var(--earnings-green); }
+.earnings-chips{ display:flex; gap:8px; margin-top:16px; }
+.earnings-chip{ flex:1; background:rgba(255,255,255,0.04); border:1px solid var(--earnings-line); border-radius:12px; padding:10px 12px; display:flex; flex-direction:column; gap:3px; }
+.earnings-chip span{ font-size:10.5px; color:rgba(255,255,255,0.5); font-weight:600; }
+.earnings-chip b{ font-family:'Geist Mono'; font-size:15px; color:#fff; }
+.earnings-bar{ height:6px; background:rgba(255,255,255,0.07); border-radius:999px; overflow:hidden; margin-top:16px; }
+.earnings-bar > div{ height:100%; width:0; background:var(--earnings-green); border-radius:999px; box-shadow:0 0 12px rgba(0,214,50,0.5); transition:width .3s ease-out; }
+.earnings-bar-meta{ display:flex; justify-content:space-between; gap:12px; margin-top:7px; font-size:10.5px; color:rgba(255,255,255,0.5); font-family:'Geist Mono'; }
+.earnings-stats{ display:grid; grid-template-columns:1fr 1fr; gap:10px; margin-bottom:12px; }
+@media (min-width:640px){ .earnings-stats{ grid-template-columns:repeat(3,1fr); } .earnings-stat-wide{ grid-column:auto !important; } }
+.earnings-stat{ background:var(--earnings-card); border:1px solid var(--earnings-line); border-radius:16px; padding:14px; }
+.earnings-stat-wide{ grid-column:1 / -1; }
+.earnings-stat-val{ font-family:'Geist Mono'; font-size:22px; font-weight:800; letter-spacing:-.5px; color:#fff; margin-top:6px; }
+.earnings-stat-wide .earnings-stat-val{ color:var(--earnings-green); }
+.earnings-stat-sub{ font-size:11px; color:rgba(255,255,255,0.5); margin-top:3px; }
+.earnings-tiers{ background:var(--earnings-card); border:1px solid var(--earnings-line); border-radius:20px; padding:18px; margin-bottom:14px; }
+.earnings-tiers-head{ display:flex; justify-content:space-between; gap:10px; align-items:flex-start; }
+.earnings-card-title{ font-size:15px; font-weight:700; color:#fff; }
+.earnings-card-sub{ font-size:11.5px; color:rgba(255,255,255,0.5); margin-top:3px; }
+.earnings-pill{ font-family:'Geist Mono'; font-size:11.5px; font-weight:700; color:#04140a; background:var(--earnings-green); padding:5px 10px; border-radius:999px; white-space:nowrap; }
+.earnings-tier-list{ display:flex; flex-direction:column; gap:8px; margin-top:16px; }
+#sec-earnings .earnings-tier-list .tier-card{ display:grid; grid-template-columns:34px 1fr auto; grid-template-rows:auto auto; column-gap:10px; align-items:center;
+  background:rgba(255,255,255,0.025); border:1px solid var(--earnings-line); border-radius:14px; padding:11px 12px; box-shadow:none; }
+#sec-earnings .earnings-tier-list .tier-icon{ grid-row:1 / 3; font-size:20px; margin:0; text-align:center; opacity:.45; }
+#sec-earnings .earnings-tier-list .tier-name{ font-size:13px; color:rgba(255,255,255,0.6); }
+#sec-earnings .earnings-tier-list .tier-range{ grid-column:2; font-size:10.5px; color:rgba(255,255,255,0.4); }
+#sec-earnings .earnings-tier-list .tier-check{ position:static; grid-column:3; grid-row:1 / 3; background:rgba(0,214,50,0.15); color:var(--earnings-green); }
+#sec-earnings .earnings-tier-list .tier-card.unlocked .tier-icon{ opacity:1; }
+#sec-earnings .earnings-tier-list .tier-card.unlocked .tier-name{ color:#fff; }
+#sec-earnings .earnings-tier-list .tier-card.current{ background:rgba(0,214,50,0.08); border-color:rgba(0,214,50,0.55); }
+#sec-earnings .earnings-tier-list .tier-card.current::after{ position:static; grid-column:3; grid-row:1 / 3; content:attr(data-current); background:var(--earnings-green); color:#04140a; }
+#sec-earnings .earnings-tier-list .tier-card.current .tier-check{ display:none; }
+
 /* ===== METER ARC (kept for compatibility) ===== */
 .meter-card{ background:var(--surface); border:1px solid var(--line); border-radius:14px;
   padding:18px; margin-bottom:14px; position:relative; overflow:hidden;
@@ -981,87 +1023,73 @@ textarea.w-input{ padding:10px 12px !important; }
                HOW a creator is doing, not just what their balance is
                right now. -->
           <div class="section" id="sec-earnings">
-            <div class="page-header">
+            <div class="page-header earnings-header">
               <div>
-                <div class="page-title">Earnings</div>
-                <div class="page-sub">Charge level, balance breakdown and recent performance</div>
+                <div class="page-title" data-en="Earnings" data-bn="আয়">Earnings</div>
+                <div class="page-sub" data-en="Charge level, balance breakdown and recent performance" data-bn="চার্জ লেভেল, ব্যালান্সের হিসাব ও সাম্প্রতিক পারফরম্যান্স">Charge level, balance breakdown and recent performance</div>
               </div>
             </div>
 
-            <div class="insights-grid" id="insightsGrid">
-              <div class="insight-card">
-                <div class="insight-label">7-day revenue</div>
-                <div class="insight-val mono" id="insRevenue7d">$0.00</div>
-                <div class="insight-sub">Settled in the last 7 days</div>
-              </div>
-              <div class="insight-card">
-                <div class="insight-label">30-day revenue</div>
-                <div class="insight-val mono" id="insRevenue30d">$0.00</div>
-                <div class="insight-sub">Settled in the last 30 days</div>
-              </div>
-              <div class="insight-card">
-                <div class="insight-label">Conversion rate</div>
-                <div class="insight-val mono" id="insConversion">0%</div>
-                <div class="insight-sub" id="insConversionSub">0 of 0 invoices paid</div>
-              </div>
-            </div>
-
-            <!-- ===== CHARGE LEVEL TIERS (replaces the old calculate node) ===== -->
-            <div class="tier-wrap" id="tierWrap">
-              <div class="tier-head">
+            <!-- Hero: available balance vs lifetime earned (ids unchanged; filled by computeStats) -->
+            <div class="earnings-hero">
+              <div class="earnings-hero-top">
                 <div>
-                  <div class="t">Charge level</div>
-                  <div class="s">Your standing on Boltpay grows as you settle more payments</div>
+                  <div class="earnings-eyebrow" data-en="Available balance" data-bn="উপলব্ধ ব্যালান্স">Available balance</div>
+                  <div class="earnings-hero-amount mono" id="statAvailableUSD">$0.00</div>
+                  <div class="earnings-hero-note" data-en="Net after conversion fee · Withdraw anytime, no withdrawal fee" data-bn="কনভার্সন ফি বাদে নিট · যেকোনো সময় উত্তোলন, কোনো উত্তোলন ফি নেই">Net after conversion fee · Withdraw anytime, no withdrawal fee</div>
                 </div>
-                <div class="tier-pill mono" id="tierCurrent">Tier 1 · Starter</div>
+                <div class="earnings-gauge" aria-hidden="true">
+                  <svg viewBox="0 0 120 62" width="96" height="50">
+                    <path d="M8 58 A52 52 0 0 1 112 58" stroke="rgba(255,255,255,0.08)" stroke-width="9" fill="none" stroke-linecap="round"/>
+                    <path id="meterArc" d="M8 58 A52 52 0 0 1 112 58" stroke="#00D632" stroke-width="9" fill="none"
+                      stroke-linecap="round" stroke-dasharray="163" stroke-dashoffset="163"/>
+                  </svg>
+                  <div class="earnings-gauge-pct mono" id="chargePercent">0%</div>
+                </div>
               </div>
-              <div class="tier-progress"><div id="tierProgressFill"></div></div>
-              <div class="tier-meta">
+              <div class="earnings-chips">
+                <div class="earnings-chip"><span data-en="Total earned" data-bn="মোট আয়">Total earned</span><b class="mono" id="statEarned_b">$0.00</b></div>
+                <div class="earnings-chip"><span data-en="Payments" data-bn="পেমেন্ট">Payments</span><b class="mono" id="statEarnedCount_b">0</b></div>
+              </div>
+              <div class="earnings-bar" aria-label="Available vs earned"><div id="chargeProgressFill"></div></div>
+              <div class="earnings-bar-meta"><span id="chargeAvailableMeta">$0.00 available</span><span id="chargeEarnedMeta">$0.00 earned</span></div>
+            </div>
+
+            <!-- Insights (filled by loadInsights) -->
+            <div class="earnings-stats" id="insightsGrid">
+              <div class="earnings-stat">
+                <div class="earnings-stat-label" data-en="7-day revenue" data-bn="৭ দিনের আয়">7-day revenue</div>
+                <div class="earnings-stat-val mono" id="insRevenue7d">$0.00</div>
+                <div class="earnings-stat-sub" data-en="Settled in the last 7 days" data-bn="গত ৭ দিনে সেটেল হয়েছে">Settled in the last 7 days</div>
+              </div>
+              <div class="earnings-stat">
+                <div class="earnings-stat-label" data-en="30-day revenue" data-bn="৩০ দিনের আয়">30-day revenue</div>
+                <div class="earnings-stat-val mono" id="insRevenue30d">$0.00</div>
+                <div class="earnings-stat-sub" data-en="Settled in the last 30 days" data-bn="গত ৩০ দিনে সেটেল হয়েছে">Settled in the last 30 days</div>
+              </div>
+              <div class="earnings-stat earnings-stat-wide">
+                <div class="earnings-stat-label" data-en="Conversion rate" data-bn="কনভার্সন রেট">Conversion rate</div>
+                <div class="earnings-stat-val mono" id="insConversion">0%</div>
+                <div class="earnings-stat-sub" id="insConversionSub">0 of 0 invoices paid</div>
+              </div>
+            </div>
+
+            <!-- Charge level tiers (filled by renderTiers) -->
+            <div class="earnings-tiers" id="tierWrap">
+              <div class="earnings-tiers-head">
+                <div>
+                  <div class="earnings-card-title" data-en="Charge level" data-bn="চার্জ লেভেল">Charge level</div>
+                  <div class="earnings-card-sub" data-en="Your standing on Boltpay grows as you settle more payments" data-bn="বেশি পেমেন্ট সেটেল করলে Boltpay-তে আপনার অবস্থান বাড়ে">Your standing on Boltpay grows as you settle more payments</div>
+                </div>
+                <div class="earnings-pill mono" id="tierCurrent">Tier 1 · Starter</div>
+              </div>
+              <div class="earnings-bar"><div id="tierProgressFill"></div></div>
+              <div class="earnings-bar-meta">
                 <span id="tierProgressFrom">$0 earned</span>
                 <span id="tierProgressTo">Next: $100</span>
               </div>
-              <div class="tiers-grid" id="tiersGrid"></div>
+              <div class="earnings-tier-list" id="tiersGrid"></div>
             </div>
-
-            <!-- ===== ORIGINAL METER (kept for compatibility) ===== -->
-            <div class="meter-card">
-              <div class="charge-card-head">
-                <div>
-                  <div class="charge-card-title">Available vs earned</div>
-                  <div class="charge-card-sub">Available balance compared with lifetime settled earnings</div>
-                </div>
-                <div class="charge-percent" id="chargePercent">0%</div>
-              </div>
-              <div class="meter-row">
-                <div class="meter-arc-wrap">
-                  <div class="meter-label-top">Available</div>
-                  <svg viewBox="0 0 120 62" width="120" height="62">
-                    <path d="M8 58 A52 52 0 0 1 112 58" stroke="rgba(15,23,32,0.10)" stroke-width="9" fill="none" stroke-linecap="round"/>
-                    <path id="meterArc" d="M8 58 A52 52 0 0 1 112 58" stroke="url(#meterGrad)" stroke-width="9" fill="none"
-                      stroke-linecap="round" stroke-dasharray="163" stroke-dashoffset="163"/>
-                    <defs>
-                      <linearGradient id="meterGrad" x1="0" y1="0" x2="1" y2="0">
-                        <stop offset="0%" stop-color="#5E58E5"/>
-                        <stop offset="100%" stop-color="#E0A200"/>
-                      </linearGradient>
-                    </defs>
-                  </svg>
-                </div>
-                <div class="meter-figures">
-                  <div class="meter-label-top">Available balance</div>
-                  <div class="meter-amount mono" id="statAvailableUSD">$0.00</div>
-                  <div class="meter-sub">Withdraw anytime — no withdrawal fee · যেকোনো সময় উত্তোলন — কোনো ফি নেই</div>
-                  <div class="meter-badges">
-                    <div class="chip">Total earned&nbsp;<b id="statEarned_b">$0.00</b></div>
-                    <div class="chip">Payments&nbsp;<b id="statEarnedCount_b">0</b></div>
-                  </div>
-                </div>
-              </div>
-              <div class="charge-progress" aria-label="Charge level progress"><div id="chargeProgressFill"></div></div>
-              <div class="charge-progress-meta"><span id="chargeAvailableMeta">$0.00 available</span><span id="chargeEarnedMeta">$0.00 earned</span></div>
-            </div>
-
-
           </div>
 
           <!-- ============ CASH OUT ============ -->
@@ -1296,15 +1324,15 @@ function renderTiers(){
   document.getElementById('tierCurrent').textContent =
     'Tier ' + (currentIdx + 1) + ' · ' + current.name;
   document.getElementById('tierProgressFill').style.width = (pct * 100) + '%';
-  document.getElementById('tierProgressFrom').textContent = '$' + earned.toFixed(2) + ' earned';
+  document.getElementById('tierProgressFrom').textContent = '$' + earned.toFixed(2) + ' ' + window.t('earned', 'আয়');
   document.getElementById('tierProgressTo').textContent = next
-    ? ('Next: $' + next.min.toLocaleString())
-    : 'Top tier reached';
+    ? (window.t('Next: $', 'পরবর্তী: $') + next.min.toLocaleString())
+    : window.t('Top tier reached', 'সর্বোচ্চ টিয়ারে পৌঁছেছেন');
 
   document.getElementById('tiersGrid').innerHTML = TIERS.map((t, i) => {
     const unlocked = earned >= t.min;
     const isCurrent = i === currentIdx;
-    return `<div class="tier-card ${isCurrent ? 'current' : ''} ${unlocked ? 'unlocked' : ''}">
+    return `<div class="tier-card ${isCurrent ? 'current' : ''} ${unlocked ? 'unlocked' : ''}" data-current="${window.t('CURRENT', 'বর্তমান')}">
       <span class="tier-check">✓</span>
       <div class="tier-icon">${t.icon}</div>
       <div class="tier-name">Tier ${i + 1} · ${t.name}</div>
@@ -2080,8 +2108,8 @@ function computeStats(){
   document.getElementById('meterArc').setAttribute('stroke-dashoffset', String(163 * (1 - pct)));
   document.getElementById('chargePercent').textContent = pctText;
   document.getElementById('chargeProgressFill').style.width = pctText;
-  document.getElementById('chargeAvailableMeta').textContent = '$' + available.toFixed(2) + ' available';
-  document.getElementById('chargeEarnedMeta').textContent = '$' + earned.toFixed(2) + ' earned';
+  document.getElementById('chargeAvailableMeta').textContent = '$' + available.toFixed(2) + ' ' + window.t('available', 'উপলব্ধ');
+  document.getElementById('chargeEarnedMeta').textContent = '$' + earned.toFixed(2) + ' ' + window.t('earned', 'আয়');
 }
 
 function fmtDate(str){ return new Date(str).toLocaleString([], { month:'short', day:'numeric', hour:'2-digit', minute:'2-digit' }); }
@@ -2590,7 +2618,7 @@ async function loadInsights(){
   const paid = Number(row.paid_invoices || 0);
   const pct = total > 0 ? Math.round((paid / total) * 100) : 0;
   document.getElementById('insConversion').textContent = pct + '%';
-  document.getElementById('insConversionSub').textContent = `${paid} of ${total} invoice${total === 1 ? '' : 's'} paid`;
+  document.getElementById('insConversionSub').textContent = window.t(`${paid} of ${total} invoice${total === 1 ? '' : 's'} paid`, `${total}টির মধ্যে ${paid}টি ইনভয়েস পরিশোধিত`);
 }
 
 function openInitialSection(){
