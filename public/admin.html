@@ -11,6 +11,7 @@
             <script src="theme.js"></script>
             <script src="i18n.js"></script>
             <style>
+html{ -webkit-text-size-adjust:100%; text-size-adjust:100%; }
 :root{
   /* One palette for admin, dashboard and moderator — the same near-black
      amber brand as the home page and the payment card. */
@@ -284,7 +285,13 @@ body::before{ content:''; position:fixed; inset:0; pointer-events:none; z-index:
 .pay-row.is-marked::before{ content:'CHECKED'; float:right; margin:-3px 0 0 8px; color:var(--ok); font-size:8px; font-weight:800; letter-spacing:.08em; }
 input:focus-visible,select:focus-visible,button:focus-visible{ outline:2px solid var(--amber); outline-offset:2px; }
 @media (max-width:680px){
-  .header{ padding:14px; }
+  .header{ padding:12px; gap:8px; }
+  /* Email ellipsizes; language + Live + Log out stay on one row (pt308u). */
+  .header-left{ flex:1; min-width:0; gap:8px; } .header-left > div:last-child{ min-width:0; }
+  .header-sub{ overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+  .header-actions{ flex:none; gap:6px; }
+  .header-actions .lang-btn{ min-height:30px !important; min-width:0 !important; padding:0 8px !important; font-size:12px !important; white-space:nowrap; }
+  .btn-logout{ padding:6px 10px; font-size:12px; }
   .content{ padding:16px 12px; }
   .panel{ padding:15px; border-radius:16px; }
   .pay-grid{ grid-template-columns:repeat(2,minmax(0,1fr)); }
@@ -410,6 +417,17 @@ textarea.w-input{ padding:10px 12px !important; }
 #allPaymentsList .pay-field:not(.wide) .pay-field-value.with-copy{ flex-wrap:wrap; white-space:normal; row-gap:2px; }
 @media (max-width:680px){ #allPaymentsList .pay-grid{ grid-template-columns:repeat(2,minmax(0,1fr)); } }
 .device-item{padding:4px 0;border-top:1px dashed rgba(0,0,0,.08)}
+#allPaymentsList .pay-details{ font-size:11.5px; line-height:16px; }
+#allPaymentsList .px-meta{ margin-top:6px; padding-top:6px; border-top:1px solid var(--line); color:var(--text-dim); font-size:11px; line-height:15px; }
+#allPaymentsList .px-line{ display:flex; align-items:center; gap:5px; margin-top:5px; min-width:0; white-space:nowrap; }
+#allPaymentsList .px-k{ font-size:9.5px; font-weight:700; color:var(--text-dim); letter-spacing:.06em; flex:none; width:16px; }
+#allPaymentsList .px-v{ overflow:hidden; text-overflow:ellipsis; min-width:0; font-size:11px; }
+#allPaymentsList .px-dev{ font-size:11px; color:var(--text-dim); }
+#allPaymentsList .px-dim{ color:var(--text-dim); font-size:11px; }
+#allPaymentsList .device-item{ padding:2px 0; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; border-top:1px dashed var(--line); }
+#allPaymentsList .px-line .copy-mini{ flex:none; }
+#allPaymentsList .px-line select.conf-select{ flex:none; width:auto; }
+
 </style>
     <link rel="stylesheet" href="dash.css">
   <script src="auth.js"></script>
@@ -703,7 +721,7 @@ textarea.w-input{ padding:10px 12px !important; }
                                       <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(170px,1fr));gap:8px">
                                         <select id="miUser"><option value="">Select user · ইউজার বাছুন</option></select>
                                         <input id="miAmount" type="number" min="0.01" step="0.01" placeholder="Amount USD · পরিমাণ">
-                                        <input id="miDate" type="date">
+                                        <label style="display:flex;flex-direction:column;gap:2px;font-size:11px;color:var(--text-dim)"><span>Invoice date (optional) · ইনভয়েসের তারিখ (ঐচ্ছিক)</span><input id="miDate" type="date" aria-label="Invoice date (optional) · ইনভয়েসের তারিখ (ঐচ্ছিক)"></label>
                                         <input id="miDesc" maxlength="500" placeholder="Description · বিবরণ">
                                         <button class="btn-sm" onclick="createManualInvoice(this)">Create invoice · তৈরি করুন</button>
                                       </div>
@@ -1613,8 +1631,17 @@ function withinTimeFilter(createdAt, filter){
   return true;
 }
 
+// Device look-up results by payment id, so a live refresh keeps them.
+const deviceLookups = new Map();
 function renderAllPayments(){
   const c = document.getElementById('allPaymentsList');
+  // Do not rebuild the list while a select inside it is focused/open
+  // (owner pt308u: Unset/Look up closed by themselves on live refresh).
+  // Re-render once focus leaves it.
+  if (c && c.contains(document.activeElement) && document.activeElement.tagName === 'SELECT') {
+    if (!c._deferred) { c._deferred = true; c.addEventListener('focusout', function f(){ c.removeEventListener('focusout', f); c._deferred = false; setTimeout(renderAllPayments, 0); }); }
+    return;
+  }
   const search = (document.getElementById('paymentSearch')?.value || '').trim().toLowerCase();
   const statusFilter = document.getElementById('adminTxStatusFilter')?.value || '';
   const timeFilter = document.getElementById('adminTxTimeFilter')?.value || '';
@@ -1695,46 +1722,27 @@ function renderAllPayments(){
           : `<button class="act-btn act-approve" onclick="markChecked('${escapeAttr(p.id)}', this)">Mark checked</button>`)
       : '';
 
-    // Every field that used to render open on the card now lives inside
-    // .pay-details, collapsed by default — same pattern as moderator.html's
-    // togglePayRow. Nothing was removed, it is all still one tap away.
+    // Compact open row (owner pt304u, pt308u): one meta line, one control
+    // line (confirmation + device), then invoice ID and Lightning invoice on
+    // single lines with copy inline. Nothing removed, just denser.
+    const meta = [safeText(p.link_slug), safeMethod(p.method), fmtDate(p.created_at), escapeHtml(location)];
+    if (p.amount_settled != null && p.status === 'settled') meta.push(`<span style="color:var(--ok);">Settled / সেটেলড $${parseFloat(p.amount_settled).toFixed(2)}${p.settled_at ? ' · ' + fmtDate(p.settled_at) : ''}</span>`);
     const detailsInner = `
-      <div class="pay-grid">
-        <div class="pay-field">
-          <div class="pay-field-label">Link &amp; payer cost</div>
-          <div class="pay-field-value">\ud83c\udf0e ${safeText(p.link_slug)}</div>
-        </div>
-        <div class="pay-field">
-          <div class="pay-field-label">Method</div>
-          <div class="pay-field-value">${safeMethod(p.method)}</div>
-        </div>
-        <div class="pay-field">
-          <div class="pay-field-label">Created</div>
-          <div class="pay-field-value">${fmtDate(p.created_at)}</div>
-        </div>
-        <div class="pay-field">
-          <div class="pay-field-label">Location</div>
-          <div class="pay-field-value">\ud83d\udccd ${escapeHtml(location)}</div>
-        </div>
-        ${settledField}
-        ${settledAtField}
-        ${confField}
-        ${devField}
-        <div class="pay-field">
-          <div class="pay-field-label">Invoice ID</div>
-          <div class="pay-field-value with-copy">
-            <span>${escapeHtml(shortInv)}</span>
-            ${inv !== '\u2014' ? `<button class="copy-mini" data-copy="${escapeAttr(inv)}">copy</button>` : ''}
-          </div>
-        </div>
-        ${ln ? `<div class="pay-field wide">
-          <div class="pay-field-label">Lightning invoice</div>
-          <div class="pay-field-value with-copy">
-            <span class="ln-value">${escapeHtml(shortLn)}</span>
-            <button class="copy-mini" data-copy="${escapeAttr(ln)}">copy</button>
-          </div>
-        </div>` : ''}
+      <div class="px-meta">${meta.join(' · ')}</div>
+      <div class="px-line">
+        <select class="conf-select" aria-label="Confirmation / নিশ্চিতকরণ" onchange="setConfirmation('${escapeAttr(p.id)}', this)">
+          ${Object.keys(confLabels).map(k => `<option value="${k}"${k === conf ? ' selected' : ''}>${confLabels[k]}</option>`).join('')}
+        </select>
+        ${dev ? `<span class="mono px-dev" title="${escapeAttr(dev)}">${escapeHtml(dev.slice(0, 8))}…</span>
+          <span class="dev-chip${Number(p.device_payments) > 1 ? ' dev-multi' : ''}">${Number(p.device_payments || 0)} pay · ${Number(p.device_creators || 0)} cr</span>
+          <button class="copy-mini" onclick="lookupDevice('${escapeAttr(dev)}', this, '${escapeAttr(p.id)}')">Look up / খুঁজুন</button>`
+          : `<span class="px-dim">Device unknown / ডিভাইস অজানা</span>`}
       </div>
+      ${conf === 'held' || conf === 'rejected' ? `<div class="conf-hint">Not withdrawable / উত্তোলনযোগ্য নয়</div>` : ''}
+      ${p.confirmation_note ? `<div class="conf-hint">${escapeHtml(p.confirmation_note)}</div>` : ''}
+      <div class="device-list"${deviceLookups.has(p.id) ? ' data-open="1"' : ''}>${deviceLookups.get(p.id) || ''}</div>
+      <div class="px-line"><span class="px-k">ID</span><span class="mono px-v">${escapeHtml(shortInv)}</span>${inv !== '\u2014' ? `<button class="copy-mini" data-copy="${escapeAttr(inv)}">copy</button>` : ''}</div>
+      ${ln ? `<div class="px-line"><span class="px-k">LN</span><span class="mono px-v ln-value">${escapeHtml(shortLn)}</span><button class="copy-mini" data-copy="${escapeAttr(ln)}">copy</button></div>` : ''}
       ${markLine}
       ${(actions || markBtn) ? `<div class="pay-actions">${actions}${markBtn}</div>` : ''}`;
 
@@ -1810,17 +1818,18 @@ async function setConfirmation(paymentId, sel){
   }
 }
 
-async function lookupDevice(deviceId, btn){
-  const box = btn.closest('.pay-field').querySelector('.device-list');
-  if (box.dataset.open === '1') { box.innerHTML = ''; box.dataset.open = ''; return; }
+async function lookupDevice(deviceId, btn, pid){
+  const box = btn.closest('.pay-details').querySelector('.device-list');
+  if (box.dataset.open === '1') { box.innerHTML = ''; box.dataset.open = ''; deviceLookups.delete(pid); return; }
   btn.disabled = true;
   try {
     const { data, error } = await window.supabaseClient.rpc('admin_payments_by_device', { p_device_id: deviceId, p_limit: 50 });
     if (error) throw error;
-    box.innerHTML = (data || []).length
-      ? (data || []).map(d => `<div class="device-item"><span>${fmtDate(d.created_at)}</span> <b>$${parseFloat(d.amount_requested).toFixed(2)}</b> <span class="badge ${escapeAttr(d.status)}">${escapeHtml(d.status)}</span> ${safeText(d.creator_email)} · ${safeText(d.link_slug)}${d.confirmation ? ' · ' + escapeHtml(d.confirmation) : ''}</div>`).join('')
+    // One short line per payment: date · amount · status · creator.
+    const html = (data || []).length
+      ? (data || []).map(d => `<div class="device-item">${fmtDate(d.created_at)} · <b>$${parseFloat(d.amount_requested).toFixed(2)}</b> · ${escapeHtml(d.status)} · ${safeText(d.creator_email)}${d.confirmation ? ' · ' + escapeHtml(d.confirmation) : ''}</div>`).join('')
       : '<div class="device-item">No payments / কোনো পেমেন্ট নেই</div>';
-    box.dataset.open = '1';
+    box.innerHTML = html; box.dataset.open = '1'; deviceLookups.set(pid, html);
   } catch (e) {
     showToast('Lookup failed / খোঁজা ব্যর্থ: ' + e.message, 'err');
   } finally { btn.disabled = false; }
