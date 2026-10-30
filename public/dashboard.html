@@ -607,6 +607,7 @@ textarea.w-input{ padding:10px 12px !important; }
 @media (min-width:1024px){ .content{ max-width:1280px !important; padding-left:32px !important; padding-right:32px !important; } }
 </style>
     <link rel="stylesheet" href="dash.css">
+    <link rel="stylesheet" href="links.css">
   </head>
   <body>
     <div id="appShell">
@@ -760,61 +761,58 @@ textarea.w-input{ padding:10px 12px !important; }
           </div>
 
           <!-- ============ PAYMENT LINKS ============ -->
-          <div class="section" id="sec-links">
-            <div class="page-header">
-              <div>
-                <div class="page-title">Payment links</div>
-                <div class="page-sub">Create and manage your public payment pages</div>
+          <div class="section links-root" id="sec-links">
+            <div class="links-hero">
+              <div class="links-eyebrow" data-en="Payment links" data-bn="পেমেন্ট লিংক">Payment links</div>
+              <div class="links-title" data-en="Your public pay pages" data-bn="আপনার পাবলিক পেমেন্ট পেজ">Your public pay pages</div>
+              <div class="links-sub" data-en="Create a link, share it, get paid. Every link works on all your domains." data-bn="লিংক তৈরি করুন, শেয়ার করুন, পেমেন্ট নিন। প্রতিটি লিংক আপনার সব ডোমেইনে কাজ করে।">Create a link, share it, get paid. Every link works on all your domains.</div>
+              <div class="links-usage limit-bar" id="limitBar"></div>
+              <button class="links-cta" onclick="toggleLinkForm()" data-en="+ New link" data-bn="+ নতুন লিংক">+ New link</button>
+            </div>
+
+            <div id="newLinkForm" class="links-card links-form" style="display:none;">
+              <div class="links-card-title" data-en="New payment link" data-bn="নতুন পেমেন্ট লিংক">New payment link</div>
+              <label class="links-label" for="newSlug" data-en="Name shown to payers" data-bn="পেয়ারদের দেখানো নাম">Name shown to payers</label>
+              <input type="text" class="w-input links-input" id="newSlug" placeholder="Name — e.g. Sophia or Taylor James" data-ph-en="Name — e.g. Sophia or Taylor James" data-ph-bn="নাম — যেমন Sophia বা Taylor James">
+              <label class="links-label" for="newLinkMarkup"><span data-en="Extra fee (%)" data-bn="অতিরিক্ত ফি (%)">Extra fee (%)</span> <span class="links-lock" data-en="🔒 Locked after creation" data-bn="🔒 তৈরির পর লক">🔒 Locked after creation</span></label>
+              <input type="number" class="w-input links-input" id="newLinkMarkup" min="0" max="100" step="0.01" inputmode="decimal" placeholder="Add extra fee (%) — optional" data-ph-en="Add extra fee (%) — optional" data-ph-bn="অতিরিক্ত ফি যোগ করুন (%) — ঐচ্ছিক">
+              <div class="hint links-hint" id="linkMarkupHint"></div>
+              <button class="links-cta links-cta-block" onclick="openStylePicker()" data-en="Choose link style" data-bn="লিংক স্টাইল বেছে নিন">Choose link style</button>
+              <div class="hint" id="linkFormMsg" style="display:none;"></div>
+            </div>
+            <div id="styleModal" class="modal-back">
+              <div class="modal-card">
+                <div class="modal-title" data-en="Choose your link" data-bn="আপনার লিংক বেছে নিন">Choose your link</div>
+                <div class="modal-sub" id="styleModalSub"></div>
+                <div id="styleOptions"></div>
+                <div class="hint" id="styleModalMsg" style="display:none;"></div>
+                <div class="modal-actions">
+                  <button class="btn-ghost" onclick="closeStylePicker()" data-en="Cancel" data-bn="বাতিল">Cancel</button>
+                  <button class="btn-primary" id="styleCreateBtn" onclick="createPaymentLink()" data-en="Create link" data-bn="লিংক তৈরি করুন">Create link</button>
+                </div>
               </div>
             </div>
-            <div class="panel">
-              <div class="panel-head">
-                <div>
-                  <div class="panel-title">Your payment links</div>
-                  <div class="domain-picker">
-                    <label for="domainPicker">Domain</label>
-                    <select id="domainPicker" onchange="renderLinks()"></select>
-                  </div>
-                  <div class="panel-sub" id="domainCountHint"></div>
-                </div>
-                <button class="btn-primary" style="padding:9px 14px; font-size:12px;" onclick="toggleLinkForm()">+ New link</button>
+
+            <div class="links-card links-qi" id="quickInvoiceCard">
+              <div class="links-card-title" data-en="Create an invoice and copy its link" data-bn="ইনভয়েস তৈরি করে লিংক কপি করুন">Create an invoice and copy its link</div>
+              <div class="links-qi-row">
+                <select id="qiLink" class="filter-select links-input"></select>
+                <input id="qiAmount" class="w-input links-input" type="number" min="1" step="0.01" inputmode="decimal" placeholder="Amount (USD)" data-ph-en="Amount (USD)" data-ph-bn="পরিমাণ (USD)">
               </div>
-              <div class="limit-bar" id="limitBar"></div>
-              <div id="newLinkForm" style="display:none; margin-bottom:16px;">
-                <div class="w-row">
-                  <input type="text" class="w-input" id="newSlug" placeholder="Name — e.g. Sophia or Taylor James">
-                </div>
-                <div class="w-row">
-                  <input type="number" class="w-input" id="newLinkMarkup" min="0" max="100" step="0.01" inputmode="decimal" placeholder="Add extra fee (%) — optional" data-ph-en="Add extra fee (%) — optional" data-ph-bn="অতিরিক্ত ফি যোগ করুন (%) — ঐচ্ছিক">
-                </div>
-                <div class="hint" id="linkMarkupHint" style="margin:-4px 0 10px;"></div>
-                <button class="btn-primary" onclick="openStylePicker()" style="width:100%;">Choose link style</button>
-                <div class="hint" id="linkFormMsg" style="display:none;"></div>
+              <button class="links-cta links-cta-block links-cta-ghost" id="qiBtn" onclick="quickInvoice()" data-en="Create &amp; copy link" data-bn="তৈরি করুন ও লিংক কপি করুন">Create &amp; copy link</button>
+              <div class="hint links-qi-out" id="qiOut" style="display:none;"></div>
+            </div>
+
+            <div class="links-list-head">
+              <div class="links-card-title" data-en="Your links" data-bn="আপনার লিংক">Your links</div>
+              <div class="links-domain">
+                <label for="domainPicker" data-en="Domain" data-bn="ডোমেইন">Domain</label>
+                <select id="domainPicker" class="links-select" onchange="renderLinks()"></select>
               </div>
-              <div id="styleModal" class="modal-back">
-                <div class="modal-card">
-                  <div class="modal-title">Choose your link</div>
-                  <div class="modal-sub" id="styleModalSub"></div>
-                  <div id="styleOptions"></div>
-                  <div class="hint" id="styleModalMsg" style="display:none;"></div>
-                  <div class="modal-actions">
-                    <button class="btn-ghost" onclick="closeStylePicker()">Cancel</button>
-                    <button class="btn-primary" id="styleCreateBtn" onclick="createPaymentLink()">Create link</button>
-                  </div>
-                </div>
-              </div>
-              <div class="card" id="quickInvoiceCard" style="margin-bottom:14px;padding:14px;">
-                <div class="model-name" data-en="Create an invoice and copy its link" data-bn="ইনভয়েস তৈরি করে লিংক কপি করুন">Create an invoice and copy its link</div>
-                <div style="display:flex;gap:8px;flex-wrap:wrap;margin-top:8px;align-items:center;">
-                  <select id="qiLink" class="filter-select" style="max-width:220px;"></select>
-                  <input id="qiAmount" class="w-input" type="number" min="1" step="0.01" inputmode="decimal" placeholder="Amount (USD)" style="max-width:140px;">
-                  <button class="btn-primary" id="qiBtn" onclick="quickInvoice()" data-en="Create &amp; copy link" data-bn="তৈরি করুন ও লিংক কপি করুন">Create &amp; copy link</button>
-                </div>
-                <div class="hint" id="qiOut" style="display:none;margin-top:8px;word-break:break-all;"></div>
-              </div>
-              <div id="linksList">
-                <div class="empty-state">No payment links yet</div>
-              </div>
+            </div>
+            <div class="links-domain-hint" id="domainCountHint"></div>
+            <div id="linksList" class="links-list">
+              <div class="links-empty" data-en="No payment links yet" data-bn="এখনও কোনো পেমেন্ট লিংক নেই">No payment links yet</div>
             </div>
           </div>
 
@@ -1451,7 +1449,7 @@ async function loadDomains(){
   const { data } = await window.supabaseClient.from('site_domains').select('hostname, purpose, is_active, sort_order').eq('is_active', true).order('sort_order');
   paymentDomains = (data || []).filter(d => d.purpose === 'payment' || d.purpose === 'both');
   if (!paymentDomains.length) paymentDomains = [{ hostname: window.location.host }];
-  document.getElementById('domainCountHint').textContent = `${paymentDomains.length} domain${paymentDomains.length === 1 ? '' : 's'} available`;
+  document.getElementById('domainCountHint').textContent = qiT(`${paymentDomains.length} domain${paymentDomains.length === 1 ? '' : 's'} available`, `${paymentDomains.length}টি ডোমেইন উপলব্ধ`);
   const picker = document.getElementById('domainPicker');
   if (picker){
     picker.innerHTML = paymentDomains
@@ -1537,7 +1535,8 @@ async function fetchLinks(){
   ).size;
   document.getElementById('statLinks').textContent = activeCount;
   document.getElementById('statLinkLimit').textContent = `of ${maxLinks} allowed`;
-  document.getElementById('limitBar').innerHTML = `You've used <b>${activeCount}</b> of <b>${maxLinks}</b> active payment links.`;
+  document.getElementById('limitBar').innerHTML = qiT(`<b>${activeCount}</b> of <b>${maxLinks}</b> active links used`, `<b>${maxLinks}</b>টির মধ্যে <b>${activeCount}</b>টি সক্রিয় লিংক ব্যবহৃত`)
+    + `<span class="links-meter"><span style="width:${Math.min(100, maxLinks ? Math.round(activeCount / maxLinks * 100) : 0)}%"></span></span>`;
   renderLinks();
 }
 
@@ -1601,7 +1600,7 @@ async function quickInvoice(){
 function renderLinks(){
   fillQuickInvoiceLinks();
   const list = document.getElementById('linksList');
-  if (!allLinks.length){ list.innerHTML = '<div class="empty-state">No payment links yet</div>'; return; }
+  if (!allLinks.length){ list.innerHTML = `<div class="links-empty">${qiT('No payment links yet', 'এখনও কোনো পেমেন্ট লিংক নেই')}</div>`; return; }
 
   const host = document.getElementById('domainPicker')?.value
     || paymentDomains[0]?.hostname
@@ -1621,22 +1620,26 @@ function renderLinks(){
 
     const rows = variants.map(l => {
       const url = `https://${host}/${l.slug}`;
-      return `<div class="domain-row">
-        <span class="domain-url">${escapeHtml(host)}/${escapeHtml(l.slug)}</span>
-        <button class="btn-copy" data-copy="${escapeAttr(url)}">⧉</button>
-        <button class="btn-copy" title="Amount options" onclick="editAmountOptions('${escapeAttr(l.id)}')">$</button>
+      return `<div class="links-row">
+        <span class="links-url"><span class="links-host">${escapeHtml(host)}/</span>${escapeHtml(l.slug)}</span>
+        <button class="btn-copy links-btn links-btn-accent" data-copy="${escapeAttr(url)}" title="${escapeAttr(qiT('Copy link', 'লিংক কপি করুন'))}">${qiT('Copy', 'কপি')}</button>
+        <button class="btn-copy links-btn" title="${escapeAttr(qiT('Amount options', 'পরিমাণের অপশন'))}" onclick="editAmountOptions('${escapeAttr(l.id)}')">$</button>
       </div>`;
     }).join('');
 
     const note = variants.length > 1
-      ? `<div class="variant-note">Same name, ${variants.length} link styles — send whichever one you prefer.</div>`
+      ? `<div class="links-note">${qiT(`Same name, ${variants.length} link styles — send whichever one you prefer.`, `একই নাম, ${variants.length}টি লিংক স্টাইল — যেটি পছন্দ পাঠান।`)}</div>`
       : '';
+    const name = head.display_name || head.slug;
 
-    return `<div class="model-card">
-      <div class="model-head">
-        <div><div class="model-name">🌐 ${escapeHtml(head.display_name || head.slug)}</div>
-          <div class="variant-note" style="margin:2px 0 0;">${qiT('Extra fee', 'অতিরিক্ত ফি')}: ${escapeHtml(String(Number(head.cost_percent || 0)))}% 🔒</div></div>
-        <span class="badge ${anyActive ? 'settled' : 'expired'}"><span class="badge-dot"></span>${anyActive ? 'active' : 'disabled'}</span>
+    return `<div class="links-item ${anyActive ? '' : 'links-off'}">
+      <div class="links-item-head">
+        <div class="links-avatar">${escapeHtml(String(name).trim().charAt(0).toUpperCase() || '#')}</div>
+        <div class="links-item-meta">
+          <div class="links-item-name">${escapeHtml(name)}</div>
+          <div class="links-fee">${qiT('Extra fee', 'অতিরিক্ত ফি')}: ${escapeHtml(String(Number(head.cost_percent || 0)))}% 🔒</div>
+        </div>
+        <span class="links-status ${anyActive ? 'on' : 'off'}">${anyActive ? qiT('Active', 'সক্রিয়') : qiT('Disabled', 'নিষ্ক্রিয়')}</span>
       </div>
       ${note}${rows}
     </div>`;
