@@ -60,6 +60,19 @@ h1{ font-size:24px; line-height:32px; font-weight:600; letter-spacing:-.02em; }
 .btn.go::before{ content:""; width:16px; height:16px; margin-right:8px; background:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='16' height='16' viewBox='0 0 24 24' fill='none' stroke='%232A1F00' stroke-width='2.4' stroke-linecap='round' stroke-linejoin='round'%3E%3Crect x='4' y='11' width='16' height='10' rx='2'/%3E%3Cpath d='M8 11V7a4 4 0 0 1 8 0v4'/%3E%3C/svg%3E") center/contain no-repeat; }
 .btn.go::after{ content:""; width:16px; height:16px; margin-left:8px; background:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='16' height='16' viewBox='0 0 24 24' fill='none' stroke='%232A1F00' stroke-width='2.4' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M5 12h14M13 6l6 6-6 6'/%3E%3C/svg%3E") center/contain no-repeat; }
 .btn.go:not(:disabled):hover{ background:var(--amber-600); }
+.head{ display:flex; flex-direction:column; align-items:center; gap:10px; padding-bottom:16px; border-bottom:1px solid var(--line); }
+.head h1{ text-align:center; font-size:28px; }
+#v-amount .method{ flex-direction:column; gap:6px; justify-content:center; border:1px solid var(--line); background:var(--card); padding:16px; }
+#v-amount .method .ms{ font-size:13px; }
+.amt-panel{ background:var(--wash); border-radius:16px; padding:16px; display:flex; flex-direction:column; gap:10px; }
+.amt-label{ font-size:12px; font-weight:700; letter-spacing:.12em; text-transform:uppercase; color:#7A5600; }
+.amt-label::before{ content:"$ "; }
+.amt-panel .amount-row{ background:var(--card); min-height:44px; font-size:16px; font-weight:500; }
+.amt-panel .err:empty{ display:none; }
+.amt-panel .more{ align-self:stretch; background:rgba(255,184,0,.18); border-radius:10px; min-height:36px; color:#7A5600; font-size:13px; }
+.amt-panel .more::after{ content:" ⌄"; }
+.powered{ text-align:center; font-size:12px; color:var(--dim); }
+.powered b{ color:var(--text); font-weight:600; border-bottom:2px solid var(--amber); }
 </style>
 </head>
 <body>
@@ -67,20 +80,25 @@ h1{ font-size:24px; line-height:32px; font-weight:600; letter-spacing:-.02em; }
   <div class="top"><div class="brand" id="brand"></div><button type="button" class="lang" id="langBtn" onclick="toggleLang()">বাংলা</button></div>
   <div class="card">
   <section class="view" id="v-amount">
-    <div class="trust"><span class="secure" data-en="Secure payment" data-bn="নিরাপদ পেমেন্ট">Secure payment</span></div>
-    <h1 id="payee" data-en="Pay" data-bn="পেমেন্ট">Pay</h1>
+    <div class="head">
+      <h1 id="payee" data-en="Pay" data-bn="পেমেন্ট">Pay</h1>
+      <span class="secure" data-en="Secure payment" data-bn="নিরাপদ পেমেন্ট">Secure payment</span>
+    </div>
     <p class="note" id="note" style="display:none"></p>
-    <p class="sub" id="limits" data-en="Choose an amount" data-bn="অ্যামাউন্ট বেছে নিন">Choose an amount</p>
-    <label class="amount-row">$<input id="amount" type="text" inputmode="decimal" autocomplete="off" placeholder="0" aria-label="Amount" oninput="onAmount()"></label>
-    <div class="err" id="amount-err" role="alert"></div>
-    <div class="quick" id="quick"></div>
-    <button type="button" class="more" id="more" style="display:none" onclick="showMore()" data-en="Show more" data-bn="আরও দেখুন">Show more</button>
     <div class="method" aria-label="Payment method">
       <div class="ic" aria-hidden="true">⚡</div>
-      <div><div class="mt" data-en="Lightning" data-bn="লাইটনিং">Lightning</div><div class="ms" data-en="Pay with Cash App or any Lightning wallet" data-bn="ক্যাশ অ্যাপ বা যেকোনো লাইটনিং ওয়ালেট দিয়ে পে করুন">Pay with Cash App or any Lightning wallet</div></div>
-      <span class="tag" data-en="Instant" data-bn="তাৎক্ষণিক">Instant</span>
+      <div class="ms" data-en="Instant" data-bn="তাৎক্ষণিক">Instant</div>
     </div>
-    <button class="btn primary go" id="continue" onclick="createInvoice()" disabled data-en="Continue" data-bn="এগিয়ে যান">Continue</button>
+    <div class="amt-panel">
+      <div class="amt-label" data-en="Select amount" data-bn="অ্যামাউন্ট বেছে নিন">Select amount</div>
+      <p class="sub" id="limits" hidden></p>
+      <label class="amount-row">$<input id="amount" type="text" inputmode="decimal" autocomplete="off" placeholder="Custom" data-ph-en="Custom" data-ph-bn="নিজের অ্যামাউন্ট" aria-label="Amount" oninput="onAmount()"></label>
+      <div class="err" id="amount-err" role="alert"></div>
+      <div class="quick" id="quick"></div>
+      <button type="button" class="more" id="more" style="display:none" onclick="showMore()" data-en="Show more amounts" data-bn="আরও অ্যামাউন্ট দেখুন">Show more amounts</button>
+    </div>
+    <button class="btn primary go" id="continue" onclick="createInvoice()" disabled data-en="Pay Now" data-bn="এখনই পে করুন">Pay Now</button>
+    <p class="powered"><span data-en="Powered by" data-bn="পরিচালনায়">Powered by</span> <b data-en="Fast &amp; Secure Payments" data-bn="দ্রুত ও নিরাপদ পেমেন্ট">Fast &amp; Secure Payments</b></p>
   </section>
   <section class="view" id="v-invoice">
     <h1 class="center" data-en="Scan or tap to pay" data-bn="স্ক্যান বা ট্যাপ করে পে করুন">Scan or tap to pay</h1>
@@ -109,7 +127,6 @@ h1{ font-size:24px; line-height:32px; font-weight:600; letter-spacing:-.02em; }
     <a class="btn ghost" id="retry" href="/" data-en="Start again" data-bn="আবার শুরু করুন">Start again</a>
   </section>
   </div>
-  <p class="foot" data-en="Secured by Lightning · Boltpay" data-bn="লাইটনিং দ্বারা সুরক্ষিত · Boltpay">Secured by Lightning · Boltpay</p>
 </main>
 
 <script>
@@ -183,6 +200,9 @@ async function loadLink() {
     limits = { min: d.minUsd, max: d.maxUsd };
     setT('payee', 'Pay ' + d.displayName, d.displayName + '-কে পেমেন্ট');
     setT('limits', 'Choose an amount · ' + money(limits.min) + ' – ' + money(limits.max), 'অ্যামাউন্ট বেছে নিন · ' + money(limits.min) + ' – ' + money(limits.max));
+    el('amount').dataset.phEn = 'Custom (' + limits.min + ' – ' + limits.max + ')';
+    el('amount').dataset.phBn = 'নিজের অ্যামাউন্ট (' + limits.min + ' – ' + limits.max + ')';
+    el('amount').placeholder = t(el('amount').dataset.phEn, el('amount').dataset.phBn);
     if (d.note) { el('note').textContent = d.note; el('note').style.display = ''; }
     el('quick').innerHTML = '';
     // Links without their own quick amounts get sensible defaults inside
@@ -193,7 +213,7 @@ async function loadLink() {
       const b = document.createElement('button');
       b.type = 'button'; b.dataset.v = q;
       if (i >= 3) b.className = 'extra';
-      b.textContent = money(q);
+      b.textContent = '$' + (Number(q) % 1 ? Number(q).toFixed(2) : String(Number(q)));
       b.onclick = function () { el('amount').value = String(q); onAmount(); };
       el('quick').appendChild(b);
     });
@@ -221,7 +241,7 @@ async function createInvoice() {
     await openInvoice();
   } catch (e) {
     el('amount-err').textContent = e.message;
-    setT('continue', 'Continue', 'এগিয়ে যান');
+    setT('continue', 'Pay Now', 'এখনই পে করুন');
     el('continue').disabled = false;
   }
 }
