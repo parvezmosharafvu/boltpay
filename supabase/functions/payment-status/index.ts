@@ -38,7 +38,7 @@ Deno.serve(async (req) => {
   if (error) return json({ error: { message: "Temporarily unavailable" } }, 503);
   if (!row) return json({ error: { message: "Payment not found" } }, 404);
 
-  if (row.status === "new" || row.status === "pending") {
+  if (row.status === "new" || row.status === "pending" || (row.status === "expired" && row.btc_address)) {
     const cfg = await lndConfig(db);
     if (cfg) {
       try {
@@ -62,6 +62,8 @@ Deno.serve(async (req) => {
       amountSats: row.amount_sats,
       bolt11: row.status === "new" || row.status === "pending" ? row.bolt11 : null,
       btcAddress: row.status === "new" || row.status === "pending" ? row.btc_address : null,
+      // BIP21 amount for the on-chain fallback page (same locked sats).
+      amountBtc: row.amount_sats ? (Number(row.amount_sats) / 1e8).toFixed(8) : null,
     },
   });
 });
