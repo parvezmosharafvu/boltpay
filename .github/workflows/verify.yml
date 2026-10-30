@@ -91,6 +91,11 @@ jobs:
           PGPASSWORD: postgres
         run: psql -h localhost -U postgres -v ON_ERROR_STOP=1 -f ci/withdrawal_bdt_regression.sql
 
+      - name: Runtime regression — withdrawal fee is zero (0086)
+        env:
+          PGPASSWORD: postgres
+        run: psql -h localhost -U postgres -v ON_ERROR_STOP=1 -f ci/withdrawal_fee_zero_regression.sql
+
   functions:
     name: Edge functions type-check
     runs-on: ubuntu-latest

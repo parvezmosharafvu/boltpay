@@ -659,14 +659,6 @@ body{
                 <div class="stat-val violet mono" id="statSuccessRate">—</div>
                 <div class="stat-sub" id="statOutcomeCounts">Paid 0 · Expired 0 · Failed 0</div>
               </div>
-              <div class="stat-card">
-                <div class="stat-head">
-                  <div class="stat-label">Withdrawal fee</div>
-                  <div class="stat-icon alert">%</div>
-                </div>
-                <div class="stat-val alert mono" id="statFee">—%</div>
-                <div class="stat-sub">Set by Boltpay admin</div>
-              </div>
             </div>
 
           <div class="section" id="sec-overview">
@@ -943,7 +935,7 @@ body{
                 <div class="meter-figures">
                   <div class="meter-label-top">Available balance</div>
                   <div class="meter-amount mono" id="statAvailableUSD">$0.00</div>
-                  <div class="meter-sub">Withdraw anytime — fee applied at request time</div>
+                  <div class="meter-sub">Withdraw anytime — no withdrawal fee (যেকোনো সময় উত্তোলন — কোনো ফি নেই)</div>
                   <div class="meter-badges">
                     <div class="chip">Total earned&nbsp;<b id="statEarned_b">$0.00</b></div>
                     <div class="chip">Payments&nbsp;<b id="statEarnedCount_b">0</b></div>
@@ -981,7 +973,7 @@ body{
                 Adds a percentage on top of every payment link you own, at whatever rate you choose.
                 Set 3% and someone paying a $100 link is invoiced $103.00 &mdash; you are credited
                 the full $103.00. Your customer sees only the final amount.
-                <b>This is your own pricing</b> and is not the same thing as your withdrawal fee.
+                <b>This is your own pricing</b>.
               </div>
               <div class="w-row" style="align-items:center; gap:10px;">
                 <input type="number" class="w-input mono" id="myCostPercent" min="0" step="0.001" placeholder="0" style="max-width:130px;">
@@ -1337,7 +1329,6 @@ async function loadDomains(){
 async function fetchProfile(){
   const { data } = await window.supabaseClient.from('profiles').select('*').eq('id', currentUser.id).single();
 
-  document.getElementById('statFee').textContent = (data?.withdrawal_fee_percent ?? 3) + '%';
   maxLinks = data?.max_payment_links ?? 5;
 
   // Auto-withdraw (instant Lightning payouts) is retired; the flags stay in the DB as history.
@@ -1383,10 +1374,7 @@ async function fetchProfile(){
   // Showing them side by side is what stops the two being confused.
   const feeHint = document.getElementById('costCeilingHint');
   if (feeHint) {
-    const fee = data?.withdrawal_fee_percent;
-    feeHint.textContent = (fee ?? null) === null
-      ? ''
-      : `Separately, your withdrawal fee is ${fee}% — set by the admin, taken when you cash out. It is not related to this markup.`;
+    feeHint.textContent = '';
   }
 }
 
@@ -1851,8 +1839,7 @@ function updateBdtPreview(){
   const amt = parseFloat(document.getElementById('wdAmount').value);
   if (METHOD_CURRENCY[m] !== 'BDT'){ box.style.display = 'none'; return; }
   if (!MY_BDT_RATE){ box.textContent = 'BDT rate not set. Contact support to withdraw in BDT. (BDT রেট সেট করা নেই। BDT-তে উত্তোলনের জন্য সাপোর্টে যোগাযোগ করুন।)'; box.style.display = 'block'; return; }
-  const fee = parseFloat((document.getElementById('statFee')?.textContent || '').replace('%','')) || 0;
-  const usd = amt > 0 ? amt * (1 - fee/100) : 0;
+  const usd = amt > 0 ? amt : 0;
   const bdt = (usd * MY_BDT_RATE).toFixed(2);
   box.textContent = `Your rate ৳${MY_BDT_RATE} / USD · You receive ≈ ৳${bdt} (আপনার রেট ৳${MY_BDT_RATE} / USD · আপনি পাবেন ≈ ৳${bdt})`;
   box.style.display = 'block';
@@ -2139,14 +2126,12 @@ document.getElementById('wdAmount').addEventListener('input', updateBdtPreview);
 document.getElementById('wdMethod').addEventListener('change', updateBdtPreview);
 document.getElementById('wdAmount').addEventListener('input', function(e) {
   const amt = parseFloat(e.target.value);
-  const feeStr = document.getElementById('statFee').textContent.replace('%','');
-  const fee = parseFloat(feeStr) || 3.0;
   const help = document.getElementById('invoiceHelpText');
   const methodDropdown = document.getElementById('wdMethod');
 
   if (amt >= 5 && methodDropdown && methodDropdown.value === 'lightning') {
-    const afterFee = (amt * (1 - fee/100)).toFixed(2);
-    help.textContent = `Fee is ${fee}%. Please create a Lightning Invoice for exactly $${afterFee} USD.`;
+    const afterFee = amt.toFixed(2);
+    help.textContent = `Please create a Lightning Invoice for exactly $${afterFee} USD. (ঠিক $${afterFee} USD-এর একটি Lightning ইনভয়েস তৈরি করুন।)`;
     help.style.display = 'block';
   } else if (help) {
     help.style.display = 'none';
