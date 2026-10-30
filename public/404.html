@@ -11,7 +11,7 @@
 // Kept in sync with validate_link_slug() and worker/og-preview-worker.js.
 const RESERVED = ['index','login','register','dashboard','admin','404','config','theme',
   'assets','favicon','invoice-boltpay-v2','api','u','static','public',
-  'well-known','robots','sitemap','moderator'];
+  'well-known','robots','sitemap','moderator','expired'];
 (function(){
   var s = location.pathname.replace(/^\/|\/$/g, '');
   // Only redirect when the link really exists; otherwise this stays a plain 404.
