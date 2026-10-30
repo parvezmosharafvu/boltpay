@@ -10,7 +10,7 @@ create index if not exists payments_device_id_idx on payments(device_id) where d
 
 -- Held / rejected settled payments do not count toward earned (so they
 -- can't be withdrawn). NULL and 'confirmed' behave exactly as before.
-create or replace function public.get_balance_for(p_user_id uuid)
+create or replace function get_balance_for(p_user_id uuid)
  returns table(earned numeric, queued numeric, withdrawn numeric, available numeric)
  language sql stable security definer set search_path to 'public'
 as $function$
@@ -27,7 +27,7 @@ as $function$
      from withdrawals where user_id = p_user_id and status = 'paid') w;
 $function$;
 
-create or replace function public.admin_set_payment_confirmation(
+create or replace function admin_set_payment_confirmation(
   p_payment_id uuid, p_confirmation text, p_note text default null)
  returns void language plpgsql security definer set search_path to 'public'
 as $function$
@@ -50,7 +50,7 @@ end; $function$;
 
 -- Per-row extras for the admin list: confirmation + device and how many
 -- payments / creators that device has touched.
-create or replace function public.admin_payment_meta(p_ids uuid[])
+create or replace function admin_payment_meta(p_ids uuid[])
  returns table(id uuid, confirmation text, confirmation_note text, device_id text,
                device_payments bigint, device_creators bigint)
  language plpgsql stable security definer set search_path to 'public'
@@ -65,7 +65,7 @@ begin
   where p.id = any(p_ids) and (is_admin() or handles_creator(p.user_id));
 end; $function$;
 
-create or replace function public.admin_payments_by_device(p_device_id text, p_limit int default 50)
+create or replace function admin_payments_by_device(p_device_id text, p_limit int default 50)
  returns table(id uuid, created_at timestamptz, status text, amount_requested numeric,
                creator_email text, link_slug text, confirmation text,
                customer_city text, customer_country text)
