@@ -700,7 +700,7 @@ textarea.w-input{ padding:10px 12px !important; }
                                     <div class="panel">
                                       <div class="panel-head">
                                         <div class="panel-title">Daily invoices &middot; 7pm–7pm (Asia/Dhaka)</div>
-                                        <button class="btn-sm" onclick="runDailyInvoices(this)">Run now</button>
+                                        <button class="btn-sm" onclick="runDailyInvoices(this)" data-en="Run now" data-bn="এখন চালান">Run now</button>
                                       </div>
                                       <div id="dailyInvoicesList" style="overflow-x:auto"></div>
                                     </div>
@@ -1285,10 +1285,13 @@ async function setManualInvoiceStatus(id, st){
 }
 async function runDailyInvoices(btn){
   btn.disabled = true;
-  const { error } = await window.supabaseClient.rpc('admin_run_daily_invoices');
+  const { data, error } = await window.supabaseClient.rpc('admin_run_daily_invoices_report');
   btn.disabled = false;
-  showToast(error ? 'Run failed' : 'Daily invoices updated', error ? 'err' : 'ok');
-  if (!error) await loadDailyInvoices();
+  if (error || !data) { showToast('Run failed · চালানো ব্যর্থ', 'err'); return; }
+  const n = (data.invoiced || []).length, m = data.zeroEarnings || 0, k = data.alreadyDone || 0, e = (data.errors || []).length;
+  showToast('Daily run complete — ' + n + ' invoiced · ' + m + ' skipped (no earnings) · ' + k + ' already done' + (e ? ' · ' + e + ' errors' : '') +
+    ' / দৈনিক রান সম্পন্ন — ' + n + 'টি ইনভয়েস · ' + m + ' জন বাদ (আয় নেই) · ' + k + 'টি আগেই হয়েছে', e ? 'err' : 'ok');
+  await loadDailyInvoices();
 }
 async function loadEarnings(){
   loadDailyInvoices();
