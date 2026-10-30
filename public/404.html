@@ -5,6 +5,19 @@
 <title>Page not found · পেজ পাওয়া যায়নি — Boltpay</title>
 <link rel="icon" href="/favicon.svg">
 <link rel="stylesheet" href="/auth.css">
+<style>
+:root{ --bg:#0B0A07; --panel:#15130D; --line:#2E2A1F; --line-strong:#3D3726; --text:#F5F3EE; --text-dim:#ADA690;
+  --amber:#FFB800; --amber-300:#FFD466; --on-accent:#2A1F00; --accent-wash:rgba(255,184,0,.10); --accent-ring:rgba(255,184,0,.30); --alert:#FF5C7A; }
+body{ font-family:Inter,system-ui,-apple-system,"Segoe UI",sans-serif; }
+.nf{ min-height:100vh; display:flex; align-items:center; justify-content:center; padding:24px; }
+.nf-card{ width:100%; max-width:420px; text-align:center; background:var(--panel); border:1px solid var(--line); border-radius:22px; padding:36px 28px; }
+.nf-row{ display:flex; align-items:center; justify-content:center; gap:20px; margin-bottom:12px; }
+.nf-code{ font-size:28px; font-weight:600; color:var(--amber-300); padding-right:20px; border-right:1px solid var(--line-strong); line-height:48px; }
+.nf h1{ font-size:18px; font-weight:500; text-align:left; }
+.nf .btn-primary{ text-decoration:none; }
+.nf p{ color:var(--text-dim); font-size:14px; margin-bottom:20px; }
+body > .lang{ position:fixed; top:16px; right:16px; }
+</style>
 <script>
 // Old /<slug> links: send them to the Lightning pay page,
 // but only if the slug exists (checked against /api/lnd/link).
@@ -24,8 +37,10 @@ const RESERVED = ['index','login','register','dashboard','admin','404','config',
 </script>
 </head>
 <body>
-<main class="shell"><div class="panel" style="max-width:420px;margin:15vh auto;text-align:center">
-  <h1 data-en="Page not found" data-bn="পেজ পাওয়া যায়নি">Page not found</h1>
+<button type="button" class="lang" id="langBtn" onclick="toggleLang()">বাংলা</button>
+<main class="nf"><div class="nf-card">
+  <div class="nf-row"><span class="nf-code">404</span>
+  <h1 data-en="This page could not be found." data-bn="পেজটি পাওয়া যায়নি।">This page could not be found.</h1></div>
   <p data-en="Check the link and try again." data-bn="লিংকটি চেক করে আবার চেষ্টা করুন।">Check the link and try again.</p>
   <a class="btn-primary" href="/" data-en="Go home" data-bn="হোমে যান">Go home</a>
 </div></main>
