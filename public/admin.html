@@ -13,7 +13,7 @@
             <style>
 html{ -webkit-text-size-adjust:100%; text-size-adjust:100%; }
 :root{
-  /* One palette for admin, dashboard and moderator — the same near-black
+  /* One palette for admin and dashboard — the same near-black
      amber brand as the home page and the payment card. */
   --bg:#0B0A07; --panel:#15130D; --panel-hi:#1D1A12;
   --line:#2E2A1F; --line-strong:#3D3726;
@@ -152,7 +152,7 @@ input:checked + .slider:before{ background:var(--ok); transform:translate(20px,-
 /* Collapsed by default: amount + creator email + status + caret. Every
    other field (link, method, location, invoice ids, mark controls) lives
    in .pay-details and only appears once the row is tapped open — same
-   pattern as moderator.html's togglePayRow, so both panels behave the
+   pattern as the dashboard's row toggle, so both panels behave the
    same way and a long Transactions list fits far more rows per screen. */
 .pay-summary{ display:flex; justify-content:space-between; align-items:center; gap:12px; }
 .pay-summary-right{ display:flex; align-items:flex-start; gap:8px; flex-shrink:0; }
@@ -902,23 +902,6 @@ textarea.w-input{ padding:10px 12px !important; }
                                                   <button class="btn-primary" style="max-width:200px;" onclick="saveDefaultLinkLimit()" data-en="Save link limit" data-bn="লিংক সীমা সেভ করুন">Save link limit</button>
                                                   <div class="hint" style="font-size:11px; color:var(--text-faint); margin-top:8px;" data-en="One name counts as one link even when it produces several rate variants. Applies to accounts created from now on — edit existing creators from Customers." data-bn="একটি নাম একটি লিংক হিসেবে গণ্য হয়, যদিও তা থেকে কয়েকটি রেট ভ্যারিয়েন্ট তৈরি হয়। এখন থেকে তৈরি হওয়া অ্যাকাউন্টে প্রযোজ্য; পুরোনো ক্রিয়েটরদের Customers থেকে বদলান।">One name counts as one link even when it produces several rate variants. Applies to accounts created from now on — edit existing creators from Customers.</div>
                                                 </div>
-                                                  <div class="panel" style="display:none">
-                                                    <div class="panel-head">
-                                                      <div class="panel-title">Staff access</div>
-                                                    </div>
-                                                    <div style="font-size:12px; color:var(--text-dim); margin-bottom:12px; line-height:1.6;">
-                                                      A <b>moderator</b> signs in to the normal dashboard and handles the
-                                                      creators you tick below &mdash; their payments, their details, and the "checked"
-                                                      mark. Creators you do not tick are invisible to them: the filtering is in the
-                                                      database, so an unassigned creator's payments never leave it.<br><br>
-                                                      A moderator can never change a payment's status or amount, touch a withdrawal,
-                                                      or grant staff access &mdash; those stay with you.
-                                                    </div>
-                                                    <div class="w-row" style="margin-bottom:10px;">
-                                                      <select class="w-input" id="staffCreatorSelect"></select>
-                                                      <button class="btn-primary" style="flex:0 0 auto;" onclick="grantModerator()">Make moderator</button>
-                                                    </div>
-                                                    <div id="staffList"><div class="empty-state">No staff yet</div></div>
                                                   </div>
 
 
@@ -990,7 +973,7 @@ let adminRefreshTimeout = null;
 
 /* ============ Idle session timeout ============
    This panel can move money: mark a payment settled, approve a payout,
-   change a fee, grant staff access. A session left open on an unattended
+   change a fee, change a role. A session left open on an unattended
    laptop is the whole of that authority sitting unlocked.
 
    Supabase tokens refresh on their own and would otherwise keep a tab
@@ -1380,7 +1363,7 @@ async function loadEarnings(){
   loadManualInvoices();
   // Live, not the daily-report cron's daily_stats table: computed fresh
   // from payments on every call, on the same 7pm-7pm Dhaka cycle the
-  // moderator panel uses, so it can never sit at $0.00 because a cron run
+  // creator dashboard uses, so it can never sit at $0.00 because a cron run
   // was missed and never needs a backfill. ledger-backup and daily_stats
   // are untouched and keep running for anything else that reads them.
   const { data, error } = await window.supabaseClient.rpc('admin_daily_settled', { p_days: 14 });
@@ -1742,7 +1725,7 @@ function renderAllPayments(){
         </div>`;
     const marked = !!p.marked_at;
     const markLine = marked
-      ? `<div class="mark-line">&#10003; Checked by ${safeText(p.marked_by_name, 'staff')} &middot; ${fmtDate(p.marked_at)}${p.mark_note ? ' &mdash; ' + escapeHtml(p.mark_note) : ''}</div>`
+      ? `<div class="mark-line">&#10003; Checked by ${safeText(p.marked_by_name, 'admin')} &middot; ${fmtDate(p.marked_at)}${p.mark_note ? ' &mdash; ' + escapeHtml(p.mark_note) : ''}</div>`
       : '';
     const markBtn = p.status === 'settled'
       ? (marked
@@ -2195,89 +2178,6 @@ async function saveSupportLinks(){
 }
 
 
-/* ============ Staff (moderator) access ============ */
-async function loadStaff(){
-  if (!allCustomers.length) await loadCustomers();
-
-  const sel = document.getElementById('staffCreatorSelect');
-  if (sel){
-    // No .filter(c => c.role === 'creator') here. admin_customer_directory()
-    // does not return a role column at all — it already filters to creators
-    // inside the query — so testing c.role compared undefined against
-    // 'creator' and emptied the list every time.
-    if (!allCustomers.length){
-      sel.innerHTML = '<option value="">No creators yet</option>';
-    } else {
-      sel.innerHTML = '<option value="">— Choose a creator —</option>' +
-        allCustomers.map(c => `<option value="${escapeAttr(c.id)}">${escapeHtml(c.display_name || c.email)}</option>`).join('');
-    }
-  }
-
-  const { data, error } = await window.supabaseClient.rpc('admin_list_staff');
-  if (error) return;
-  const list = document.getElementById('staffList');
-  const staff = data || [];
-  if (!staff.length){ list.innerHTML = '<div class="empty-state">No staff yet</div>'; return; }
-
-  list.innerHTML = staff.map(m => `
-    <div class="link-row">
-      <div class="link-top">
-        <div style="min-width:0;">
-          <div class="link-slug">${safeText(m.display_name || m.email)}</div>
-          <div class="link-owner">${safeText(m.email)}</div>
-        </div>
-        <span class="badge ${m.role === 'admin' ? 'settled' : 'active'}"><span class="badge-dot"></span>${escapeHtml(m.role)}</span>
-      </div>
-      ${m.role === 'moderator' ? `
-        <div class="link-stats" style="margin-bottom:6px;">Handles ${(m.assigned_creators || []).length} of ${allCustomers.length} creators &mdash; full access to those, nothing on the rest.</div>
-        <div class="assign-grid">
-          ${allCustomers.map(c => `
-            <label class="assign-opt">
-              <input type="checkbox" ${(m.assigned_creators || []).includes(c.id) ? 'checked' : ''}
-                     onchange="assignCreator('${escapeAttr(m.id)}', '${escapeAttr(c.id)}', this)">
-              <span>${escapeHtml(c.display_name || c.email)}</span>
-            </label>`).join('')}
-        </div>
-        <div class="pay-actions">
-          <button class="act-btn act-reject" onclick="revokeModerator('${escapeAttr(m.id)}', this)">Remove access</button>
-        </div>` : ''}
-    </div>`).join('');
-}
-
-async function assignCreator(moderatorId, creatorId, box){
-  box.disabled = true;
-  try {
-    const { error } = await window.supabaseClient.rpc('admin_assign_creator', {
-      p_moderator_id: moderatorId, p_creator_id: creatorId, p_assigned: box.checked,
-    });
-    if (error){ box.checked = !box.checked; return showToast('Failed: ' + error.message, 'err'); }
-    showToast(box.checked ? 'Creator assigned' : 'Creator removed', 'ok');
-    loadStaff();
-  } finally { box.disabled = false; }
-}
-
-async function grantModerator(){
-  const id = document.getElementById('staffCreatorSelect').value;
-  if (!id) return showToast('Pick a creator first', 'err');
-  const { error } = await window.supabaseClient.rpc('admin_set_role', { p_user_id: id, p_role: 'moderator' });
-  if (error) return showToast('Failed: ' + error.message, 'err');
-  showToast('Moderator access granted', 'ok');
-  allCustomers = [];
-  loadStaff();
-}
-
-async function revokeModerator(id, btn){
-  if (!confirm('Remove review access? They become a normal creator again.')) return;
-  btn.disabled = true;
-  try {
-    const { error } = await window.supabaseClient.rpc('admin_set_role', { p_user_id: id, p_role: 'creator' });
-    if (error) return showToast('Failed: ' + error.message, 'err');
-    showToast('Access removed', 'ok');
-    allCustomers = [];
-    loadStaff();
-  } finally { btn.disabled = false; }
-}
-
 
 // Item 12: checkout expiry and min/max, read by lnd-create-invoice via _shared/settings.ts.
 async function loadCheckoutLimits(){
@@ -2433,7 +2333,7 @@ function switchTab(tab, btn){
   if (tab === 'earnings') loadEarnings();
   if (tab === 'messages') loadCreatorList();
   if (tab === 'domains') loadDomains();
-  if (tab === 'settings') { loadStaff(); tgAdmin('status'); }
+  if (tab === 'settings') { tgAdmin('status'); }
   if (tab === 'methods') loadWithdrawalMethods();
   if (tab === 'customers') closeCustomerDetail();
 }

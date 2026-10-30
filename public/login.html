@@ -11,7 +11,7 @@
             <script src="theme.js"></script>
             <style>
 :root{
-  /* Same palette as admin.html, dashboard.html and moderator.html — the
+  /* Same palette as admin.html, and dashboard.html — the
      old violet/amber scheme below was left over from before that palette
      was unified, and made the login screen the one page in the app that
      didn't look like it belonged to it. */
@@ -97,15 +97,7 @@ window.addEventListener('DOMContentLoaded', async () => {
 
 async function redirectByRole(userId){
   const { data: profile } = await window.supabaseClient.from('profiles').select('role').eq('id', userId).single();
-  // Used to be a two-way admin/creator split, so a moderator landed on
-  // dashboard.html — which then bounces anything that isn't 'creator'
-  // straight back here, creating an infinite login<->dashboard redirect.
-  // The only way in was typing /moderator.html directly.
-  // A reseller's default landing is their oversight panel, which links
-  // across to their own dashboard. Both are theirs; this just picks
-  // which one opens first.
   const dest = profile?.role === 'admin' ? 'admin.html'
-             : profile?.role === 'moderator' ? 'moderator.html'
              : 'dashboard.html#income';
   window.location.href = dest;
 }

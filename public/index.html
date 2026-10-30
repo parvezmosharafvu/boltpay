@@ -214,7 +214,7 @@ window.addEventListener('DOMContentLoaded', async () => {
   if (!session) return;
   const { data: profile } = await window.supabaseClient
     .from('profiles').select('role').eq('id', session.user.id).single();
-  window.location.href = profile?.role === 'admin' ? 'admin.html' : profile?.role === 'moderator' ? 'moderator.html' : 'dashboard.html#income';
+  window.location.href = profile?.role === 'admin' ? 'admin.html' : 'dashboard.html#income';
 });
 
 /* ============ Home page: support links ============ */

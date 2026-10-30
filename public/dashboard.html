@@ -13,7 +13,7 @@
     <style>
 html{ -webkit-text-size-adjust:100%; text-size-adjust:100%; }
 :root{
-  /* One palette for admin, dashboard and moderator — the same near-black
+  /* One palette for admin and dashboard — the same near-black
      amber brand as the home page and the payment card. */
   --bg:#0B0A07; --panel:#15130D; --panel-hi:#1D1A12;
   --line:#2E2A1F; --line-strong:#3D3726;
@@ -348,7 +348,7 @@ body{
 .pay-row:hover{ border-color:rgba(255,255,255,.2); }
 /* Collapsed by default: amount + method/date + status + caret. Every
    other field lives in .pay-details and only appears once the row is
-   tapped open — same pattern as the admin and moderator panels, so a
+   tapped open — same pattern as the admin panel, so a
    long list still fits several rows per screen. */
 .pay-summary{ display:flex; justify-content:space-between; align-items:flex-start; gap:12px; }
 .pay-summary-right{ display:flex; align-items:flex-start; gap:8px; flex-shrink:0; }
@@ -1283,12 +1283,8 @@ async function init(){
       + '<button onclick="window.supabaseClient.auth.signOut().then(()=>location.href=\'login.html\')">Log out</button></div>';
     return;
   }
-  // Resellers (role = 'moderator') own payment links and earn from them
-  // exactly as freelancers do, so this dashboard is theirs too — the
-  // moderator panel is a separate, additional tool for the creators they
-  // oversee, not a replacement for their own earnings view. Only admins
-  // and unrecognised roles are sent elsewhere.
-  if (profile?.role !== 'creator' && profile?.role !== 'moderator') {
+  // Only creators use this dashboard; admins go to the admin panel.
+  if (profile?.role !== 'creator') {
     const dest = profile?.role === 'admin' ? 'admin.html' : 'login.html';
     window.location.href = dest;
     return;
@@ -1296,13 +1292,6 @@ async function init(){
 
   currentUser = user;
   document.getElementById('userEmailDisplay').textContent = user.email;
-  if (profile?.role === 'moderator') {
-    const a = document.createElement('a');
-    a.href = 'moderator.html';
-    a.textContent = 'Moderator panel · মডারেটর প্যানেল';
-    a.style.cssText = 'display:inline-block;margin-left:10px;color:var(--amber,#FFB800);font-weight:700;text-decoration:none';
-    document.getElementById('userEmailDisplay').after(a);
-  }
 
   loadLocalMarks();
   await loadDomains();
@@ -2043,7 +2032,7 @@ function renderPayments(){
       ? `<div class="pay-field"><div class="pay-field-label">Settled at</div><div class="pay-field-value">${fmtDate(p.settled_at)}</div></div>`
       : '';
 
-    // Every field admin/moderator show now shows here too: nothing was
+    // Every field admin shows now shows here too: nothing was
     // left out, it is just one tap away instead of always open, so a long
     // list still fits several rows per screen.
     const detailsInner = `

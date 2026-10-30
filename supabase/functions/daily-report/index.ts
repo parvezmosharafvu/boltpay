@@ -14,7 +14,7 @@ const BD_OFFSET_MS = 6 * 60 * 60 * 1000;
 * A "cycle" runs 7pm Dhaka to 7pm Dhaka, and is named after the date it
 * STARTED on. Shifting back 19 hours before taking the date turns
 * "7pm today through 6:59pm tomorrow" into a single calendar date —
-* the same arithmetic staff_daily_settled() does in SQL.
+* the same arithmetic admin_daily_settled() does in SQL.
 */
 function bdCycleDate(daysAgo: number): string {
   const t = new Date(Date.now() + BD_OFFSET_MS - 19 * 3600000 - daysAgo * 86400000);
@@ -32,8 +32,8 @@ async function computeDay(dateStr: string) {
   // belonged to.
   //
   // daily_totals_for_cycle() fixes both: the database sums without a row
-  // limit, using the exact cycle boundary admin_daily_settled() and
-  // staff_daily_settled() already use.
+  // limit, using the exact cycle boundary admin_daily_settled()
+  // already uses.
   // The shape daily_totals_for_cycle() returns.
   //
   // Without generated database types, supabase-js infers the result of an
