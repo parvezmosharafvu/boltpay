@@ -10,6 +10,22 @@
 * crawls of the same slug don't re-check.
 */
 const SUPABASE_URL = "https://ohwzmxwsphsfzudmlins.supabase.co";
+// Custom (white-label) hostnames and the SaaS fallback host have no origin
+// of their own: the static site is the Workers custom domain on the platform
+// host. Pass-through fetches for any other hostname are re-pointed there, so
+// fetch(request) on a customer domain serves the same files instead of 522.
+const ASSET_HOST = "paycashapp.shop";
+const PASSTHRU_HOSTS = new Set(["paycashapp.shop", "www.paycashapp.shop"]);
+const nativeFetch = globalThis.fetch.bind(globalThis);
+function fetch(input, init) {
+const req = new Request(input, init);
+const u = new URL(req.url);
+if (u.protocol === "https:" && !PASSTHRU_HOSTS.has(u.hostname) && !u.hostname.endsWith(".supabase.co")) {
+u.hostname = ASSET_HOST;
+return nativeFetch(new Request(u.toString(), req));
+}
+return nativeFetch(req);
+}
 const SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im9od3pteHdzcGhzZnp1ZG1saW5zIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODYwMzE0MTksImV4cCI6MjEwMTYwNzQxOX0.frTl7qnDx7SK2IBMQxFCkKGe5u4XAQweRxPhQ-2r8rU";
 // og:site_name is the small grey line a chat app prints above the card.
 // It used to say "Boltpay" on every domain, which told the payer nothing
@@ -97,7 +113,7 @@ if (cached) {
 const found = await cached.text();
 return found === "1" ? candidate : generatedImage(origin, slug);
 }
-const head = await fetch(candidate, { method: "HEAD" });
+const head = await nativeFetch(candidate, { method: "HEAD" });
 const exists = head.ok;
 await cache.put(
 cacheKey,

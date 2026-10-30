@@ -1,7 +1,7 @@
 // Admin-only custom (white-label) domains via Cloudflare for SaaS.
 // add | check | reprovision | set_status | remove. The Cloudflare token
 // (CF_SAAS_API_TOKEN, scoped to SSL and Certificates on the SaaS zone)
-// and CF_SAAS_ZONE_ID live only in function secrets.
+// lives only in function secrets; zone id / CNAME target have defaults.
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 
 const SUPABASE_URL = Deno.env.get("SUPABASE_URL")!;
@@ -49,7 +49,8 @@ type CfHost = {
 
 async function cf(method: string, path: string, body?: unknown) {
   const token = Deno.env.get("CF_SAAS_API_TOKEN");
-  const zone = Deno.env.get("CF_SAAS_ZONE_ID");
+  // Zone id and CNAME target are not secrets; env overrides the defaults.
+  const zone = Deno.env.get("CF_SAAS_ZONE_ID") ?? "824828c48c7a721f01ac5f3684078461";
   if (!token || !zone) throw new Error("Cloudflare for SaaS is not configured / Cloudflare for SaaS সেট করা নেই");
   const r = await fetch(`https://api.cloudflare.com/client/v4/zones/${zone}/custom_hostnames${path}`, {
     method,
@@ -75,7 +76,7 @@ function fromCf(h: CfHost) {
     status: live ? "active" : (h.status === "blocked" || h.status === "moved" ? "failed" : "provisioning"),
     is_active: live,
     verification: {
-      cname_target: Deno.env.get("CF_SAAS_CNAME_TARGET") ?? null,
+      cname_target: Deno.env.get("CF_SAAS_CNAME_TARGET") ?? "fallback.paycashapp.shop",
       ownership: h.ownership_verification ?? null,
       ownership_http: h.ownership_verification_http ?? null,
       ssl_records: h.ssl?.validation_records ?? [],
