@@ -76,3 +76,7 @@ verify_jwt = false
 # telegram-webhook: called by Telegram; checks X-Telegram-Bot-Api-Secret-Token itself.
 [functions.telegram-webhook]
 verify_jwt = false
+
+# telegram-admin: admin-only bot status / resync / test. JWT required.
+[functions.telegram-admin]
+verify_jwt = true

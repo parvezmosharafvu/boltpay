@@ -975,8 +975,8 @@ textarea.w-input{ padding:10px 12px !important; }
             <div class="card" id="tgCard" style="margin-bottom:14px">
               <div style="display:flex;justify-content:space-between;align-items:center;gap:8px">
                 <div><div style="font-weight:700">Telegram notifications</div><div id="tgStatus" style="font-size:13px;opacity:.8">Checking…</div></div>
-                <div><button class="btn-ghost" id="tgConnectBtn" onclick="connectTelegram()">Connect Telegram</button>
-                <button class="btn-ghost" id="tgDisconnectBtn" style="display:none" onclick="disconnectTelegram()">Disconnect</button></div>
+                <div><button class="btn-ghost" id="tgConnectBtn" onclick="connectTelegram()">Connect Telegram · যুক্ত করুন</button>
+                <button class="btn-ghost" id="tgDisconnectBtn" style="display:none" onclick="disconnectTelegram()">Disconnect · বিচ্ছিন্ন</button></div>
               </div>
               <div id="tgCode" style="display:none;margin-top:10px;font-size:13px"></div>
             </div>
@@ -2323,29 +2323,56 @@ async function loadInvoicesTab(){
     : '<div style="opacity:.7">No other invoices. · কোনো ইনভয়েস নেই।</div>');
 }
 
+let tgPollTimer = null, tgTickTimer = null;
+function tgT(en, bn){ return (localStorage.getItem('boltpay_lang') === 'bn') ? bn : en; }
+function tgStopPoll(){ clearInterval(tgPollTimer); clearInterval(tgTickTimer); tgPollTimer = tgTickTimer = null; }
 async function loadTelegramStatus(){
-  const { data, error } = await window.supabaseClient.rpc('my_telegram_status');
+  const { data, error } = await window.supabaseClient.rpc('my_telegram_info');
   const row = Array.isArray(data) ? data[0] : data;
   const st = document.getElementById('tgStatus'); if (!st) return;
-  if (error || !row){ st.textContent = 'Could not load status.'; return; }
+  if (error || !row){ st.textContent = tgT('Could not load status.', 'অবস্থা লোড করা যায়নি।'); return; }
   window._tgBot = row.bot_username;
-  st.textContent = row.connected ? 'Connected. You get a message for every settled payment.' : (row.bot_username ? 'Not connected.' : 'Not available yet.');
+  st.textContent = row.connected
+    ? tgT('Connected. You get a message for every settled payment.', 'যুক্ত। প্রতিটি সফল পেমেন্টে আপনি বার্তা পাবেন।')
+    : (row.bot_username ? tgT('Not connected.', 'যুক্ত নয়।') : tgT('Not available yet.', 'এখনো চালু হয়নি।'));
   document.getElementById('tgConnectBtn').style.display = row.connected || !row.bot_username ? 'none' : '';
   document.getElementById('tgDisconnectBtn').style.display = row.connected ? '' : 'none';
+  const el = document.getElementById('tgCode');
+  if (row.connected) {
+    if (tgPollTimer) showToast(tgT('Telegram connected', 'টেলিগ্রাম যুক্ত হয়েছে'), 'ok');
+    tgStopPoll(); el.style.display = 'none'; return;
+  }
+  if (row.pending_code) showTgCode(row.pending_code, row.pending_expires_at);
+  else { tgStopPoll(); el.style.display = 'none'; }
 }
-async function connectTelegram(){
-  const { data, error } = await window.supabaseClient.rpc('my_telegram_link_code');
-  if (error){ showToast('Could not create code', 'err'); return; }
+function showTgCode(code, expiresAt){
   const bot = String(window._tgBot || '').replace(/[^A-Za-z0-9_]/g, '');
-  const code = String(data).replace(/[^A-Z0-9]/g, '');
+  code = String(code).replace(/[^A-Z0-9]/g, '');
   const el = document.getElementById('tgCode');
   el.style.display = 'block';
-  el.innerHTML = `Open <a href="https://t.me/${bot}?start=${code}" target="_blank" rel="noopener">@${bot}</a> and tap Start, or send <b>/start ${code}</b>. The code works for 15 minutes.`;
+  el.innerHTML = `${tgT('Open', 'খুলুন')} <a href="https://t.me/${bot}?start=${code}" target="_blank" rel="noopener">@${bot}</a> ${tgT('and tap Start, or send', 'এবং Start চাপুন, অথবা পাঠান')} <b>/start ${code}</b>. <span id="tgLeft"></span>`;
+  const end = new Date(expiresAt).getTime();
+  const tick = () => {
+    const left = Math.max(0, Math.round((end - Date.now()) / 1000));
+    const t = document.getElementById('tgLeft');
+    if (t) t.textContent = left > 0
+      ? tgT(`Code expires in ${Math.floor(left/60)}:${String(left%60).padStart(2,'0')}`, `কোডের মেয়াদ ${Math.floor(left/60)}:${String(left%60).padStart(2,'0')} এ শেষ`)
+      : tgT('Code expired — tap Connect again.', 'কোডের মেয়াদ শেষ — আবার Connect চাপুন।');
+    if (left <= 0) tgStopPoll();
+  };
+  clearInterval(tgTickTimer); tgTickTimer = setInterval(tick, 1000); tick();
+  if (!tgPollTimer) tgPollTimer = setInterval(() => { if (!document.hidden) loadTelegramStatus(); }, 5000);
+}
+async function connectTelegram(){
+  const { error } = await window.supabaseClient.rpc('my_telegram_link_code');
+  if (error){ showToast(tgT('Could not create code', 'কোড তৈরি করা যায়নি'), 'err'); return; }
+  loadTelegramStatus();
 }
 async function disconnectTelegram(){
+  if (!confirm(tgT('Disconnect Telegram?', 'টেলিগ্রাম বিচ্ছিন্ন করবেন?'))) return;
   const { error } = await window.supabaseClient.rpc('my_telegram_disconnect');
-  showToast(error ? 'Failed' : 'Telegram disconnected', error ? 'err' : 'ok');
-  document.getElementById('tgCode').style.display = 'none';
+  showToast(error ? tgT('Failed', 'ব্যর্থ') : tgT('Telegram disconnected', 'টেলিগ্রাম বিচ্ছিন্ন হয়েছে'), error ? 'err' : 'ok');
+  tgStopPoll(); document.getElementById('tgCode').style.display = 'none';
   loadTelegramStatus();
 }
 
