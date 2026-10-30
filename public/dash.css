@@ -11,7 +11,7 @@ body{ -webkit-text-size-adjust:100%; overflow-x:hidden; }
 /* Tables never push the page sideways: they scroll inside their box. */
 table{ max-width:100%; }
 .table-wrap, .panel > table, #methodsList{ overflow-x:auto; -webkit-overflow-scrolling:touch; }
-#methodsList table{ min-width:520px; }
+
 td, th{ overflow-wrap:anywhere; }
 .mono, code{ overflow-wrap:anywhere; }
 
@@ -30,3 +30,48 @@ td, th{ overflow-wrap:anywhere; }
   input, select, textarea{ max-width:100%; font-size:16px; }
   .header-actions, .header-right{ gap:6px; flex-wrap:wrap; }
 }
+
+/* ---- Admin controls that had no class of their own (rendered as white
+   native inputs on phones): Create user, Create invoice, BDT rate, etc. ---- */
+.panel input:not([type=checkbox]):not([type=radio]):not([class]),
+.panel select:not([class]), .panel textarea:not([class]),
+.panel .w-select, .field input, .field select{
+  width:100%; min-height:44px; padding:0 12px; border-radius:10px;
+  background:var(--bg, #0B0A07); color:var(--text, #F5F3EE);
+  border:1px solid var(--line-strong, #3D3726); font:400 14px/20px 'Inter', system-ui, sans-serif;
+  outline:none; -webkit-appearance:none; appearance:none; color-scheme:dark;
+}
+.panel textarea:not([class]){ padding:10px 12px; min-height:88px; }
+.panel select:not([class]), .panel .w-select{
+  background-image:linear-gradient(45deg, transparent 50%, var(--text-dim,#ADA690) 50%), linear-gradient(135deg, var(--text-dim,#ADA690) 50%, transparent 50%);
+  background-position:calc(100% - 17px) 50%, calc(100% - 12px) 50%; background-size:5px 5px; background-repeat:no-repeat; padding-right:30px;
+}
+.panel input:not([class]):focus, .panel select:not([class]):focus, .panel textarea:not([class]):focus, .panel .w-select:focus{
+  border-color:var(--amber, #FFB800); box-shadow:0 0 0 3px var(--accent-ring, rgba(255,184,0,.3));
+}
+.panel input::placeholder{ color:var(--text-faint); }
+.btn-sm{
+  display:inline-flex; align-items:center; justify-content:center; gap:6px;
+  min-height:40px; padding:0 14px; border-radius:10px; cursor:pointer;
+  background:var(--amber, #FFB800); color:var(--on-accent, #2A1F00); border:none;
+  font:600 13px/1.2 'Inter', system-ui, sans-serif; white-space:nowrap; -webkit-appearance:none;
+}
+.btn-sm:hover{ background:var(--amber-600, #E0A200); }
+.btn-sm:disabled{ opacity:.55; cursor:default; }
+.panel-head .btn-sm{ min-height:34px; padding:0 12px; }
+.panel small{ display:block; margin-top:8px; color:var(--text-faint); font-size:11px; opacity:1 !important; }
+
+/* Payment methods: stacked cards */
+.method-list{ display:flex; flex-direction:column; gap:10px; }
+.method-card{ display:flex; flex-wrap:wrap; align-items:center; gap:10px 12px; padding:12px 14px;
+  border:1px solid var(--line, #2E2A1F); border-radius:12px; background:var(--panel-hi, #1D1A12); }
+.method-main{ flex:1 1 160px; min-width:0; }
+.method-name{ font-weight:600; font-size:14px; color:var(--text); }
+.method-code{ font-size:11px; color:var(--text-faint); margin-top:2px; }
+.method-status{ font-size:11px; font-weight:700; padding:4px 10px; border-radius:999px; }
+.method-status.on{ background:var(--accent-wash); color:var(--amber); }
+.method-status.off{ background:var(--alert-soft, rgba(255,92,122,.12)); color:var(--alert, #FF5C7A); }
+.method-actions{ display:flex; gap:8px; flex:1 1 100%; }
+.method-actions .w-select{ flex:0 0 96px; width:96px; }
+.method-actions .btn-sm{ flex:1; }
+@media (min-width:700px){ .method-actions{ flex:0 0 auto; } .method-actions .btn-sm{ flex:0 0 auto; } }

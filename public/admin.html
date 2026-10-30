@@ -1326,9 +1326,20 @@ async function loadWithdrawalMethods(){
   const el = document.getElementById('methodsList'); if (!el) return;
   const { data, error } = await window.supabaseClient.rpc('admin_list_withdrawal_methods');
   if (error){ el.textContent = 'Could not load methods. · মেথড লোড হয়নি।'; return; }
-  el.innerHTML = '<table style="width:100%;font-size:13px"><tr><th align="left">Method</th><th align="left">Code</th><th>Status</th><th>Currency · মুদ্রা</th><th></th></tr>'
-    + data.filter(r => LIVE_METHODS.includes(r.code)).map(r => `<tr><td>${escAcc(r.label_en)} · ${escAcc(r.label_bn)}</td><td class="mono">${escAcc(r.code)}</td><td align="center">${r.enabled ? 'Enabled · চালু' : 'Disabled · বন্ধ'}</td><td align="center"><select class="btn-sm" aria-label="Currency · মুদ্রা" onchange="setMethodCurrency('${escAcc(r.code)}', this.value)">${['USD','BDT'].map(c => `<option value="${c}"${r.currency === c ? ' selected' : ''}>${c}</option>`).join('')}</select></td>`
-      + `<td><button class="btn-sm" onclick="setWithdrawalMethod('${escAcc(r.code)}', ${!r.enabled})">${r.enabled ? 'Disable · বন্ধ করুন' : 'Enable · চালু করুন'}</button></td></tr>`).join('') + '</table>';
+  // Stacked cards instead of a table: a 5-column table cut off the name and
+  // the Disable button on a 390px phone.
+  el.innerHTML = '<div class="method-list">' + data.filter(r => LIVE_METHODS.includes(r.code)).map(r => `
+    <div class="method-card">
+      <div class="method-main">
+        <div class="method-name">${escAcc(r.label_en)}${r.label_bn && r.label_bn !== r.label_en ? ' · ' + escAcc(r.label_bn) : ''}</div>
+        <div class="method-code mono">${escAcc(r.code)}</div>
+      </div>
+      <span class="method-status ${r.enabled ? 'on' : 'off'}">${r.enabled ? 'Enabled · চালু' : 'Disabled · বন্ধ'}</span>
+      <div class="method-actions">
+        <select class="w-select" aria-label="Currency · মুদ্রা" onchange="setMethodCurrency('${escAcc(r.code)}', this.value)">${['USD','BDT'].map(c => `<option value="${c}"${r.currency === c ? ' selected' : ''}>${c}</option>`).join('')}</select>
+        <button class="btn-sm" onclick="setWithdrawalMethod('${escAcc(r.code)}', ${!r.enabled})">${r.enabled ? 'Disable · বন্ধ করুন' : 'Enable · চালু করুন'}</button>
+      </div>
+    </div>`).join('') + '</div>';
 }
 async function setMethodCurrency(code, currency){
   const { error } = await window.supabaseClient.rpc('admin_set_withdrawal_method_currency', { p_code: code, p_currency: currency });
