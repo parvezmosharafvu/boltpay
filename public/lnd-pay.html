@@ -124,6 +124,27 @@ body.inv .link{ min-height:36px; font-size:13px; }
 body.inv .inv-foot{ display:flex; }
 .inv-foot::before{ content:""; width:10px; height:10px; border:1.5px solid #9CA3AF; border-radius:50%; }
 .inv-foot b{ color:var(--text); font-weight:600; border-bottom:2px solid var(--amber); }
+/* v2: exact reference tokens (Tailwind yellow-100/700, zinc). */
+body.inv .pill.tr{ background:#fef9c2; color:#a36100; gap:4px; padding:4px 12px; }
+body.inv .pill.tr .eyebrow{ color:#9f9fa9; font-size:8px; letter-spacing:.18em; font-weight:600; }
+body.inv .pill.tr span:last-child{ font-family:ui-monospace,SFMono-Regular,Menlo,monospace; font-size:12px; color:#18181b; }
+body.inv .eyebrow{ color:#9f9fa9; font-size:10px; letter-spacing:.18em; font-weight:600; }
+body.inv .due-amt{ font-size:36px; line-height:40px; margin-top:4px; }
+body.inv .due .sub{ font-size:12px; color:#71717b; margin-top:4px; }
+body.inv .qr-card{ border:1px solid #e4e4e7; padding:12px; margin:0; border-radius:16px; }
+body.inv .inv-row{ background:#fafafa; padding:12px 16px; }
+body.inv .inv-row .mono{ font-size:12px; color:#52525c; }
+body.inv .await{ background:#fef9c2; color:#a36100; border:0; padding:4px 10px; }
+body.inv .row-between, body.inv .row-between .sub, body.inv .row-between .mono{ font-size:12px; color:#9f9fa9; }
+body.inv .btn{ min-height:48px; border-radius:12px; }
+body.inv .btn.primary{ font-size:16px; font-weight:700; color:#18181b; box-shadow:0 4px 6px -1px rgba(0,0,0,.1),0 2px 4px -2px rgba(0,0,0,.1); }
+body.inv .btn.ghost{ font-size:14px; font-weight:500; border-color:#e4e4e7; color:#18181b; }
+body.inv .btn.ico::before{ width:16px; height:16px; margin-right:8px; }
+body.inv .btn.arrow::after{ margin-left:8px; }
+body.inv .settle{ font-size:12px; color:#9f9fa9; }
+body.inv .link{ min-height:28px; font-size:11px; font-weight:500; color:#9f9fa9; text-decoration:underline; }
+body.inv .meta{ font-size:12px; color:#9f9fa9; }
+.qr-wrap canvas{ display:block; }
 </style>
 </head>
 <body>
@@ -166,7 +187,7 @@ body.inv .inv-foot{ display:flex; }
     </div>
     <div class="row-between small"><span class="sub">lightning:</span><span class="mono" id="inv-short"></span></div>
     <p class="meta" id="inv-amount" hidden></p>
-    <a class="btn primary go-ln ico i-phone arrow" id="cashapp" href="#" rel="noopener" onclick="payClick()">Open in Cash App</a>
+    <a class="btn primary go-ln ico i-phone arrow" id="cashapp" href="#" rel="noopener" onclick="payClick()">Pay Now</a>
     <button class="btn ghost ico i-copy" id="copy" onclick="copyInvoice()">Copy Invoice</button>
     <p class="settle">Payments usually settle in seconds</p>
     <a class="link" id="btc-link" href="#" style="display:none">Pay with on-chain Bitcoin instead</a>
@@ -345,9 +366,8 @@ function render(d) {
   expiresAt = d.expiresAt ? new Date(d.expiresAt).getTime() : null;
   if (d.bolt11 && d.bolt11 !== bolt11) {
     bolt11 = d.bolt11;
-    el('qr').innerHTML = '';
     // Lowercase, like the invoice itself (what Cash App's scanner expects).
-    new QRCode(el('qr'), { text: 'lightning:' + bolt11.toLowerCase(), width: 296, height: 296, correctLevel: QRCode.CorrectLevel.M });
+    dotQR(el('qr'), 'lightning:' + bolt11.toLowerCase());
     el('cashapp').href = 'https://cash.app/launch/lightning/' + encodeURIComponent(bolt11);
   }
   el('inv-amount').textContent = money(d.amountUSD) + (d.amountSats ? ' · ' + Number(d.amountSats).toLocaleString() + ' sats' : '');
@@ -357,8 +377,7 @@ function render(d) {
   if (d.btcAddress && d.amountBtc && d.btcAddress !== btcAddr) {
     btcAddr = d.btcAddress; btcAmt = d.amountBtc;
     const uri = 'bitcoin:' + btcAddr + '?amount=' + btcAmt;
-    el('qr-btc').innerHTML = '';
-    new QRCode(el('qr-btc'), { text: uri, width: 296, height: 296, correctLevel: QRCode.CorrectLevel.M });
+    dotQR(el('qr-btc'), uri);
     el('btc-addr').textContent = btcAddr;
     el('btc-amt').textContent = btcAmt + ' BTC · ' + money(d.amountUSD);
     el('btc-addr-short').textContent = btcAddr.slice(0, 10) + '…' + btcAddr.slice(-10);
@@ -372,6 +391,29 @@ function render(d) {
   setT('btc-title', money(d.amountUSD));
   el('btc-inv-id').textContent = el('inv-id').textContent;
   show(wantBtc && btcAddr ? 'v-btc' : 'v-invoice');
+}
+
+// Re-draw qrcodejs's matrix as dot modules with rounded finder patterns.
+function dotQR(box, text) {
+  box.innerHTML = '';
+  const q = new QRCode(box, { text: text, width: 296, height: 296, correctLevel: QRCode.CorrectLevel.M });
+  const m = q._oQRCode; if (!m) return;
+  const n = m.getModuleCount(), px = 296, sc = 2, cell = px * sc / (n + 2), off = cell;
+  const c = document.createElement('canvas'); c.width = c.height = px * sc; c.style.width = c.style.height = px + 'px';
+  const g = c.getContext('2d'); g.fillStyle = '#fff'; g.fillRect(0, 0, c.width, c.height); g.fillStyle = '#000';
+  const finder = function (r, k) { return (r < 7 && k < 7) || (r < 7 && k >= n - 7) || (r >= n - 7 && k < 7); };
+  for (let r = 0; r < n; r++) for (let k = 0; k < n; k++) {
+    if (finder(r, k) || !m.isDark(r, k)) continue;
+    g.beginPath(); g.arc(off + (k + .5) * cell, off + (r + .5) * cell, cell * .43, 0, 7); g.fill();
+  }
+  const rr = function (x, y, w, rad) { g.beginPath(); g.roundRect(x, y, w, w, rad); g.fill(); };
+  [[0, 0], [0, n - 7], [n - 7, 0]].forEach(function (p) {
+    const x = off + p[1] * cell, y = off + p[0] * cell;
+    g.fillStyle = '#000'; rr(x, y, 7 * cell, 2 * cell);
+    g.fillStyle = '#fff'; rr(x + cell, y + cell, 5 * cell, 1.4 * cell);
+    g.fillStyle = '#000'; rr(x + 2 * cell, y + 2 * cell, 3 * cell, cell);
+  });
+  box.innerHTML = ''; box.appendChild(c);
 }
 
 function goBtc() {
