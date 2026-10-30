@@ -1317,7 +1317,7 @@ async function loadManualInvoices(){
   }
   const { data, error } = await window.supabaseClient.rpc('admin_list_manual_invoices', { p_limit: 100 });
   if (error){ el.textContent = 'Could not load invoices. · ইনভয়েস লোড হয়নি।'; return; }
-  el.innerHTML = data.length ? '<table style="width:100%;font-size:13px"><tr><th align="left">Date</th><th align="left">Creator</th><th align="left">Description</th><th align="right">Amount</th><th>Status</th><th></th></tr>'
+  el.innerHTML = data.length ? '<table style="width:100%;font-size:13px"><tr><th align="left">Date</th><th align="left">Creator</th><th align="left">Description</th><th align="right">Amount</th><th>Status</th><th>Currency · মুদ্রা</th><th></th></tr>'
     + data.map(r => `<tr><td>${esc(r.invoice_date)}</td><td>${esc(r.display_name || r.email)}</td><td>${esc(r.description)}</td><td align="right">$${Number(r.amount_usd).toFixed(2)}</td><td align="center">${esc(r.status)}</td><td>`
       + ['open','paid','void'].filter(st => st !== r.status).map(st => `<button class="btn-sm" onclick="setManualInvoiceStatus('${r.id}','${st}')">${st}</button>`).join(' ') + '</td></tr>').join('') + '</table>'
     : '<div style="opacity:.7">No manual invoices yet. · কোনো ইনভয়েস নেই।</div>';
@@ -1396,9 +1396,14 @@ async function loadWithdrawalMethods(){
   const el = document.getElementById('methodsList'); if (!el) return;
   const { data, error } = await window.supabaseClient.rpc('admin_list_withdrawal_methods');
   if (error){ el.textContent = 'Could not load methods. · মেথড লোড হয়নি।'; return; }
-  el.innerHTML = '<table style="width:100%;font-size:13px"><tr><th align="left">Method</th><th align="left">Code</th><th>Status</th><th></th></tr>'
-    + data.map(r => `<tr><td>${escAcc(r.label_en)} · ${escAcc(r.label_bn)}</td><td class="mono">${escAcc(r.code)}</td><td align="center">${r.enabled ? 'Enabled · চালু' : 'Disabled · বন্ধ'}</td>`
+  el.innerHTML = '<table style="width:100%;font-size:13px"><tr><th align="left">Method</th><th align="left">Code</th><th>Status</th><th>Currency · মুদ্রা</th><th></th></tr>'
+    + data.map(r => `<tr><td>${escAcc(r.label_en)} · ${escAcc(r.label_bn)}</td><td class="mono">${escAcc(r.code)}</td><td align="center">${r.enabled ? 'Enabled · চালু' : 'Disabled · বন্ধ'}</td><td align="center"><select class="btn-sm" aria-label="Currency · মুদ্রা" onchange="setMethodCurrency('${escAcc(r.code)}', this.value)">${['USD','BDT'].map(c => `<option value="${c}"${r.currency === c ? ' selected' : ''}>${c}</option>`).join('')}</select></td>`
       + `<td><button class="btn-sm" onclick="setWithdrawalMethod('${escAcc(r.code)}', ${!r.enabled})">${r.enabled ? 'Disable · বন্ধ করুন' : 'Enable · চালু করুন'}</button></td></tr>`).join('') + '</table>';
+}
+async function setMethodCurrency(code, currency){
+  const { error } = await window.supabaseClient.rpc('admin_set_withdrawal_method_currency', { p_code: code, p_currency: currency });
+  showToast(error ? 'Failed · ব্যর্থ' : 'Currency saved · মুদ্রা সেভ হয়েছে', error ? 'err' : 'ok');
+  loadWithdrawalMethods();
 }
 async function setWithdrawalMethod(code, enabled){
   const { error } = await window.supabaseClient.rpc('admin_set_withdrawal_method', { p_code: code, p_enabled: enabled });
