@@ -18,17 +18,9 @@ begin
   if (select value from app_settings where key = 'lnd_pay_max_usd') <> '1000'::jsonb then raise exception 'max'; end if;
   if (select value from app_settings where key = 'lnd_invoice_expiry_sec') <> '3600'::jsonb then raise exception 'expiry'; end if;
 
-  -- Links default to btcpay
+  -- Links default to lnd
   select checkout_backend into v_backend from payment_links where slug = 'LndTestLink';
-  if v_backend <> 'btcpay' then raise exception 'link backend default is %', v_backend; end if;
-
-  -- A BTCPay-style insert (as create-invoice does) still works unchanged
-  insert into payments(payment_link_id, user_id, btcpay_invoice_id, method, amount_requested, status, expires_at)
-  select id, '33333333-3333-3333-3333-333333333333', 'lnd-ci-btcpay', 'lightning', 10, 'new', now() + interval '1 hour'
-  from payment_links where slug = 'LndTestLink';
-  if (select backend from payments where btcpay_invoice_id = 'lnd-ci-btcpay') <> 'btcpay' then
-    raise exception 'existing insert did not default to btcpay';
-  end if;
+  if v_backend <> 'lnd' then raise exception 'link backend default is %', v_backend; end if;
 
   -- An LND row without its hash is rejected
   begin
@@ -68,8 +60,8 @@ begin
   if not system_expire_lnd_payment(repeat('cd', 32)) then raise exception 'expire failed'; end if;
   if system_settle_lnd_payment(repeat('cd', 32), 5000000) then raise exception 'expired row settled'; end if;
 
-  -- Settle never touches a BTCPay row
-  if system_settle_lnd_payment('lnd-ci-btcpay', 1) then raise exception 'btcpay row settled'; end if;
+  -- Settle ignores an unknown hash
+  if system_settle_lnd_payment(repeat('ef', 32), 1) then raise exception 'unknown hash settled'; end if;
 
   -- Client roles cannot call the system functions or read payment_events
   if has_function_privilege('anon', 'system_settle_lnd_payment(text,bigint)', 'execute') then raise exception 'anon can settle'; end if;

@@ -30,7 +30,7 @@ export async function syncLndPayment(
     });
     if (error) throw new Error(`settle failed for ${row.id}: ${error.message}`);
     if (data === true) {
-      // Same post-settle step as btcpay-webhook.
+      // Post-settle: queue any automatic withdrawal.
       const { error: qErr } = await db.rpc("system_queue_withdrawal", { p_user_id: row.user_id });
       if (qErr) console.error("Auto-queue failed for", row.user_id, qErr.message);
       // Only the caller whose settle returned true gets here, so the

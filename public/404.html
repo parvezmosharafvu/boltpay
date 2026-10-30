@@ -6,11 +6,11 @@
 <link rel="icon" href="/favicon.svg">
 <link rel="stylesheet" href="/auth.css">
 <script>
-// Legacy BTCPay links were /<slug>. Send them to the Lightning pay page,
+// Old /<slug> links: send them to the Lightning pay page,
 // but only if the slug exists (checked against /api/lnd/link).
 // Kept in sync with validate_link_slug() and worker/og-preview-worker.js.
 const RESERVED = ['index','login','register','dashboard','admin','404','config','theme',
-  'assets','favicon','invoice-boltpay-v2','api','u','static','public',
+  'assets','favicon','api','u','static','public',
   'well-known','robots','sitemap','moderator','expired'];
 (function(){
   var s = location.pathname.replace(/^\/|\/$/g, '');

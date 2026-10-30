@@ -5,8 +5,7 @@
 // Errors: { error: { message } }
 //
 // Runs only when app_settings.lnd_checkout_enabled is true AND the link's
-// checkout_backend is 'lnd'. Otherwise it refuses, and the existing
-// BTCPay create-invoice keeps handling every link exactly as before.
+// checkout_backend is 'lnd'. Otherwise it refuses.
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 import { LndClient, lndConfig } from "../_shared/lnd.ts";
 import { chargedAmount, parseUsd, usdToSats, withinLimits } from "../_shared/pricing.ts";

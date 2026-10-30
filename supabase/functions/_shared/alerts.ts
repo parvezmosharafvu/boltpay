@@ -1,7 +1,6 @@
-// Settled-payment alert for the LND path. Same channels, env vars and
-// ALERT_ON_SETTLED switch as btcpay-webhook's sendSettledAlert, and the
-// same hide_small_payments suppression (should_suppress_payment_alert).
-// btcpay-webhook keeps its own copy untouched. Best-effort: never throws,
+// Settled-payment alert. Uses the ALERT_ON_SETTLED switch and the
+// hide_small_payments suppression (should_suppress_payment_alert).
+// Best-effort: never throws,
 // a failure only reaches the function log.
 import type { SupabaseClient } from "https://esm.sh/@supabase/supabase-js@2";
 
@@ -48,7 +47,7 @@ export async function notifyLndSettled(db: SupabaseClient, paymentId: string): P
     if (!p) return;
     const amount = Number(p.amount_settled ?? 0);
     const { data: suppress, error } = await db.rpc("should_suppress_payment_alert", { p_amount: amount });
-    if (!error && suppress === true) return; // fails open, like btcpay-webhook
+    if (!error && suppress === true) return; // fails open
     let slug = "unknown-link";
     if (p.payment_link_id) {
       const { data: l } = await db.from("payment_links").select("slug").eq("id", p.payment_link_id).maybeSingle();

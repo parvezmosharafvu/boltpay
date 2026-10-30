@@ -1495,8 +1495,8 @@ function renderPending(){
     let actions = '';
     if (w.status === 'pending'){
       actions = `
-        <button class="act-btn act-approve" onclick="handleAction('${escapeAttr(w.id)}','${w.method === 'lightning' ? 'approve' : 'mark_paid_manual'}',this)">
-          ${w.method === 'lightning' ? 'Force Lightning Payout' : 'Mark Paid'}
+        <button class="act-btn act-approve" onclick="handleAction('${escapeAttr(w.id)}','mark_paid_manual',this)">
+          Mark Paid
         </button>
         <button class="act-btn act-reject" onclick="handleAction('${w.id}','reject',this)">Reject</button>`;
     } else if (w.status === 'approved'){
@@ -1618,7 +1618,7 @@ function renderAllPayments(){
     if (statusFilter && p.status !== statusFilter) return false;
     if (!withinTimeFilter(p.created_at, timeFilter)) return false;
     if (search){
-      const ln = (p.lightning_invoice || '').toLowerCase(); const inv = (p.btcpay_invoice_id || '').toLowerCase();
+      const ln = (p.lightning_invoice || '').toLowerCase(); const inv = (p.id || '').toLowerCase();
       if (!ln.includes(search) && !inv.includes(search) && !(p.creator_email||'').toLowerCase().includes(search) && !(p.link_slug||'').toLowerCase().includes(search)) return false;
     }
     return true;
@@ -1631,7 +1631,7 @@ function renderAllPayments(){
       actions = `<button class="act-btn act-approve" onclick="markPayment('${escapeAttr(p.id)}','settled',this)">Approve</button>
                  <button class="act-btn act-reject" onclick="markPayment('${escapeAttr(p.id)}','expired',this)">Mark expired</button>`;
     }
-    const inv = p.btcpay_invoice_id || '\u2014';
+    const inv = p.id || '\u2014';
     const shortInv = inv.length > 15 ? inv.slice(0, 8) + '...' + inv.slice(-7) : inv;
     const ln = p.lightning_invoice || '';
     const shortLn = ln.length > 25 ? ln.slice(0, 16) + '...' + ln.slice(-10) : ln;
@@ -1844,9 +1844,9 @@ async function markPayment(paymentId, status, btnEl){
   if (status === 'settled'){
     const { data: { session } } = await window.supabaseClient.auth.getSession();
     try {
-      const res = await fetch(`${window.SUPABASE_URL}/functions/v1/btcpay-webhook/admin-mark-settled`, {
+      const res = await fetch(`${window.SUPABASE_URL}/functions/v1/admin-actions`, {
         method: 'POST', headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${session.access_token}` },
-        body: JSON.stringify({ paymentId }),
+        body: JSON.stringify({ action: 'mark-settled', paymentId }),
       });
       const result = await res.json();
       if (!res.ok){ showToast('Failed: ' + (result.error || 'Unknown error'), 'err'); btnEl.disabled = false; return; }
@@ -1902,7 +1902,7 @@ async function handleAction(withdrawalId, action, btnEl){
   btnEl.disabled = true; btnEl.textContent = 'Working…';
   const { data: { session } } = await window.supabaseClient.auth.getSession();
   try {
-    const res = await fetch(`${window.SUPABASE_URL}/functions/v1/btcpay-webhook/process-withdrawal`, {
+    const res = await fetch(`${window.SUPABASE_URL}/functions/v1/admin-actions`, {
       method: 'POST', headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${session.access_token}` },
       body: JSON.stringify({ withdrawalId, action }),
     });
@@ -2203,8 +2203,8 @@ async function exportPaymentsCsv(btn){
   btn.disabled = false;
   if (error) { showToast('Export failed · এক্সপোর্ট ব্যর্থ', 'err'); return; }
   const host = window.location.host;
-  const head = ['Invoice ID','BTCPay Invoice','Lightning Address','Customer','Email','Link','Status','Confirmation','Amount USD','Created At','Paid At'];
-  const rows = (data || []).map(r => [r.invoice_id, r.btcpay_invoice, r.bolt11, r.customer, r.email,
+  const head = ['Invoice ID','Payment Hash','Lightning Address','Customer','Email','Link','Status','Confirmation','Amount USD','Created At','Paid At'];
+  const rows = (data || []).map(r => [r.invoice_id, r.payment_hash, r.bolt11, r.customer, r.email,
     r.link ? 'https://' + host + '/' + r.link : '', r.status, r.confirmation, r.amount_usd, r.created_at, r.paid_at].map(csvCell).join(','));
   const blob = new Blob([[head.join(',')].concat(rows).join('\r\n')], { type: 'text/csv' });
   const a = document.createElement('a'); a.href = URL.createObjectURL(blob);

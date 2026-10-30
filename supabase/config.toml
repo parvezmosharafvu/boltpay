@@ -1,17 +1,13 @@
 # Boltpay — Supabase CLI / GitHub integration config
 #
 # Without this file the GitHub integration reports "No functions to deploy"
-# even though supabase/functions/ has five of them, because it has nothing
+# even though supabase/functions/ has several of them, because it has nothing
 # telling it they exist.
 #
 # The verify_jwt values below are NOT optional. The default is true, and
-# three of these functions are called by clients that cannot present a
+# some of these functions are called by clients that cannot present a
 # Supabase JWT:
 #
-#   btcpay-webhook  — BTCPay authenticates with an HMAC signature instead.
-#                     Its two admin routes verify an admin JWT in code.
-#   create-invoice  — paying customers have no account. Abuse is capped by
-#                     a per-link rate limit inside the function.
 #   daily-report,
 #   ledger-backup   — called by pg_cron with an x-cron-secret header.
 #                     Both fail closed if CRON_SECRET is unset.
@@ -20,16 +16,10 @@
 # verification ON.
 #
 # If you ever let the integration deploy functions WITHOUT this file, all
-# five get verify_jwt = true and every payment on the site starts failing
+# they all get verify_jwt = true and every payment on the site starts failing
 # with 401.
 
 project_id = "ohwzmxwsphsfzudmlins"
-
-[functions.btcpay-webhook]
-verify_jwt = false
-
-[functions.create-invoice]
-verify_jwt = false
 
 [functions.user-withdraw]
 verify_jwt = true
@@ -38,12 +28,6 @@ verify_jwt = true
 verify_jwt = false
 
 [functions.ledger-backup]
-verify_jwt = false
-
-# Compares BTCPay's settled invoices against the Boltpay ledger. Called by
-# pg_cron with an x-cron-secret header, same as the two above, and fails
-# closed if CRON_SECRET is unset.
-[functions.reconcile]
 verify_jwt = false
 
 # Health monitor. Called by pg_cron, and optionally by an external uptime
@@ -59,7 +43,7 @@ verify_jwt = false
 
 # LND checkout (flag-gated by app_settings.lnd_checkout_enabled, default off).
 # lnd-create-invoice / payment-status: called by anonymous payers through
-# the Worker proxy, same as create-invoice. lnd-watcher: pg_cron with
+# the Worker proxy. lnd-watcher: pg_cron with
 # x-cron-secret, fails closed if CRON_SECRET is unset.
 [functions.lnd-create-invoice]
 verify_jwt = false
@@ -79,4 +63,8 @@ verify_jwt = false
 
 # telegram-admin: admin-only bot status / resync / test. JWT required.
 [functions.telegram-admin]
+verify_jwt = true
+
+# Admin-only payment and withdrawal actions; checks the admin JWT.
+[functions.admin-actions]
 verify_jwt = true

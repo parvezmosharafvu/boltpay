@@ -35,7 +35,7 @@ const RESERVED = new Set([
 // mirror validate_link_slug() in the database exactly.
 "",
 'index','login','register','dashboard','admin','404','config','theme',
-'assets','favicon','invoice-boltpay-v2','api','u','static','public',
+'assets','favicon','api','u','static','public',
 'well-known','robots','sitemap','moderator','expired',
 // Worker-only (not in validate_link_slug): the Lightning checkout page file.
 'lnd-pay',
@@ -267,35 +267,6 @@ return `<!DOCTYPE html>
 </html>`;
 }
 
-/**
- * Forward the invoice request to Supabase, adding the geo Cloudflare
- * already knows. Nothing else is changed, so if this proxy is ever
- * unavailable the payment page can still call Supabase directly and the
- * only thing lost is the location.
- */
-async function proxyCreateInvoice(request) {
-const cf = request.cf || {};
-const body = await request.text();
-
-const res = await fetch(`${SUPABASE_URL}/functions/v1/create-invoice`, {
-method: "POST",
-headers: {
-"Content-Type": "application/json",
-apikey: SUPABASE_ANON_KEY,
-Authorization: `Bearer ${SUPABASE_ANON_KEY}`,
-// Named after Cloudflare's own headers so create-invoice reads the
-// same keys whichever path the request took.
-"cf-ipcity": cf.city || "",
-"cf-ipcountry": cf.country || "",
-},
-body,
-});
-
-const out = new Response(res.body, res);
-out.headers.set("Content-Type", "application/json");
-return out;
-}
-
 // ---- Lightning (LND) checkout --------------------------------------------
 // Same-origin proxy for the /pay/* pages, so the page's CSP stays
 // connect-src 'self' and Cloudflare's city/country reach the function.
@@ -389,21 +360,6 @@ if (path.startsWith("pay/")) return servePayPage(request, url);
 // Generated preview images.
 if (path.startsWith("og-image/") && path.endsWith(".png")) {
 return serveOgImage(request, url);
-}
-
-// Invoice creation, proxied so the customer's location can be recorded.
-//
-// The payment page used to POST straight to supabase.co. That request
-// never touches Cloudflare, so the cf-ipcity / cf-ipcountry headers
-// create-invoice looks for were never present and every payment was
-// stored with a null location — which is why the admin panel showed
-// "Unknown location" on all of them.
-//
-// Going through the worker means Cloudflare has already resolved the
-// city and country by the time we forward it. Same origin too, so the
-// browser skips the CORS preflight.
-if (path === "api/create-invoice" && request.method === "POST") {
-return proxyCreateInvoice(request);
 }
 
 // A payment-only domain serves payment links and nothing else. The
