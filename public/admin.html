@@ -829,7 +829,17 @@ textarea.w-input{ padding:10px 12px !important; }
                                               <label style="font-size:12px">Conversion fee (%) · কনভার্সন ফি (%)<br><input id="markupPct" class="w-input" type="number" min="0" max="50" step="0.01"></label>
                                               <button class="btn-sm" onclick="saveMarkup(this)">Save · সংরক্ষণ</button>
                                             </div>
-                                            <div class="hint" style="font-size:11px; color:var(--text-faint); margin-top:8px;" id="markupHint">Deducted from the creator's amount on new payments. · নতুন পেমেন্টে ক্রিয়েটরের পরিমাণ থেকে কাটা হয়।</div>
+                                            <div class="hint" style="font-size:11px; color:var(--text-faint); margin-top:8px;" id="markupHint">Total fee on new payments; who pays depends on the fee mode below. · নতুন পেমেন্টে মোট ফি; কে দেবেন তা নিচের ফি মোডে নির্ধারিত।</div>
+                                          </div>
+                                          <div class="panel" id="feeModePanel">
+                                            <div class="panel-head"><div class="panel-title">Fee mode · ফি মোড</div></div>
+                                            <div style="display:flex;flex-direction:column;gap:8px;font-size:12px">
+                                              <label><input type="radio" name="feeMode" value="creator"> <b>Creator pays</b> — fee deducted from the creator (default) · <b>ক্রিয়েটর দেন</b> — ক্রিয়েটরের পরিমাণ থেকে কাটা (ডিফল্ট)</label>
+                                              <label><input type="radio" name="feeMode" value="buyer"> <b>Buyer pays</b> — added to the buyer total; creator gets the full amount · <b>ক্রেতা দেন</b> — ক্রেতার মোটে যোগ; ক্রিয়েটর পুরো পরিমাণ পান</label>
+                                              <label><input type="radio" name="feeMode" value="split"> <b>Split 50/50</b> (suggested) — half on the buyer, half from the creator · <b>৫০/৫০ ভাগ</b> (প্রস্তাবিত) — অর্ধেক ক্রেতা, অর্ধেক ক্রিয়েটর</label>
+                                            </div>
+                                            <div class="w-row" style="margin-top:10px"><button class="btn-sm" onclick="saveFeeMode(this)">Save mode · মোড সংরক্ষণ</button></div>
+                                            <div class="hint" style="font-size:11px; color:var(--text-faint); margin-top:8px;">Applies to new invoices only; existing payments keep their mode. · শুধু নতুন ইনভয়েসে প্রযোজ্য; আগের পেমেন্ট আগের মোডেই থাকে।</div>
                                           </div>
                                           <div class="panel" id="linkMarkupPanel">
                                             <div class="panel-head"><div class="panel-title">Per-link extra fee · লিংক অনুযায়ী অতিরিক্ত ফি</div></div>
@@ -2271,7 +2281,25 @@ async function loadMarkup(){
   const { data } = await window.supabaseClient.from('app_settings').select('value').eq('key', 'conversion_fee_percent').maybeSingle();
   const v = data && data.value != null ? Number(data.value) : 10;
   document.getElementById('markupPct').value = v;
+  loadFeeMode();
   markupHint(v);
+}
+async function loadFeeMode(){
+  const { data } = await window.supabaseClient.rpc('conversion_fee_config');
+  const c = Array.isArray(data) ? data[0] : data;
+  const m = (c && c.mode) || 'creator';
+  document.querySelectorAll('input[name=feeMode]').forEach(r => { r.checked = r.value === m; });
+}
+async function saveFeeMode(btn){
+  const r = document.querySelector('input[name=feeMode]:checked');
+  if (!r) { showToast('Choose a mode · একটি মোড বাছুন', 'err'); return; }
+  const names = { creator: 'Creator pays · ক্রিয়েটর দেন', buyer: 'Buyer pays · ক্রেতা দেন', split: 'Split 50/50 · ৫০/৫০ ভাগ' };
+  if (!confirm('Switch fee mode to "' + names[r.value] + '" for new invoices? · নতুন ইনভয়েসের জন্য ফি মোড পরিবর্তন করবেন?')) { loadFeeMode(); return; }
+  btn.disabled = true;
+  const { data, error } = await window.supabaseClient.rpc('admin_set_conversion_fee_mode', { p_mode: r.value });
+  btn.disabled = false;
+  if (error) { showToast('Failed · ব্যর্থ: ' + error.message, 'err'); loadFeeMode(); return; }
+  showToast('Fee mode saved · ফি মোড সংরক্ষিত: ' + names[data], 'ok');
 }
 function markupHint(v){
   const net = (100 * (1 - v / 100)).toFixed(2);

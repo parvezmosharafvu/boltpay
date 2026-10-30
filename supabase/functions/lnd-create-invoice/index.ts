@@ -8,7 +8,7 @@
 // checkout_backend is 'lnd'. Otherwise it refuses.
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 import { LndClient, lndConfig } from "../_shared/lnd.ts";
-import { chargedAmount, parseUsd, resolveMarkup, usdToSats, withinLimits } from "../_shared/pricing.ts";
+import { parseUsd, quote, resolveMarkup, usdToSats, withinLimits } from "../_shared/pricing.ts";
 import { btcUsdRate } from "../_shared/rate.ts";
 import { loadLndSettings } from "../_shared/settings.ts";
 
@@ -117,8 +117,14 @@ Deno.serve(async (req) => {
   const lim = linkLimits(link, settings);
   if (!withinLimits(amount, lim.min, lim.max)) return err(`Amount must be between $${lim.min} and $${lim.max}`, 400);
 
-  // Buyer pays base + link markup only (0104: no global buyer markup).
-  const charged = chargedAmount(amount, resolveMarkup(link, settings));
+  // 0107: buyer pays base + link extra fee (+ the buyer share of the
+  // conversion fee in 'buyer'/'split' mode). Mode and split are snapshotted
+  // on the payment so later admin changes never re-price it.
+  const { data: feeRows, error: feeErr } = await db.rpc("conversion_fee_config");
+  const fee = Array.isArray(feeRows) ? feeRows[0] : feeRows;
+  if (feeErr || !fee) return err("Temporarily unavailable", 503);
+  const q = quote(amount, resolveMarkup(link, settings), fee.mode, fee.fee_percent);
+  const charged = q.total;
   if (charged > settings.maxUsd * 11) return err("This link's current price is too high to invoice", 400);
 
   // Same per-owner brake as create-invoice; fails closed.
@@ -163,6 +169,10 @@ Deno.serve(async (req) => {
     method: "lightning",
     buyer_amount: amount,
     amount_requested: charged,
+    conversion_fee_mode: q.mode,
+    conversion_fee_percent: q.creator,
+    buyer_fee_percent: q.buyer,
+    buyer_fee_usd: q.buyerFeeUsd,
     status: "new",
     expires_at: expiresAt,
     customer_city: req.headers.get("cf-ipcity") || null,
