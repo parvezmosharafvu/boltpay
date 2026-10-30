@@ -1326,18 +1326,12 @@ async function loadDomains(){
 
 async function fetchProfile(){
   const { data } = await window.supabaseClient.from('profiles').select('*').eq('id', currentUser.id).single();
-  const { data: appSetting } = await window.supabaseClient.from('app_settings').select('value').eq('key', 'auto_withdraw_enabled').maybeSingle();
 
   document.getElementById('statFee').textContent = (data?.withdrawal_fee_percent ?? 3) + '%';
   maxLinks = data?.max_payment_links ?? 5;
 
-  // Fails CLOSED. This used to default to true, so any hiccup reading the
-  // setting — a network blip, an RLS change, a deleted row — silently
-  // offered every creator instant payouts. For a money feature the safe
-  // default is off; the server enforces the same rule independently.
-  const globalAuto = (appSetting?.value === true || String(appSetting?.value) === 'true');
-  const userAuto = (data?.auto_withdraw_enabled === true || String(data?.auto_withdraw_enabled) === 'true');
-  isAutoWithdrawEnabled = globalAuto && userAuto;
+  // Auto-withdraw (instant Lightning payouts) is retired; the flags stay in the DB as history.
+  isAutoWithdrawEnabled = false;
 
   const methodDropdown = document.getElementById('wdMethod');
   const hasLightningOption = Array.from(methodDropdown.options).some(opt => opt.value === 'lightning');

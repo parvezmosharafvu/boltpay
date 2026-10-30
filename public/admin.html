@@ -572,19 +572,7 @@ input:focus-visible,select:focus-visible,button:focus-visible{ outline:2px solid
                                   <b>Nagad:</b> <span id="wNagad">—</span>
                                 </div>
                               </div>
-                              <div class="detail-section-title">Auto-Withdraw Access</div>
-                              <div class="toggle-row" style="background:var(--panel-hi); padding:12px; border-radius:10px; border:1px solid var(--line);">
-                                <div>
-                                  <div class="toggle-label">Allow Lightning & Auto-Withdraw</div>
-                                  <div class="toggle-sub">If disabled, creator won't even see the Lightning option.</div>
-                                </div>
-                                <label class="switch">
-                                  <input type="checkbox" id="detailAutoWithdrawToggle" onchange="toggleCreatorAutoWithdraw()">
-                                    <span class="slider">
-                                    </span>
-                                  </label>
-                                </div>
-                                <div class="detail-section-title">Pricing markup for this user</div>
+                              <div class="detail-section-title">Pricing markup for this user</div>
                                 <div class="w-row">
                                   <input type="number" step="0.001" class="w-input" id="detailCostInput" placeholder="0">
                                   <button class="btn-primary" style="flex:0 0 auto;" onclick="saveDetailCost()">Save cost %</button>
@@ -809,11 +797,7 @@ input:focus-visible,select:focus-visible,button:focus-visible{ outline:2px solid
                                                       <span>Manual withdrawal requests (bKash / Nagad / Binance / USDT / bank)</span>
                                                     </label>
                                                     <div class="hint" style="font-size:11px; color:var(--text-faint); margin:4px 0 8px;">Off: nobody can submit a new withdrawal request of any kind &mdash; a full freeze on new submissions, independent of instant Lightning below. Already-queued requests are unaffected; you can still process them.</div>
-                                                    <label class="toggle-row" style="margin-top:14px;">
-                                                      <input type="checkbox" id="globalAutoWithdraw" onchange="saveGlobalToggle('auto_withdraw_enabled', this)">
-                                                      <span>Instant Lightning payouts</span>
-                                                    </label>
-                                                    <div class="hint" style="font-size:11px; color:var(--text-faint); margin:4px 0 14px;">Master switch. Off here means no creator gets an instant payout, whatever their own profile says. On here does not enable anyone by itself &mdash; you still turn it on per creator under Customers.</div>
+                                                    
                                                     <label class="toggle-row" style="display:none">
                                                       <input type="checkbox" id="globalPublicFeed" onchange="saveGlobalToggle('public_feed_enabled', this)">
                                                       <span>Live payments on the home page</span>
@@ -1396,7 +1380,6 @@ async function openCustomerDetail(creatorId){
   
   // `!== false` treated null/undefined as enabled, so a creator who had never
   // been granted instant Lightning showed up in the panel as already granted.
-  document.getElementById('detailAutoWithdrawToggle').checked = cu.auto_withdraw_enabled === true;
   
   document.getElementById('wBinance').textContent = cu.w_binance || '—';
   document.getElementById('wUsdt').textContent = cu.w_usdt || '—';
@@ -1434,19 +1417,6 @@ async function openCustomerDetail(creatorId){
     : '<div class="empty-state">No withdrawals</div>';
 }
 
-async function toggleCreatorAutoWithdraw() {
-  const isEnabled = document.getElementById('detailAutoWithdrawToggle').checked;
-  const { error } = await window.supabaseClient.rpc('admin_toggle_creator_auto', {
-    p_creator_id: currentDetailCreatorId, p_enabled: isEnabled
-  });
-  if (error) {
-    showToast('Failed to update status', 'err');
-    document.getElementById('detailAutoWithdrawToggle').checked = !isEnabled;
-  } else {
-    showToast(isEnabled ? 'Lightning enabled for this creator' : 'Lightning disabled for this creator', 'ok');
-    await loadCustomers();
-  }
-}
 
 async function saveDetailCost(){
   const pct = parseFloat(document.getElementById('detailCostInput').value);
@@ -2100,7 +2070,6 @@ async function loadSettings(){
   document.getElementById('noticeInput').value = notice?.text || ''; document.getElementById('noticeActiveToggle').checked = notice?.active || false;
   if (defaultFee){ document.getElementById('defaultFeeInput').value = defaultFee.percent; }
   const manual = data?.find(s => s.key === 'manual_withdrawals_enabled')?.value;
-  const auto = data?.find(s => s.key === 'auto_withdraw_enabled')?.value;
   const feed = data?.find(s => s.key === 'public_feed_enabled')?.value;
   const hideSmall = data?.find(s => s.key === 'hide_small_payments_enabled')?.value;
   const hideSmallAmt = data?.find(s => s.key === 'hide_small_payments_threshold')?.value;
@@ -2108,7 +2077,6 @@ async function loadSettings(){
   const support = data?.find(s => s.key === 'support_links')?.value || {};
   const setChecked = (id, v) => { const e = document.getElementById(id); if (e) e.checked = v === true; };
   setChecked('globalManualWithdrawals', manual);
-  setChecked('globalAutoWithdraw', auto);
   setChecked('globalPublicFeed', feed);
   setChecked('globalHideSmall', hideSmall);
   setChecked('globalShowBuyerAmount', showBuyerAmount);
