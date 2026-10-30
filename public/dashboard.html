@@ -509,6 +509,38 @@ body{
 .msg-edit-input{ width:100%; background:var(--panel-hi); border:1px solid var(--line); color:var(--text);
   padding:8px 10px; border-radius:8px; font-family:inherit; font-size:13px; outline:none; margin-bottom:6px; }
 
+/* ===== MESSAGES SECTION (msg-*) — scoped to #sec-messages ===== */
+#sec-messages{ --msg-g:#00D632; --msg-g-soft:rgba(0,214,50,.12); --msg-g-line:rgba(0,214,50,.32);
+  --msg-bg:#0f1311; --msg-bg-hi:#161b18; --msg-line:rgba(255,255,255,.08); --msg-dim:rgba(255,255,255,.55); }
+#sec-messages .msg-card{ background:var(--msg-bg); border:1px solid var(--msg-line); border-radius:20px; overflow:hidden; margin-bottom:14px; box-shadow:0 10px 30px rgba(0,0,0,.35); }
+#sec-messages .msg-head{ display:flex; align-items:center; gap:12px; padding:14px 14px 12px; border-bottom:1px solid var(--msg-line); background:linear-gradient(180deg, rgba(0,214,50,.07), transparent); }
+#sec-messages .msg-avatar{ width:40px; height:40px; flex:0 0 40px; border-radius:50%; display:grid; place-items:center; background:var(--msg-g); color:#04140a; font-weight:800; font-size:17px; }
+#sec-messages .msg-head-text{ flex:1; min-width:0; }
+#sec-messages .msg-head-title{ font-weight:700; font-size:15px; color:#fff; }
+#sec-messages .msg-head-sub{ display:flex; align-items:center; gap:6px; font-size:12px; color:var(--msg-dim); margin-top:2px; line-height:1.35; }
+#sec-messages .msg-dot{ width:7px; height:7px; border-radius:50%; background:var(--msg-g); box-shadow:0 0 0 3px var(--msg-g-soft); flex:0 0 7px; }
+#sec-messages .msg-tools{ display:flex; gap:6px; }
+#sec-messages .msg-tool{ min-width:40px; height:40px; padding:0 12px; border-radius:12px; border:1px solid var(--msg-line); background:var(--msg-bg-hi); color:#fff; font-weight:600; font-size:13px; font-family:inherit; cursor:pointer; }
+#sec-messages .msg-tool-danger{ color:#ff6b6b; }
+#sec-messages .msg-tool:active, #sec-messages .msg-send:active, #sec-messages .msg-tg-btn:active{ transform:scale(.96); }
+#sec-messages .msg-thread{ height:min(56vh, 460px); overflow-y:auto; padding:16px 14px; display:flex; flex-direction:column; overscroll-behavior:contain; }
+#sec-messages .msg-thread > .empty-state{ margin:auto; }
+#sec-messages .msg-bubble{ max-width:82%; padding:10px 13px !important; margin-bottom:8px !important; font-size:14px !important; line-height:1.45; border-radius:18px; color:#fff; word-wrap:break-word; }
+#sec-messages .msg-bubble.admin{ background:var(--msg-bg-hi); border:1px solid var(--msg-line); border-bottom-left-radius:6px; align-self:flex-start; }
+#sec-messages .msg-bubble.creator{ background:var(--msg-g); color:#04140a; border:none; border-bottom-right-radius:6px; align-self:flex-end; margin-left:0; }
+#sec-messages .msg-from{ color:var(--msg-g); font-size:10px; letter-spacing:.5px; }
+#sec-messages .msg-bubble.creator .msg-from{ display:none; }
+#sec-messages .msg-time{ color:var(--msg-dim); font-size:11px; }
+#sec-messages .msg-bubble.creator .msg-time, #sec-messages .msg-bubble.creator .msg-act{ color:rgba(4,20,10,.65); }
+#sec-messages .msg-act{ font-size:12px; padding:4px 0; }
+#sec-messages .msg-bubble.creator .msg-act:hover{ color:#04140a; }
+#sec-messages .msg-edit-input{ background:#fff; color:#04140a; border:none; }
+#sec-messages .msg-composer{ display:flex; gap:8px; align-items:center; padding:10px 10px 12px; border-top:1px solid var(--msg-line); background:var(--msg-bg); margin:0; }
+#sec-messages .msg-input{ flex:1; min-width:0; height:46px; padding:0 16px; border-radius:999px; border:1px solid var(--msg-line); background:var(--msg-bg-hi); color:#fff; font-family:inherit; font-size:15px; outline:none; }
+#sec-messages .msg-input:focus{ border-color:var(--msg-g-line); box-shadow:0 0 0 3px var(--msg-g-soft); }
+#sec-messages .msg-send{ width:46px; height:46px; flex:0 0 46px; border-radius:50%; border:none; background:var(--msg-g); color:#04140a; display:grid; place-items:center; cursor:pointer; }
+@media (min-width:768px){ #sec-messages .msg-bubble{ max-width:70%; } }
+
 /* Was background:var(--text) with color:#fff — a near-white bubble with
    white text, so "Copied" (and every other toast) was unreadable the
    instant it appeared. Matches admin.html's toast now: a dark panel
@@ -617,6 +649,7 @@ textarea.w-input{ padding:10px 12px !important; }
 @media (min-width:1024px){ .content{ max-width:1280px !important; padding-left:32px !important; padding-right:32px !important; } }
 </style>
     <link rel="stylesheet" href="dash.css">
+    <link rel="stylesheet" href="links.css">
   </head>
   <body>
     <div id="appShell">
@@ -770,61 +803,58 @@ textarea.w-input{ padding:10px 12px !important; }
           </div>
 
           <!-- ============ PAYMENT LINKS ============ -->
-          <div class="section" id="sec-links">
-            <div class="page-header">
-              <div>
-                <div class="page-title">Payment links</div>
-                <div class="page-sub">Create and manage your public payment pages</div>
+          <div class="section links-root" id="sec-links">
+            <div class="links-hero">
+              <div class="links-eyebrow" data-en="Payment links" data-bn="পেমেন্ট লিংক">Payment links</div>
+              <div class="links-title" data-en="Your public pay pages" data-bn="আপনার পাবলিক পেমেন্ট পেজ">Your public pay pages</div>
+              <div class="links-sub" data-en="Create a link, share it, get paid. Every link works on all your domains." data-bn="লিংক তৈরি করুন, শেয়ার করুন, পেমেন্ট নিন। প্রতিটি লিংক আপনার সব ডোমেইনে কাজ করে।">Create a link, share it, get paid. Every link works on all your domains.</div>
+              <div class="links-usage limit-bar" id="limitBar"></div>
+              <button class="links-cta" onclick="toggleLinkForm()" data-en="+ New link" data-bn="+ নতুন লিংক">+ New link</button>
+            </div>
+
+            <div id="newLinkForm" class="links-card links-form" style="display:none;">
+              <div class="links-card-title" data-en="New payment link" data-bn="নতুন পেমেন্ট লিংক">New payment link</div>
+              <label class="links-label" for="newSlug" data-en="Name shown to payers" data-bn="পেয়ারদের দেখানো নাম">Name shown to payers</label>
+              <input type="text" class="w-input links-input" id="newSlug" placeholder="Name — e.g. Sophia or Taylor James" data-ph-en="Name — e.g. Sophia or Taylor James" data-ph-bn="নাম — যেমন Sophia বা Taylor James">
+              <label class="links-label" for="newLinkMarkup"><span data-en="Extra fee (%)" data-bn="অতিরিক্ত ফি (%)">Extra fee (%)</span> <span class="links-lock" data-en="🔒 Locked after creation" data-bn="🔒 তৈরির পর লক">🔒 Locked after creation</span></label>
+              <input type="number" class="w-input links-input" id="newLinkMarkup" min="0" max="100" step="0.01" inputmode="decimal" placeholder="Add extra fee (%) — optional" data-ph-en="Add extra fee (%) — optional" data-ph-bn="অতিরিক্ত ফি যোগ করুন (%) — ঐচ্ছিক">
+              <div class="hint links-hint" id="linkMarkupHint"></div>
+              <button class="links-cta links-cta-block" onclick="openStylePicker()" data-en="Choose link style" data-bn="লিংক স্টাইল বেছে নিন">Choose link style</button>
+              <div class="hint" id="linkFormMsg" style="display:none;"></div>
+            </div>
+            <div id="styleModal" class="modal-back">
+              <div class="modal-card">
+                <div class="modal-title" data-en="Choose your link" data-bn="আপনার লিংক বেছে নিন">Choose your link</div>
+                <div class="modal-sub" id="styleModalSub"></div>
+                <div id="styleOptions"></div>
+                <div class="hint" id="styleModalMsg" style="display:none;"></div>
+                <div class="modal-actions">
+                  <button class="btn-ghost" onclick="closeStylePicker()" data-en="Cancel" data-bn="বাতিল">Cancel</button>
+                  <button class="btn-primary" id="styleCreateBtn" onclick="createPaymentLink()" data-en="Create link" data-bn="লিংক তৈরি করুন">Create link</button>
+                </div>
               </div>
             </div>
-            <div class="panel">
-              <div class="panel-head">
-                <div>
-                  <div class="panel-title">Your payment links</div>
-                  <div class="domain-picker">
-                    <label for="domainPicker">Domain</label>
-                    <select id="domainPicker" onchange="renderLinks()"></select>
-                  </div>
-                  <div class="panel-sub" id="domainCountHint"></div>
-                </div>
-                <button class="btn-primary" style="padding:9px 14px; font-size:12px;" onclick="toggleLinkForm()">+ New link</button>
+
+            <div class="links-card links-qi" id="quickInvoiceCard">
+              <div class="links-card-title" data-en="Create an invoice and copy its link" data-bn="ইনভয়েস তৈরি করে লিংক কপি করুন">Create an invoice and copy its link</div>
+              <div class="links-qi-row">
+                <select id="qiLink" class="filter-select links-input"></select>
+                <input id="qiAmount" class="w-input links-input" type="number" min="1" step="0.01" inputmode="decimal" placeholder="Amount (USD)" data-ph-en="Amount (USD)" data-ph-bn="পরিমাণ (USD)">
               </div>
-              <div class="limit-bar" id="limitBar"></div>
-              <div id="newLinkForm" style="display:none; margin-bottom:16px;">
-                <div class="w-row">
-                  <input type="text" class="w-input" id="newSlug" placeholder="Name — e.g. Sophia or Taylor James">
-                </div>
-                <div class="w-row">
-                  <input type="number" class="w-input" id="newLinkMarkup" min="0" max="100" step="0.01" inputmode="decimal" placeholder="Add extra fee (%) — optional" data-ph-en="Add extra fee (%) — optional" data-ph-bn="অতিরিক্ত ফি যোগ করুন (%) — ঐচ্ছিক">
-                </div>
-                <div class="hint" id="linkMarkupHint" style="margin:-4px 0 10px;"></div>
-                <button class="btn-primary" onclick="openStylePicker()" style="width:100%;">Choose link style</button>
-                <div class="hint" id="linkFormMsg" style="display:none;"></div>
+              <button class="links-cta links-cta-block links-cta-ghost" id="qiBtn" onclick="quickInvoice()" data-en="Create &amp; copy link" data-bn="তৈরি করুন ও লিংক কপি করুন">Create &amp; copy link</button>
+              <div class="hint links-qi-out" id="qiOut" style="display:none;"></div>
+            </div>
+
+            <div class="links-list-head">
+              <div class="links-card-title" data-en="Your links" data-bn="আপনার লিংক">Your links</div>
+              <div class="links-domain">
+                <label for="domainPicker" data-en="Domain" data-bn="ডোমেইন">Domain</label>
+                <select id="domainPicker" class="links-select" onchange="renderLinks()"></select>
               </div>
-              <div id="styleModal" class="modal-back">
-                <div class="modal-card">
-                  <div class="modal-title">Choose your link</div>
-                  <div class="modal-sub" id="styleModalSub"></div>
-                  <div id="styleOptions"></div>
-                  <div class="hint" id="styleModalMsg" style="display:none;"></div>
-                  <div class="modal-actions">
-                    <button class="btn-ghost" onclick="closeStylePicker()">Cancel</button>
-                    <button class="btn-primary" id="styleCreateBtn" onclick="createPaymentLink()">Create link</button>
-                  </div>
-                </div>
-              </div>
-              <div class="card" id="quickInvoiceCard" style="margin-bottom:14px;padding:14px;">
-                <div class="model-name" data-en="Create an invoice and copy its link" data-bn="ইনভয়েস তৈরি করে লিংক কপি করুন">Create an invoice and copy its link</div>
-                <div style="display:flex;gap:8px;flex-wrap:wrap;margin-top:8px;align-items:center;">
-                  <select id="qiLink" class="filter-select" style="max-width:220px;"></select>
-                  <input id="qiAmount" class="w-input" type="number" min="1" step="0.01" inputmode="decimal" placeholder="Amount (USD)" style="max-width:140px;">
-                  <button class="btn-primary" id="qiBtn" onclick="quickInvoice()" data-en="Create &amp; copy link" data-bn="তৈরি করুন ও লিংক কপি করুন">Create &amp; copy link</button>
-                </div>
-                <div class="hint" id="qiOut" style="display:none;margin-top:8px;word-break:break-all;"></div>
-              </div>
-              <div id="linksList">
-                <div class="empty-state">No payment links yet</div>
-              </div>
+            </div>
+            <div class="links-domain-hint" id="domainCountHint"></div>
+            <div id="linksList" class="links-list">
+              <div class="links-empty" data-en="No payment links yet" data-bn="এখনও কোনো পেমেন্ট লিংক নেই">No payment links yet</div>
             </div>
           </div>
 
@@ -904,17 +934,70 @@ textarea.w-input{ padding:10px 12px !important; }
                rather than midnight-to-midnight. Nothing here is a cron
                job or a backup — reload the page and it recomputes. -->
           <div class="section" id="sec-invoices">
-            <div class="page-header">
-              <div>
-                <div class="page-title">Invoices</div>
-                <div class="page-sub">One invoice per day, 7pm–7pm (Asia/Dhaka)</div>
+            <style>
+              /* Invoices section redesign, scoped: every rule is under #sec-invoices and uses inv- classes. */
+              #sec-invoices{--inv-g:#00D632;--inv-bg:#0E1110;--inv-card:#151917;--inv-line:rgba(255,255,255,.07);--inv-mut:rgba(236,242,238,.58);--inv-tx:#ECF2EE}
+              #sec-invoices .inv-wrap{display:flex;flex-direction:column;gap:14px;color:var(--inv-tx)}
+              #sec-invoices .inv-head{display:flex;align-items:flex-start;justify-content:space-between;gap:12px}
+              #sec-invoices .inv-title{font-size:24px;font-weight:800;letter-spacing:-.02em;line-height:1.15}
+              #sec-invoices .inv-sub{margin-top:4px;font-size:12.5px;color:var(--inv-mut)}
+              #sec-invoices .inv-refresh{flex:none;display:inline-flex;align-items:center;gap:6px;height:36px;padding:0 14px;border-radius:999px;border:1px solid rgba(0,214,50,.35);background:rgba(0,214,50,.08);color:var(--inv-g);font-weight:700;font-size:13px;cursor:pointer}
+              #sec-invoices .inv-refresh:active{transform:scale(.97)}
+              #sec-invoices .inv-card{background:linear-gradient(180deg,#171C19,var(--inv-card));border:1px solid var(--inv-line);border-radius:20px;padding:16px;box-shadow:0 10px 30px rgba(0,0,0,.25)}
+              #sec-invoices .inv-card-h{display:flex;align-items:baseline;justify-content:space-between;gap:8px;margin-bottom:12px}
+              #sec-invoices .inv-card-t{font-size:15px;font-weight:750}
+              #sec-invoices .inv-card-k{font-size:11px;letter-spacing:.06em;text-transform:uppercase;color:var(--inv-mut)}
+              #sec-invoices .inv-hero{display:flex;align-items:flex-end;justify-content:space-between;gap:10px;margin-bottom:12px}
+              #sec-invoices .inv-hero-v{font-size:30px;font-weight:800;letter-spacing:-.02em;font-variant-numeric:tabular-nums}
+              #sec-invoices .inv-hero-l{font-size:12px;color:var(--inv-mut)}
+              #sec-invoices .inv-chip{display:inline-flex;align-items:center;gap:5px;padding:4px 10px;border-radius:999px;background:rgba(0,214,50,.12);color:var(--inv-g);font-size:12px;font-weight:700}
+              #sec-invoices .inv-chart svg{display:block;width:100%;height:auto}
+              #sec-invoices .inv-axis{display:flex;justify-content:space-between;margin-top:6px;font-size:11px;color:var(--inv-mut);font-variant-numeric:tabular-nums}
+              #sec-invoices .inv-row{display:flex;align-items:center;gap:12px;padding:12px 0;border-top:1px solid var(--inv-line)}
+              #sec-invoices .inv-row:first-child{border-top:0;padding-top:2px}
+              #sec-invoices .inv-rank{flex:none;width:30px;height:30px;border-radius:10px;display:grid;place-items:center;background:rgba(0,214,50,.1);color:var(--inv-g);font-weight:800;font-size:13px}
+              #sec-invoices .inv-main{flex:1;min-width:0}
+              #sec-invoices .inv-name{font-weight:650;font-size:14.5px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+              #sec-invoices .inv-meta{margin-top:2px;font-size:12px;color:var(--inv-mut);font-variant-numeric:tabular-nums}
+              #sec-invoices .inv-amt{flex:none;text-align:right;font-weight:800;font-size:15px;font-variant-numeric:tabular-nums}
+              #sec-invoices .inv-amt-s{display:block;font-size:11.5px;font-weight:500;color:var(--inv-mut)}
+              #sec-invoices .inv-pos{color:var(--inv-g)}
+              #sec-invoices .inv-day{padding:12px 0;border-top:1px solid var(--inv-line)}
+              #sec-invoices .inv-day:first-child{border-top:0;padding-top:2px}
+              #sec-invoices .inv-day-top{display:flex;justify-content:space-between;align-items:baseline;gap:10px}
+              #sec-invoices .inv-break{display:grid;grid-template-columns:repeat(3,1fr);gap:6px;margin-top:8px}
+              #sec-invoices .inv-cell{background:rgba(255,255,255,.03);border:1px solid var(--inv-line);border-radius:12px;padding:7px 9px}
+              #sec-invoices .inv-cell-l{font-size:10.5px;color:var(--inv-mut);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+              #sec-invoices .inv-cell-v{font-size:13px;font-weight:700;font-variant-numeric:tabular-nums;margin-top:1px}
+              #sec-invoices .inv-status{display:inline-block;margin-top:4px;padding:2px 8px;border-radius:999px;font-size:11px;font-weight:700;text-transform:capitalize;background:rgba(255,255,255,.06);color:var(--inv-mut)}
+              #sec-invoices .inv-status.inv-paid{background:rgba(0,214,50,.12);color:var(--inv-g)}
+              #sec-invoices .inv-empty{padding:18px 4px;text-align:center;font-size:13px;color:var(--inv-mut)}
+            </style>
+            <div class="inv-wrap">
+              <div class="inv-head">
+                <div>
+                  <div class="inv-title" data-en="Invoices" data-bn="ইনভয়েস">Invoices</div>
+                  <div class="inv-sub" data-en="One invoice per day, 7pm–7pm (Asia/Dhaka)" data-bn="প্রতিদিন একটি ইনভয়েস, সন্ধ্যা ৭টা–সন্ধ্যা ৭টা (এশিয়া/ঢাকা)">One invoice per day, 7pm–7pm (Asia/Dhaka)</div>
+                </div>
+                <button class="inv-refresh" onclick="loadInvoicesTab()" data-en="↻ Refresh" data-bn="↻ রিফ্রেশ">↻ Refresh</button>
               </div>
-              <button class="btn-ghost" onclick="loadInvoicesTab()">Refresh</button>
+              <div class="inv-card">
+                <div class="inv-card-h"><div class="inv-card-t" data-en="Last 30 days" data-bn="গত ৩০ দিন">Last 30 days</div><div class="inv-card-k" data-en="Settled" data-bn="সেটেলড">Settled</div></div>
+                <div id="invChart" class="inv-chart"></div>
+              </div>
+              <div class="inv-card">
+                <div class="inv-card-h"><div class="inv-card-t" data-en="Top links" data-bn="শীর্ষ লিংক">Top links</div><div class="inv-card-k" data-en="30 days" data-bn="৩০ দিন">30 days</div></div>
+                <div id="invTopLinks"></div>
+              </div>
+              <div class="inv-card">
+                <div class="inv-card-h"><div class="inv-card-t" data-en="Daily invoices" data-bn="দৈনিক ইনভয়েস">Daily invoices</div><div class="inv-card-k" data-en="Net after fee" data-bn="ফি বাদে নিট">Net after fee</div></div>
+                <div id="invList"></div>
+              </div>
+              <div class="inv-card">
+                <div class="inv-card-h"><div class="inv-card-t" data-en="Other invoices" data-bn="অন্যান্য ইনভয়েস">Other invoices</div></div>
+                <div id="manualInvList"></div>
+              </div>
             </div>
-            <div class="card" style="margin-bottom:14px"><div style="font-weight:700;margin-bottom:8px">Last 30 days</div><div id="invChart"></div></div>
-            <div class="card" style="margin-bottom:14px"><div style="font-weight:700;margin-bottom:8px">Top links (30 days)</div><div id="invTopLinks"></div></div>
-            <div class="card" style="overflow-x:auto"><div id="invList"></div></div>
-            <div class="card" style="overflow-x:auto;margin-top:14px"><div style="font-weight:700;margin-bottom:8px">Other invoices · অন্যান্য ইনভয়েস</div><div id="manualInvList"></div></div>
           </div>
           <div class="section" id="sec-daily">
             <div class="page-header">
@@ -1010,102 +1093,155 @@ textarea.w-input{ padding:10px 12px !important; }
           </div>
 
           <!-- ============ CASH OUT ============ -->
-          <div class="section" id="sec-cashout">
+          <div class="section cashout-root" id="sec-cashout">
+            <style>
+/* Cash out — scoped to #sec-cashout only. Green accent matches the pay pages. */
+#sec-cashout{ --cashout-accent:#00D632; --cashout-accent-ink:#00230A; --cashout-wash:rgba(0,214,50,.10); --cashout-ring:rgba(0,214,50,.28); --cashout-card:#121212; --cashout-line:rgba(255,255,255,.08); --cashout-dim:rgba(255,255,255,.62); --cashout-faint:rgba(255,255,255,.40); }
+#sec-cashout .cashout-hero{ position:relative; overflow:hidden; border-radius:22px; padding:22px 20px 20px; margin-bottom:14px; background:radial-gradient(120% 90% at 100% 0%, rgba(0,214,50,.22) 0%, rgba(0,214,50,0) 60%), #0E0F0E; border:1px solid var(--cashout-line); }
+#sec-cashout .cashout-hero-label{ font-size:12px; letter-spacing:.06em; text-transform:uppercase; color:var(--cashout-dim); font-weight:600; }
+#sec-cashout .cashout-hero-amount{ font-size:40px; line-height:1.1; font-weight:700; color:#fff; margin:6px 0 4px; letter-spacing:-.02em; }
+#sec-cashout .cashout-hero-sub{ font-size:13px; color:var(--cashout-dim); display:flex; align-items:center; gap:6px; }
+#sec-cashout .cashout-dot{ width:7px; height:7px; border-radius:50%; background:var(--cashout-accent); box-shadow:0 0 0 4px var(--cashout-wash); flex:none; }
+#sec-cashout .cashout-card{ background:var(--cashout-card); border:1px solid var(--cashout-line); border-radius:20px; padding:18px 16px; margin-bottom:14px; }
+#sec-cashout .cashout-card-title{ font-size:16px; font-weight:700; color:#fff; }
+#sec-cashout .cashout-card-sub{ font-size:12.5px; color:var(--cashout-dim); margin-top:3px; line-height:1.45; }
+#sec-cashout .cashout-card-head{ margin-bottom:14px; }
+#sec-cashout .cashout-field{ display:flex; flex-direction:column; gap:6px; margin-bottom:12px; }
+#sec-cashout .cashout-label{ font-size:12px; font-weight:600; color:var(--cashout-dim); }
+#sec-cashout .cashout-field .w-input, #sec-cashout .cashout-field .w-select{ width:100%; min-height:50px; border-radius:14px !important; background:#0A0A0A !important; border:1px solid var(--cashout-line) !important; font-size:15px !important; }
+#sec-cashout .cashout-field .w-input:focus, #sec-cashout .cashout-field .w-select:focus{ border-color:var(--cashout-accent) !important; box-shadow:0 0 0 3px var(--cashout-ring); outline:none; }
+#sec-cashout .cashout-amount .w-input{ font-size:22px !important; font-weight:600; min-height:58px; }
+#sec-cashout .cashout-hint{ font-size:12px; color:var(--cashout-faint); line-height:1.5; }
+#sec-cashout .cashout-hint b{ color:var(--cashout-dim); font-weight:600; }
+#sec-cashout .cashout-details summary{ cursor:pointer; color:var(--cashout-accent); font-size:12.5px; font-weight:600; list-style:none; }
+#sec-cashout .cashout-details summary::-webkit-details-marker{ display:none; }
+#sec-cashout .cashout-details[open] summary{ margin-bottom:6px; }
+#sec-cashout .cashout-btn{ width:100%; min-height:52px; border-radius:999px; font-size:15px; font-weight:700; cursor:pointer; transition:transform .08s ease, opacity .15s; }
+#sec-cashout .cashout-btn:active{ transform:scale(.98); }
+#sec-cashout .cashout-btn-primary{ background:var(--cashout-accent) !important; color:var(--cashout-accent-ink) !important; border:0 !important; box-shadow:0 8px 24px rgba(0,214,50,.22); }
+#sec-cashout .cashout-btn-primary:disabled{ opacity:.55; box-shadow:none; }
+#sec-cashout .cashout-btn-ghost{ background:transparent !important; color:#fff !important; border:1px solid var(--cashout-line) !important; }
+#sec-cashout .cashout-help{ color:var(--cashout-accent) !important; font-size:12.5px; font-weight:600; margin:-4px 0 12px; line-height:1.45; }
+#sec-cashout .cashout-preview{ font-size:13px; color:var(--cashout-dim); margin:-4px 0 12px; }
+#sec-cashout .cashout-eta{ display:flex; align-items:center; justify-content:center; gap:6px; margin-top:12px; font-size:12px; color:var(--cashout-dim); }
+#sec-cashout .cashout-saved{ text-align:center; color:var(--cashout-accent); font-size:12px; margin-top:8px; }
+#sec-cashout .cashout-tg{ display:flex; align-items:center; justify-content:space-between; gap:12px; flex-wrap:wrap; }
+#sec-cashout .cashout-tg .cashout-btn{ width:auto; min-height:40px; padding:0 16px; font-size:13px; }
+#sec-cashout .cashout-tg-code{ display:none; margin-top:10px; font-size:13px; }
+#sec-cashout .cashout-history .tx-row{ background:#0A0A0A; border:1px solid var(--cashout-line); border-radius:14px; }
+#sec-cashout .cashout-history .tx-amt{ color:#fff !important; }
+@media (min-width:768px){ #sec-cashout .cashout-hero-amount{ font-size:48px; } }
+            </style>
             <div class="page-header">
               <div>
-                <div class="page-title">Cash out</div>
-                <div class="page-sub">Manage your withdrawal wallets and request payouts</div>
+                <div class="page-title" data-en="Cash out" data-bn="ক্যাশ আউট">Cash out</div>
+                <div class="page-sub" data-en="Manage your withdrawal wallets and request payouts" data-bn="আপনার উইথড্র ওয়ালেট পরিচালনা করুন এবং পেআউটের অনুরোধ করুন">Manage your withdrawal wallets and request payouts</div>
               </div>
-            </div>
-            <div class="card" id="tgCard" style="margin-bottom:14px">
-              <div style="display:flex;justify-content:space-between;align-items:center;gap:8px">
-                <div><div style="font-weight:700">Telegram notifications</div><div id="tgStatus" style="font-size:13px;opacity:.8">Checking…</div></div>
-                <div><button class="btn-ghost" id="tgConnectBtn" onclick="connectTelegram()">Connect Telegram · যুক্ত করুন</button>
-                <button class="btn-ghost" id="tgDisconnectBtn" style="display:none" onclick="disconnectTelegram()">Disconnect · বিচ্ছিন্ন</button></div>
-              </div>
-              <div id="tgCode" style="display:none;margin-top:10px;font-size:13px"></div>
-            </div>
-            <!-- 0105: profile-wide pricing removed; extra fee is set per link at creation -->
-
-            <div class="panel">
-              <div class="panel-head">
-                <div class="panel-title">Your withdrawal wallets</div>
-              </div>
-              <div class="w-row" style="display:flex; flex-direction:column; gap:10px;">
-                <input type="text" class="w-input" id="wallet_lightning_address" placeholder="Lightning Address  (you@walletofsatoshi.com)">
-                <div class="hint" style="font-size:11px; color:var(--text-faint); margin:-4px 0 2px;">
-                  Set this and Lightning payouts can be sent automatically &mdash; no pasting a fresh invoice each time.
-                  A Lightning Address looks like an email and never expires.
-                  <b>Wallets that give you one:</b> Wallet of Satoshi, Alby, Phoenix, Zeus, Coinos, Primal, Bitkit.
-                  Open your wallet, find "Lightning Address" or "Receive &rarr; Address", copy it, paste it here.
-                </div>
-                <input type="text" class="w-input" id="wallet_usdt_bep20" placeholder="USDT (BEP20) Address">
-              </div>
-              <button class="btn-secondary" onclick="saveWallets()" style="width:100%; margin-top:10px;">💾 Save Wallet Details</button>
-              <div class="saved-tag" id="walletSavedTag">✓ Saved successfully</div>
             </div>
 
-            <div class="panel">
-              <div class="panel-head">
-                <div class="panel-title">Request a withdrawal</div>
-                <div style="text-align:right;">
-                  <div style="font-size:11px; color:var(--text-faint);">Available balance</div>
-                  <div id="statAvailableUSD2" class="mono" style="color:var(--amber); font-weight:700; font-size:18px;">$0.00</div>
-                </div>
+            <div class="cashout-hero">
+              <div class="cashout-hero-label" data-en="Available balance" data-bn="উত্তোলনযোগ্য ব্যালেন্স">Available balance</div>
+              <div id="statAvailableUSD2" class="cashout-hero-amount mono">$0.00</div>
+              <div class="cashout-hero-sub"><span class="cashout-dot"></span><span data-en="Ready to cash out" data-bn="ক্যাশ আউটের জন্য প্রস্তুত">Ready to cash out</span></div>
+            </div>
+
+            <div class="cashout-card">
+              <div class="cashout-card-head">
+                <div class="cashout-card-title" data-en="Request a withdrawal" data-bn="উইথড্রর অনুরোধ করুন">Request a withdrawal</div>
               </div>
-              <div class="w-row">
+              <div class="cashout-field">
+                <label class="cashout-label" for="wdMethod" data-en="Payout method" data-bn="পেআউট পদ্ধতি">Payout method</label>
                 <select class="w-select" id="wdMethod" onchange="toggleInvoiceInput()">
                   <option value="usdt_bep20">USDT BEP20</option>
                 </select>
               </div>
-              <div class="w-row">
-                <input type="number" class="w-input mono" id="wdAmount" placeholder="Amount (USD)">
+              <div class="cashout-field cashout-amount">
+                <label class="cashout-label" for="wdAmount" data-en="Amount (USD)" data-bn="পরিমাণ (USD)">Amount (USD)</label>
+                <input type="number" inputmode="decimal" class="w-input mono" id="wdAmount" placeholder="$0.00">
               </div>
-              <div class="w-row" id="wdBdtPreview" style="display:none;font-size:13px;color:var(--text-dim);" aria-live="polite"></div>
-              <div class="w-row" id="invoiceRow" style="display:none;">
-                <input type="text" class="w-input mono" id="wdInvoice" placeholder="Paste Lightning Invoice here (Matches USD amount)">
+              <div class="cashout-preview" id="wdBdtPreview" style="display:none;" aria-live="polite"></div>
+              <div class="cashout-field" id="invoiceRow" style="display:none;">
+                <label class="cashout-label" for="wdInvoice" data-en="Lightning invoice or address" data-bn="লাইটনিং ইনভয়েস বা অ্যাড্রেস">Lightning invoice or address</label>
+                <input type="text" class="w-input mono" id="wdInvoice" data-ph-en="Paste Lightning Invoice here (Matches USD amount)" data-ph-bn="এখানে লাইটনিং ইনভয়েস পেস্ট করুন (USD পরিমাণের সাথে মিলবে)" placeholder="Paste Lightning Invoice here (Matches USD amount)">
               </div>
-              <div id="invoiceHelpText" class="hint" style="color:var(--ok); font-weight:bold; margin-top:4px; display:none;"></div>
-              <button class="btn-primary" id="withdrawBtn" onclick="submitWithdrawal()" style="width:100%;">Submit request</button>
-              <div class="hint" style="text-align:center; margin-top:14px; color:var(--text-dim); font-size:12px;">
-                ⏱️ Withdrawals are processed within <b>30 minutes</b>.
-              </div>
+              <div id="invoiceHelpText" class="hint cashout-help" style="display:none;"></div>
+              <button class="btn-primary cashout-btn cashout-btn-primary" id="withdrawBtn" onclick="submitWithdrawal()" data-en="Submit request" data-bn="অনুরোধ জমা দিন">Submit request</button>
+              <div class="cashout-eta">⏱️ <span data-en="Withdrawals are processed within 30 minutes." data-bn="উইথড্র ৩০ মিনিটের মধ্যে প্রসেস করা হয়।">Withdrawals are processed within 30 minutes.</span></div>
             </div>
 
-            <div class="panel">
-              <div class="panel-head">
-                <div class="panel-title">Withdrawal history</div>
+            <div class="cashout-card">
+              <div class="cashout-card-head">
+                <div class="cashout-card-title" data-en="Your withdrawal wallets" data-bn="আপনার উইথড্র ওয়ালেট">Your withdrawal wallets</div>
+                <div class="cashout-card-sub" data-en="Saved once, used for every payout." data-bn="একবার সেভ করুন, প্রতিটি পেআউটে ব্যবহার হবে।">Saved once, used for every payout.</div>
+              </div>
+              <div class="cashout-field">
+                <label class="cashout-label" for="wallet_lightning_address" data-en="Lightning Address" data-bn="লাইটনিং অ্যাড্রেস">Lightning Address</label>
+                <input type="text" class="w-input" id="wallet_lightning_address" placeholder="you@walletofsatoshi.com">
+                <details class="cashout-details cashout-hint">
+                  <summary data-en="What is a Lightning Address?" data-bn="লাইটনিং অ্যাড্রেস কী?">What is a Lightning Address?</summary>
+                  <div data-en="It looks like an email and never expires, so Lightning payouts can be sent without pasting a fresh invoice each time. Wallets that give you one: Wallet of Satoshi, Alby, Phoenix, Zeus, Coinos, Primal, Bitkit. Open your wallet, find &quot;Lightning Address&quot; or &quot;Receive → Address&quot;, copy it and paste it here." data-bn="এটি দেখতে ইমেইলের মতো এবং কখনো মেয়াদ শেষ হয় না, তাই প্রতিবার নতুন ইনভয়েস পেস্ট না করেই লাইটনিং পেআউট পাঠানো যায়। যেসব ওয়ালেট এটি দেয়: Wallet of Satoshi, Alby, Phoenix, Zeus, Coinos, Primal, Bitkit। আপনার ওয়ালেট খুলে &quot;Lightning Address&quot; বা &quot;Receive → Address&quot; খুঁজুন, কপি করে এখানে পেস্ট করুন।">It looks like an email and never expires, so Lightning payouts can be sent without pasting a fresh invoice each time. Wallets that give you one: Wallet of Satoshi, Alby, Phoenix, Zeus, Coinos, Primal, Bitkit. Open your wallet, find "Lightning Address" or "Receive → Address", copy it and paste it here.</div>
+                </details>
+              </div>
+              <div class="cashout-field">
+                <label class="cashout-label" for="wallet_usdt_bep20" data-en="USDT (BEP20) address" data-bn="USDT (BEP20) অ্যাড্রেস">USDT (BEP20) address</label>
+                <input type="text" class="w-input mono" id="wallet_usdt_bep20" placeholder="0x…">
+              </div>
+              <button class="btn-secondary cashout-btn cashout-btn-ghost" onclick="saveWallets()" data-en="Save wallet details" data-bn="ওয়ালেটের তথ্য সেভ করুন">Save wallet details</button>
+              <div class="saved-tag cashout-saved" id="walletSavedTag" data-en="✓ Saved successfully" data-bn="✓ সফলভাবে সেভ হয়েছে">✓ Saved successfully</div>
+            </div>
+
+            <div class="cashout-card cashout-history">
+              <div class="cashout-card-head">
+                <div class="cashout-card-title" data-en="Withdrawal history" data-bn="উইথড্রর ইতিহাস">Withdrawal history</div>
               </div>
               <div id="withdrawalsList">
                 <div class="empty-state">No withdrawal history</div>
               </div>
             </div>
+
+            <div class="cashout-card" id="tgCard">
+              <div class="cashout-tg">
+                <div><div class="cashout-card-title" data-en="Telegram notifications" data-bn="টেলিগ্রাম নোটিফিকেশন">Telegram notifications</div><div id="tgStatus" class="cashout-card-sub">Checking…</div></div>
+                <div><button class="btn-ghost cashout-btn cashout-btn-ghost" id="tgConnectBtn" onclick="connectTelegram()">Connect Telegram · যুক্ত করুন</button>
+                <button class="btn-ghost cashout-btn cashout-btn-ghost" id="tgDisconnectBtn" style="display:none" onclick="disconnectTelegram()">Disconnect · বিচ্ছিন্ন</button></div>
+              </div>
+              <div id="tgCode" class="cashout-tg-code"></div>
+            </div>
+            <!-- 0105: profile-wide pricing removed; extra fee is set per link at creation -->
           </div>
 
           <!-- ============ MESSAGES ============ -->
           <div class="section" id="sec-messages">
             <div class="page-header">
               <div>
-                <div class="page-title">Messages</div>
-                <div class="page-sub">Thread with the Boltpay support team</div>
+                <div class="page-title" data-en="Messages" data-bn="বার্তা">Messages</div>
+                <div class="page-sub" data-en="Talk to the Boltpay support team" data-bn="Boltpay সাপোর্ট টিমের সাথে কথা বলুন">Talk to the Boltpay support team</div>
               </div>
             </div>
-            <div class="panel">
-              <div class="panel-head">
-                <div class="panel-title">Messages with Boltpay</div>
-                <div style="display:flex; gap:8px;">
-                  <button class="btn-icon" onclick="loadMessages()" title="Refresh">⟳</button>
-                  <button class="btn-danger" onclick="clearMyThread()">Clear history</button>
+
+            <div class="msg-card">
+              <div class="msg-head">
+                <div class="msg-avatar" aria-hidden="true">B</div>
+                <div class="msg-head-text">
+                  <div class="msg-head-title" data-en="Boltpay Support" data-bn="Boltpay সাপোর্ট">Boltpay Support</div>
+                  <div class="msg-head-sub"><span class="msg-dot"></span><span data-en="Payouts, links and account help" data-bn="পেআউট, লিংক ও অ্যাকাউন্ট সহায়তা">Payouts, links and account help</span></div>
+                </div>
+                <div class="msg-tools">
+                  <button class="msg-tool" onclick="loadMessages()" title="Refresh · রিফ্রেশ" aria-label="Refresh · রিফ্রেশ">⟳</button>
+                  <button class="msg-tool msg-tool-danger" onclick="clearMyThread()" data-en="Clear" data-bn="মুছুন" title="Clear history · ইতিহাস মুছুন">Clear</button>
                 </div>
               </div>
-              <div id="messagesList" style="max-height:420px; overflow-y:auto; margin-bottom:14px;">
-                <div class="empty-state">No messages yet</div>
+              <div id="messagesList" class="msg-thread">
+                <div class="empty-state">No messages yet · এখনো কোনো বার্তা নেই</div>
               </div>
-              <div class="w-row">
-                <input type="text" class="w-input" id="replyInput" placeholder="Send feedback or a question...">
-              </div>
-              <button class="btn-primary" onclick="sendReply()" style="width:100%;">Send</button>
+              <form class="msg-composer" onsubmit="event.preventDefault(); sendReply();">
+                <input type="text" class="msg-input" id="replyInput" autocomplete="off" placeholder="Write a message…" data-ph-en="Write a message…" data-ph-bn="বার্তা লিখুন…">
+                <button type="submit" class="msg-send" aria-label="Send · পাঠান" title="Send · পাঠান">
+                  <svg viewBox="0 0 24 24" width="20" height="20" aria-hidden="true"><path fill="currentColor" d="M3.4 20.4 21 12 3.4 3.6 3.4 10l12.6 2-12.6 2z"/></svg>
+                </button>
+              </form>
             </div>
+
           </div>
         </div>
       </div>
@@ -1341,7 +1477,7 @@ async function loadDomains(){
   const { data } = await window.supabaseClient.from('site_domains').select('hostname, purpose, is_active, sort_order').eq('is_active', true).order('sort_order');
   paymentDomains = (data || []).filter(d => d.purpose === 'payment' || d.purpose === 'both');
   if (!paymentDomains.length) paymentDomains = [{ hostname: window.location.host }];
-  document.getElementById('domainCountHint').textContent = `${paymentDomains.length} domain${paymentDomains.length === 1 ? '' : 's'} available`;
+  document.getElementById('domainCountHint').textContent = qiT(`${paymentDomains.length} domain${paymentDomains.length === 1 ? '' : 's'} available`, `${paymentDomains.length}টি ডোমেইন উপলব্ধ`);
   const picker = document.getElementById('domainPicker');
   if (picker){
     picker.innerHTML = paymentDomains
@@ -1427,7 +1563,8 @@ async function fetchLinks(){
   ).size;
   document.getElementById('statLinks').textContent = activeCount;
   document.getElementById('statLinkLimit').textContent = `of ${maxLinks} allowed`;
-  document.getElementById('limitBar').innerHTML = `You've used <b>${activeCount}</b> of <b>${maxLinks}</b> active payment links.`;
+  document.getElementById('limitBar').innerHTML = qiT(`<b>${activeCount}</b> of <b>${maxLinks}</b> active links used`, `<b>${maxLinks}</b>টির মধ্যে <b>${activeCount}</b>টি সক্রিয় লিংক ব্যবহৃত`)
+    + `<span class="links-meter"><span style="width:${Math.min(100, maxLinks ? Math.round(activeCount / maxLinks * 100) : 0)}%"></span></span>`;
   renderLinks();
 }
 
@@ -1491,7 +1628,7 @@ async function quickInvoice(){
 function renderLinks(){
   fillQuickInvoiceLinks();
   const list = document.getElementById('linksList');
-  if (!allLinks.length){ list.innerHTML = '<div class="empty-state">No payment links yet</div>'; return; }
+  if (!allLinks.length){ list.innerHTML = `<div class="links-empty">${qiT('No payment links yet', 'এখনও কোনো পেমেন্ট লিংক নেই')}</div>`; return; }
 
   const host = document.getElementById('domainPicker')?.value
     || paymentDomains[0]?.hostname
@@ -1511,22 +1648,26 @@ function renderLinks(){
 
     const rows = variants.map(l => {
       const url = `https://${host}/${l.slug}`;
-      return `<div class="domain-row">
-        <span class="domain-url">${escapeHtml(host)}/${escapeHtml(l.slug)}</span>
-        <button class="btn-copy" data-copy="${escapeAttr(url)}">⧉</button>
-        <button class="btn-copy" title="Amount options" onclick="editAmountOptions('${escapeAttr(l.id)}')">$</button>
+      return `<div class="links-row">
+        <span class="links-url"><span class="links-host">${escapeHtml(host)}/</span>${escapeHtml(l.slug)}</span>
+        <button class="btn-copy links-btn links-btn-accent" data-copy="${escapeAttr(url)}" title="${escapeAttr(qiT('Copy link', 'লিংক কপি করুন'))}">${qiT('Copy', 'কপি')}</button>
+        <button class="btn-copy links-btn" title="${escapeAttr(qiT('Amount options', 'পরিমাণের অপশন'))}" onclick="editAmountOptions('${escapeAttr(l.id)}')">$</button>
       </div>`;
     }).join('');
 
     const note = variants.length > 1
-      ? `<div class="variant-note">Same name, ${variants.length} link styles — send whichever one you prefer.</div>`
+      ? `<div class="links-note">${qiT(`Same name, ${variants.length} link styles — send whichever one you prefer.`, `একই নাম, ${variants.length}টি লিংক স্টাইল — যেটি পছন্দ পাঠান।`)}</div>`
       : '';
+    const name = head.display_name || head.slug;
 
-    return `<div class="model-card">
-      <div class="model-head">
-        <div><div class="model-name">🌐 ${escapeHtml(head.display_name || head.slug)}</div>
-          <div class="variant-note" style="margin:2px 0 0;">${qiT('Extra fee', 'অতিরিক্ত ফি')}: ${escapeHtml(String(Number(head.cost_percent || 0)))}% 🔒</div></div>
-        <span class="badge ${anyActive ? 'settled' : 'expired'}"><span class="badge-dot"></span>${anyActive ? 'active' : 'disabled'}</span>
+    return `<div class="links-item ${anyActive ? '' : 'links-off'}">
+      <div class="links-item-head">
+        <div class="links-avatar">${escapeHtml(String(name).trim().charAt(0).toUpperCase() || '#')}</div>
+        <div class="links-item-meta">
+          <div class="links-item-name">${escapeHtml(name)}</div>
+          <div class="links-fee">${qiT('Extra fee', 'অতিরিক্ত ফি')}: ${escapeHtml(String(Number(head.cost_percent || 0)))}% 🔒</div>
+        </div>
+        <span class="links-status ${anyActive ? 'on' : 'off'}">${anyActive ? qiT('Active', 'সক্রিয়') : qiT('Disabled', 'নিষ্ক্রিয়')}</span>
       </div>
       ${note}${rows}
     </div>`;
@@ -2291,14 +2432,14 @@ async function loadMessages(){
   const unread = (data || []).filter(m => m.sender === 'admin' && !m.read_by_creator).length;
   const badge = document.getElementById('msgBadge');
   badge.textContent = unread; badge.classList.toggle('show', unread > 0);
-  if (!data || !data.length){ list.innerHTML = '<div class="empty-state">No messages yet</div>'; return; }
+  if (!data || !data.length){ list.innerHTML = '<div class="empty-state">' + t('No messages yet', 'এখনো কোনো বার্তা নেই') + '</div>'; return; }
   list.innerHTML = data.map(m => {
     const isMine = m.sender === 'creator'; const editing = editingMessageId === m.id;
-    return `<div class="msg-bubble ${m.sender}"><div class="msg-from">${m.sender === 'admin' ? 'Boltpay Team' : 'You'}</div>
+    return `<div class="msg-bubble ${m.sender}"><div class="msg-from">${m.sender === 'admin' ? t('Boltpay Team', 'Boltpay টিম') : t('You', 'আপনি')}</div>
       ${editing ? `<input class="msg-edit-input" id="editInput_${m.id}" value="${escapeAttr(m.message)}">
-        <div class="msg-actions"><button class="msg-act" onclick="saveMessageEdit('${m.id}')">Save</button><button class="msg-act" onclick="cancelEdit()">Cancel</button></div>`
-      : `${escapeHtml(m.message)}<div class="msg-time">${fmtDate(m.created_at)}${m.edited_at ? ' · edited' : ''}</div>
-        ${isMine ? `<div class="msg-actions"><button class="msg-act" onclick="startEdit('${m.id}')">Edit</button><button class="msg-act danger" onclick="deleteMessage('${m.id}')">Delete</button></div>` : ''}`}</div>`;
+        <div class="msg-actions"><button class="msg-act" onclick="saveMessageEdit('${m.id}')">${t('Save', 'সেভ')}</button><button class="msg-act" onclick="cancelEdit()">${t('Cancel', 'বাতিল')}</button></div>`
+      : `${escapeHtml(m.message)}<div class="msg-time">${fmtDate(m.created_at)}${m.edited_at ? ' • ' + t('edited', 'সম্পাদিত') : ''}</div>
+        ${isMine ? `<div class="msg-actions"><button class="msg-act" onclick="startEdit('${m.id}')">${t('Edit', 'এডিট')}</button><button class="msg-act danger" onclick="deleteMessage('${m.id}')">${t('Delete', 'মুছুন')}</button></div>` : ''}`}</div>`;
   }).join('');
   list.scrollTop = list.scrollHeight;
   // Mark-as-read: shudhu unread admin message thakle-i UPDATE chalay, ar
@@ -2352,37 +2493,42 @@ async function sendReply(){
 async function loadInvoicesTab(){
   const esc = s => String(s ?? '').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
   const m = n => '$' + Number(n || 0).toFixed(2);
+  const T = qiT;
+  const empty = (en, bn) => `<div class="inv-empty">${T(en, bn)}</div>`;
   const [days, inv, top] = await Promise.all([
     window.supabaseClient.rpc('my_daily_settled', { p_days: 30 }),
     window.supabaseClient.rpc('my_daily_invoices', { p_days: 30 }),
     window.supabaseClient.rpc('my_top_links', { p_days: 30 }),
   ]);
   const chart = document.getElementById('invChart');
-  if (days.error) chart.textContent = 'Could not load chart.';
+  if (days.error) chart.innerHTML = empty('Could not load chart.', 'চার্ট লোড হয়নি।');
   else {
     const rows = [...days.data].reverse();
+    // Display-only sum of the same per-day settled values the bars show.
+    const total = rows.reduce((a, r) => a + Number(r.settled || 0), 0);
+    const active = rows.filter(r => Number(r.settled) > 0).length;
     const max = Math.max(1, ...rows.map(r => Number(r.settled)));
     const w = 600, h = 140, bw = w / Math.max(rows.length, 1);
-    chart.innerHTML = `<svg viewBox="0 0 ${w} ${h + 16}" style="width:100%;height:auto">` + rows.map((r, i) => {
-      const bh = Math.round(Number(r.settled) / max * h);
-      return `<rect x="${i * bw + 1}" y="${h - bh}" width="${Math.max(bw - 2, 1)}" height="${bh}" fill="var(--accent, #6c5ce7)"><title>${esc(r.cycle_date)}: ${m(r.settled)}</title></rect>`;
-    }).join('') + `<text x="0" y="${h + 14}" font-size="11" fill="currentColor">${esc(rows[0]?.cycle_date)}</text><text x="${w}" y="${h + 14}" font-size="11" text-anchor="end" fill="currentColor">${esc(rows[rows.length - 1]?.cycle_date)}</text></svg>`;
+    chart.innerHTML = `<div class="inv-hero"><div><div class="inv-hero-v">${m(total)}</div><div class="inv-hero-l">${T('Settled in the last 30 days', 'গত ৩০ দিনে সেটেলড')}</div></div><span class="inv-chip">${active} ${T('active days', 'সক্রিয় দিন')}</span></div>`
+      + `<svg viewBox="0 0 ${w} ${h}" preserveAspectRatio="none" style="height:120px"><defs><linearGradient id="invBarGrad" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#00D632"/><stop offset="1" stop-color="#00D632" stop-opacity=".35"/></linearGradient></defs>` + rows.map((r, i) => {
+      const bh = Math.max(Math.round(Number(r.settled) / max * h), Number(r.settled) > 0 ? 3 : 2);
+      return `<rect x="${i * bw + 2}" y="${h - bh}" width="${Math.max(bw - 4, 1)}" height="${bh}" rx="3" fill="${Number(r.settled) > 0 ? 'url(#invBarGrad)' : 'rgba(255,255,255,.08)'}"><title>${esc(r.cycle_date)}: ${m(r.settled)}</title></rect>`;
+    }).join('') + `</svg><div class="inv-axis"><span>${esc(rows[0]?.cycle_date)}</span><span>${esc(rows[rows.length - 1]?.cycle_date)}</span></div>`;
   }
   const tl = document.getElementById('invTopLinks');
-  tl.innerHTML = top.error ? 'Could not load top links.' : (top.data.length
-    ? top.data.map(r => `<div style="display:flex;justify-content:space-between;padding:4px 0"><span>${esc(r.display_name || r.slug)}</span><span>${r.payment_count} · ${m(r.settled_usd)}</span></div>`).join('')
-    : '<div style="opacity:.7">No payments yet.</div>');
+  tl.innerHTML = top.error ? empty('Could not load top links.', 'শীর্ষ লিংক লোড হয়নি।') : (top.data.length
+    ? top.data.map((r, i) => `<div class="inv-row"><div class="inv-rank">${i + 1}</div><div class="inv-main"><div class="inv-name">${esc(r.display_name || r.slug)}</div><div class="inv-meta">${r.payment_count} ${T('payments', 'পেমেন্ট')}</div></div><div class="inv-amt">${m(r.settled_usd)}</div></div>`).join('')
+    : empty('No payments yet.', 'এখনো কোনো পেমেন্ট নেই।'));
   const il = document.getElementById('invList');
-  il.innerHTML = inv.error ? 'Could not load invoices.' : (inv.data.length
-    ? '<table style="width:100%;font-size:13px"><tr><th align="left">Day</th><th>Payments</th><th align="right">Gross</th><th align="right">' + qiT('Conversion fee', 'কনভার্সন ফি') + '</th><th align="right">Net</th></tr>'
-      + inv.data.map(r => `<tr><td>${esc(r.cycle_date)}</td><td align="center">${r.payment_count}</td><td align="right">${m(r.gross_usd)}</td><td align="right">${m(r.commission_usd)}</td><td align="right">${m(r.net_usd)}</td></tr>`).join('') + '</table>'
-    : '<div style="opacity:.7">No invoices yet.</div>');
+  il.innerHTML = inv.error ? empty('Could not load invoices.', 'ইনভয়েস লোড হয়নি।') : (inv.data.length
+    ? inv.data.map(r => `<div class="inv-day"><div class="inv-day-top"><div><div class="inv-name">${esc(r.cycle_date)}</div><div class="inv-meta">${r.payment_count} ${T('payments', 'পেমেন্ট')}</div></div><div class="inv-amt inv-pos">${m(r.net_usd)}<span class="inv-amt-s">${T('Net', 'নিট')}</span></div></div>`
+      + `<div class="inv-break"><div class="inv-cell"><div class="inv-cell-l">${T('Gross', 'মোট')}</div><div class="inv-cell-v">${m(r.gross_usd)}</div></div><div class="inv-cell"><div class="inv-cell-l">${T('Conversion fee', 'কনভার্সন ফি')}</div><div class="inv-cell-v">${m(r.commission_usd)}</div></div><div class="inv-cell"><div class="inv-cell-l">${T('Net', 'নিট')}</div><div class="inv-cell-v inv-pos">${m(r.net_usd)}</div></div></div></div>`).join('')
+    : empty('No invoices yet.', 'এখনো কোনো ইনভয়েস নেই।'));
   const mi = await window.supabaseClient.rpc('my_manual_invoices');
   const ml = document.getElementById('manualInvList');
-  if (ml) ml.innerHTML = mi.error ? 'Could not load invoices. · ইনভয়েস লোড হয়নি।' : (mi.data.length
-    ? '<table style="width:100%;font-size:13px"><tr><th align="left">Date</th><th align="left">Description</th><th align="right">Amount</th><th>Status</th></tr>'
-      + mi.data.map(r => `<tr><td>${esc(r.invoice_date)}</td><td>${esc(r.description)}</td><td align="right">${m(r.amount_usd)}</td><td align="center">${esc(r.status)}</td></tr>`).join('') + '</table>'
-    : '<div style="opacity:.7">No other invoices. · কোনো ইনভয়েস নেই।</div>');
+  if (ml) ml.innerHTML = mi.error ? empty('Could not load invoices.', 'ইনভয়েস লোড হয়নি।') : (mi.data.length
+    ? mi.data.map(r => `<div class="inv-row"><div class="inv-main"><div class="inv-name">${esc(r.description)}</div><div class="inv-meta">${esc(r.invoice_date)}</div></div><div class="inv-amt">${m(r.amount_usd)}<br><span class="inv-status${String(r.status) === 'paid' ? ' inv-paid' : ''}">${esc(r.status)}</span></div></div>`).join('')
+    : empty('No other invoices.', 'কোনো ইনভয়েস নেই।'));
 }
 
 let tgPollTimer = null, tgTickTimer = null;
