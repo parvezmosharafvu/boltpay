@@ -36,7 +36,7 @@ const RESERVED = new Set([
 "",
 'index','login','register','dashboard','admin','404','config','theme',
 'assets','favicon','invoice-boltpay-v2','api','u','static','public',
-'well-known','robots','sitemap','moderator',
+'well-known','robots','sitemap','moderator','expired',
 // Worker-only (not in validate_link_slug): the Lightning checkout page file.
 'lnd-pay',
 ]);

@@ -87,6 +87,7 @@ h1{ font-size:24px; line-height:32px; font-weight:600; letter-spacing:-.02em; }
     <div id="qr"></div>
     <p class="meta" id="inv-amount"></p>
     <a class="btn primary" id="cashapp" href="#" rel="noopener" onclick="payClick()">Open in Cash App</a>
+    <p class="meta" id="open-hint" style="display:none" data-en="Didn't open? Copy the invoice below and paste it in Cash App." data-bn="খোলেনি? নিচের ইনভয়েস কপি করে ক্যাশ অ্যাপে পেস্ট করুন।">Didn't open? Copy the invoice below and paste it in Cash App.</p>
     <button class="btn ghost" id="copy" onclick="copyInvoice()" data-en="Copy Lightning invoice" data-bn="লাইটনিং ইনভয়েস কপি করুন">Copy Lightning invoice</button>
     <div id="btc-box" style="display:none">
       <p class="meta" data-en="Or send on-chain Bitcoin to:" data-bn="অথবা অন-চেইন বিটকয়েন পাঠান:">Or send on-chain Bitcoin to:</p>
@@ -284,7 +285,11 @@ async function openInvoice() {
 
 function showMore() { el('quick').classList.add('all'); el('more').style.display = 'none'; }
 
-function payClick() { track('pay-click'); }
+function payClick() {
+  track('pay-click');
+  // If Cash App did not take over, the page is still visible 1.5s later.
+  setTimeout(function () { if (!document.hidden) { var h = el('open-hint'); if (h) h.style.display = ''; } }, 1500);
+}
 
 async function copyInvoice() {
   if (!bolt11) return;
