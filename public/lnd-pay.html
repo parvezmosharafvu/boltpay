@@ -9,10 +9,7 @@
      Per-customer URLs: never indexed, never leak via Referer. -->
 <meta name="robots" content="noindex, nofollow">
 <meta name="referrer" content="no-referrer">
-<link rel="icon" href="/favicon.ico" sizes="48x48">
-<link rel="icon" type="image/svg+xml" href="/favicon.svg">
-<link rel="apple-touch-icon" href="/apple-touch-icon.png">
-<link rel="manifest" href="/site.webmanifest">
+<link rel="icon" href="data:,">
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
 <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
 <script src="/brand.js"></script>
@@ -182,7 +179,6 @@ body.inv .meta{ font-size:12px; color:#9f9fa9; }
       <button type="button" class="more" id="more" style="display:none" onclick="toggleMore()" aria-expanded="false" aria-controls="quick">Show more amounts</button>
     </div>
     <button class="btn primary go" id="continue" onclick="createInvoice()" disabled data-en="Pay Now">Pay Now</button>
-    <p class="hint">Pay from your Cash App bitcoin balance.</p>
     <p class="powered"><span data-en="Powered by">Powered by</span> <b data-en="Fast &amp; Secure Payments">Fast &amp; Secure Payments</b></p>
   </section>
   <section class="view" id="v-invoice">
