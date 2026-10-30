@@ -101,6 +101,11 @@ jobs:
           PGPASSWORD: postgres
         run: psql -h localhost -U postgres -v ON_ERROR_STOP=1 -f ci/confirmation_hold_regression.sql
 
+      - name: Runtime regression — withdrawal request key (0088)
+        env:
+          PGPASSWORD: postgres
+        run: psql -h localhost -U postgres -v ON_ERROR_STOP=1 -f ci/withdrawal_request_key_regression.sql
+
   functions:
     name: Edge functions type-check
     runs-on: ubuntu-latest

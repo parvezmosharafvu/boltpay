@@ -132,7 +132,7 @@ global: { headers: { Authorization: authHeader } },
 });
 const { data: { user }, error: userErr } = await callerClient.auth.getUser();
 if (userErr || !user) return json({ error: "Invalid session" }, 401, cors);
-let body: { amount?: unknown; method?: unknown; destination?: unknown };
+let body: { amount?: unknown; method?: unknown; destination?: unknown; request_key?: unknown };
 try {
 body = await req.json();
 } catch {
@@ -141,6 +141,11 @@ return json({ error: "Invalid JSON body" }, 400, cors);
 const amount = Number(body.amount);
 const method = String(body.method ?? "").trim();
 const destination = String(body.destination ?? "").trim();
+// Optional idempotency key (0088). Anything that isn't a UUID is ignored.
+const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+const requestKey = typeof body.request_key === "string" && UUID_RE.test(body.request_key)
+? body.request_key
+: null;
 // Cheap client-side-mirroring checks. The authoritative versions all live
 // in request_withdrawal(); these only exist to return a nicer error faster.
 if (!Number.isFinite(amount) || amount < 5) {
@@ -169,11 +174,14 @@ error: "That does not look like a Lightning invoice or a Lightning Address (you@
 // definition than request_withdrawal(), which let the same money be
 // withdrawn twice. Now there is one code path.
 const { data: withdrawal, error: rpcErr } = await callerClient
-.rpc("request_withdrawal", {
-p_amount: amount,
-p_method: method,
-p_destination: destination,
-});
+.rpc("request_withdrawal", requestKey
+? { p_amount: amount, p_method: method, p_destination: destination, p_request_key: requestKey }
+: { p_amount: amount, p_method: method, p_destination: destination });
+// Same key seen before: the first request already created the withdrawal
+// (and ran any payout). Answer success without doing anything again.
+if (rpcErr?.message === "DUPLICATE_REQUEST") {
+return json({ ok: true, duplicate: true, msg: "Already submitted / ইতিমধ্যে জমা দেওয়া হয়েছে" }, 200, cors);
+}
 if (rpcErr || !withdrawal) {
 // Postgres RAISE messages here are user-facing and intentionally safe
 // ("Insufficient balance. Available: $12.40").
