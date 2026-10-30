@@ -80,3 +80,7 @@ verify_jwt = false
 # telegram-admin: admin-only bot status / resync / test. JWT required.
 [functions.telegram-admin]
 verify_jwt = true
+
+# custom-domain: admin-only Cloudflare for SaaS custom hostnames. JWT required.
+[functions.custom-domain]
+verify_jwt = true
