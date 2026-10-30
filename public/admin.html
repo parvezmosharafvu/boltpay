@@ -793,6 +793,14 @@ textarea.w-input{ padding:10px 12px !important; }
                                               <button class="btn-sm" onclick="saveCheckoutLimits(this)">Save · সংরক্ষণ</button>
                                             </div>
                                           </div>
+                                          <div class="panel" id="markupPanel">
+                                            <div class="panel-head"><div class="panel-title">Customer fee · কাস্টমার ফি</div></div>
+                                            <div class="w-row" style="gap:10px;flex-wrap:wrap;align-items:flex-end">
+                                              <label style="font-size:12px">Fee added to payer (%) · পেয়ারের উপর ফি (%)<br><input id="markupPct" class="w-input" type="number" min="0" max="50" step="0.01"></label>
+                                              <button class="btn-sm" onclick="saveMarkup(this)">Save · সংরক্ষণ</button>
+                                            </div>
+                                            <div class="hint" style="font-size:11px; color:var(--text-faint); margin-top:8px;" id="markupHint">Applies to new invoices. $10 is charged as $11.00 at 10%. · নতুন ইনভয়েসে প্রযোজ্য।</div>
+                                          </div>
                                           <div class="panel" id="paymentsCsvPanel">
                                             <div class="panel-head"><div class="panel-title">Export payments (CSV) · পেমেন্ট এক্সপোর্ট (CSV)</div></div>
                                             <div class="w-row" style="gap:10px;align-items:center">
@@ -2242,6 +2250,26 @@ async function loadCheckoutLimits(){
   document.getElementById('ckMin').value = m.lnd_pay_min_usd ?? 10;
   document.getElementById('ckMax').value = m.lnd_pay_max_usd ?? 1000;
 }
+async function loadMarkup(){
+  const { data } = await window.supabaseClient.from('app_settings').select('value').eq('key', 'lnd_customer_markup_percent').maybeSingle();
+  const v = data && data.value != null ? Number(data.value) : 10;
+  document.getElementById('markupPct').value = v;
+  markupHint(v);
+}
+function markupHint(v){
+  const charged = (10 * (1 + v / 100)).toFixed(2);
+  document.getElementById('markupHint').textContent = 'Applies to new invoices. $10 is charged as $' + charged + ' at ' + v + '%. · নতুন ইনভয়েসে প্রযোজ্য। ' + v + '% এ $10 এর জন্য $' + charged + ' নেওয়া হবে।';
+}
+async function saveMarkup(btn){
+  const v = Number(document.getElementById('markupPct').value);
+  if (!(v >= 0 && v <= 50) || document.getElementById('markupPct').value.trim() === '') { showToast('Fee must be 0–50% · ফি ০–৫০% হতে হবে', 'err'); return; }
+  btn.disabled = true;
+  const { data, error } = await window.supabaseClient.rpc('admin_set_customer_markup', { p_percent: v });
+  btn.disabled = false;
+  if (error) { showToast('Failed · ব্যর্থ: ' + error.message, 'err'); return; }
+  markupHint(Number(data));
+  showToast('Fee saved · ফি সংরক্ষিত: ' + Number(data) + '%', 'ok');
+}
 async function saveCheckoutLimits(btn){
   const ex = Math.round(Number(document.getElementById('ckExpiry').value));
   const mn = Number(document.getElementById('ckMin').value), mx = Number(document.getElementById('ckMax').value);
@@ -2277,6 +2305,7 @@ async function exportPaymentsCsv(btn){
 
 async function loadSettings(){
   loadCheckoutLimits();
+  loadMarkup();
   const { data } = await window.supabaseClient.from('app_settings').select('key, value');
   const notice = data?.find(s => s.key === 'platform_notice')?.value;
 
