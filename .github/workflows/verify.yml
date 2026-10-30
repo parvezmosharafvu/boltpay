@@ -93,6 +93,10 @@ jobs:
         env:
           PGPASSWORD: postgres
         run: psql -h localhost -U postgres -v ON_ERROR_STOP=1 -f ci/fee_audit_regression.sql
+      - name: Runtime regression — moderator system removed (0110)
+        env:
+          PGPASSWORD: postgres
+        run: psql -h localhost -U postgres -v ON_ERROR_STOP=1 -f ci/no_moderator_regression.sql
 
       - name: Runtime regression — per-link markup (0103)
         env:

@@ -133,7 +133,7 @@ Every daily figure in this system runs **5:00 PM to 5:00 PM Asia/Dhaka**,
 not midnight to midnight, and a cycle is named after the date it *started*.
 
 One SQL function defines it — `daily_totals_for_cycle()` — and everything
-else derives from that: `admin_daily_settled()`, `staff_daily_settled()`,
+else derives from that: `admin_daily_settled()`,
 `my_daily_settled()`, and the `daily-report` cron. They cannot drift apart
 because there is only one definition.
 
@@ -183,7 +183,7 @@ repository stays private.
 
 ## Auditing
 
-`audit_log` records who changed a fee, a role, a moderator assignment or a
+`audit_log` records who changed a fee, a role or a
 creator's instant-payout access — with the old value alongside the new
 one. It is append-only: there is no update or delete policy for anyone,
 including admins.
