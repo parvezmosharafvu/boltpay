@@ -1,0 +1,73 @@
+name: Daily DB backup to R2
+
+# 21:00 UTC = 03:00 Asia/Dhaka. Free: GitHub Actions + R2 free tier.
+on:
+  schedule:
+    - cron: "0 21 * * *"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: db-backup
+  cancel-in-progress: false
+
+jobs:
+  backup:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    env:
+      PGHOST: aws-0-ap-south-1.pooler.supabase.com
+      PGPORT: "5432"
+      PGUSER: postgres.ohwzmxwsphsfzudmlins
+      PGDATABASE: postgres
+      PGSSLMODE: require
+      R2_ENDPOINT: https://9e94249be9fe387b6ed4551ba22a19f3.r2.cloudflarestorage.com
+      R2_BUCKET: boltpay-lnd-scb
+    steps:
+      - name: Dump (pg_dump 17, schema + data)
+        env:
+          PGPASSWORD: ${{ secrets.SUPABASE_DB_PASSWORD }}
+        run: |
+          set -euo pipefail
+          docker run --rm -e PGPASSWORD -e PGHOST -e PGPORT -e PGUSER -e PGDATABASE -e PGSSLMODE \
+            postgres:17 pg_dump --no-owner --no-privileges \
+              --schema=public --schema=auth --schema=storage \
+            | gzip -9 > boltpay.sql.gz
+          SIZE=$(stat -c %s boltpay.sql.gz)
+          echo "dump size: $SIZE bytes"
+          [ "$SIZE" -gt 10000 ] || { echo "dump suspiciously small"; exit 1; }
+
+      - name: Test-restore public schema into a throwaway Postgres
+        run: |
+          set -euo pipefail
+          docker run -d --name scratch -e POSTGRES_PASSWORD=scratch postgres:17 >/dev/null
+          for i in $(seq 1 30); do docker exec scratch pg_isready -U postgres >/dev/null 2>&1 && break; sleep 1; done
+          docker exec -i scratch psql -U postgres -q <<'SQL'
+          create role anon nologin; create role authenticated nologin; create role service_role nologin;
+          create role supabase_auth_admin nologin; create role supabase_storage_admin nologin;
+          create schema extensions; create extension if not exists pgcrypto schema extensions;
+          create extension if not exists "uuid-ossp" schema extensions;
+          SQL
+          gunzip -c boltpay.sql.gz | docker exec -i scratch psql -U postgres -q -v ON_ERROR_STOP=0 >/dev/null 2>restore.err || true
+          echo "restore error lines: $(grep -c ERROR restore.err || true)"
+          TABLES=$(docker exec scratch psql -U postgres -Atc "select count(*) from information_schema.tables where table_schema='public'")
+          PROFILES=$(docker exec scratch psql -U postgres -Atc "select count(*) from public.profiles")
+          echo "restored public tables: $TABLES, profiles rows: $PROFILES"
+          [ "$TABLES" -gt 5 ] && [ "$PROFILES" -gt 0 ]
+          docker rm -f scratch >/dev/null
+
+      - name: Upload to R2 (db-backups/YYYY-MM-DD/)
+        env:
+          AWS_ACCESS_KEY_ID: ${{ secrets.R2_ACCESS_KEY_ID }}
+          AWS_SECRET_ACCESS_KEY: ${{ secrets.R2_SECRET_ACCESS_KEY }}
+          AWS_DEFAULT_REGION: auto
+          AWS_REQUEST_CHECKSUM_CALCULATION: when_required
+          AWS_RESPONSE_CHECKSUM_VALIDATION: when_required
+        run: |
+          set -euo pipefail
+          KEY="db-backups/$(TZ=Asia/Dhaka date +%F)/boltpay-$(date -u +%H%M%SZ).sql.gz"
+          aws s3 cp boltpay.sql.gz "s3://$R2_BUCKET/$KEY" --endpoint-url "$R2_ENDPOINT" --only-show-errors
+          aws s3 ls "s3://$R2_BUCKET/$KEY" --endpoint-url "$R2_ENDPOINT"
+          echo "uploaded $KEY"
