@@ -69,37 +69,34 @@ function escapeXml(str: string): string {
  * the -5 letter-spacing, every coordinate — is untouched.
  */
 function buildSvg(name: string): string {
+  // Centred card (owner pt312u): neutral $ mark with a soft glow, "Pay
+  // <Name>", a muted tagline and a "Secure Payment" pill on white.
   const displayName = String(name || "").trim().slice(0, 40);
-  const safeName = escapeXml(displayName);
-  const initial = escapeXml(
-    ([...displayName][0] || "?").toUpperCase(),
-  );
-
-  // Inter Bold at -5 letter-spacing averages ~0.60 em per character.
-  // Budget 1,120px so the name keeps your 60px left margin and still
-  // clears the right edge.
-  const estimatedWidth = displayName.length * 150 * 0.60 - displayName.length * 5;
-  const nameSize = estimatedWidth > 1120
-    ? Math.max(56, Math.floor(150 * (1120 / estimatedWidth)))
-    : 150;
+  const title = escapeXml(`Pay ${displayName}`);
+  // Inter Bold averages ~0.58 em per character; keep 80px side margins.
+  const est = (displayName.length + 4) * 84 * 0.58;
+  const titleSize = est > 1040 ? Math.max(44, Math.floor(84 * (1040 / est))) : 84;
 
   return `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1200 630" width="1200" height="630">
-  <!-- Boltpay dark background with amber bar -->
-  <rect width="1200" height="630" fill="#0E0E10" />
-  <rect width="1200" height="10" fill="#FFB800" />
-
-  <!-- Blue Avatar (Top Left, partially cut off like the screenshot) -->
-  <circle cx="180" cy="40" r="110" fill="#FFB800" />
-  <text x="180" y="72" font-size="90" font-family="Boltpay Display" font-weight="bold" fill="#0E0E10" text-anchor="middle">${initial}</text>
-
-  <!-- Black Icon (Top Right, partially cut off like the screenshot) -->
-  <rect x="1000" y="-50" width="130" height="130" rx="30" fill="#FFB800" />
-
-  <!-- Half Dollar Sign inside the black box -->
-  <text x="1065" y="46" font-size="90" font-family="Boltpay Display" font-weight="bold" fill="#0E0E10" text-anchor="middle">$</text>
-
-  <!-- Name (Bottom Left, large and bold like the screenshot) -->
-  <text x="60" y="560" font-size="${nameSize}" font-family="Boltpay Display" font-weight="bold" letter-spacing="-5" fill="#FFFFFF">${safeName}</text>
+  <defs>
+    <filter id="glow" x="-50%" y="-50%" width="200%" height="200%">
+      <feGaussianBlur stdDeviation="28" />
+    </filter>
+  </defs>
+  <rect width="1200" height="630" fill="#FFFFFF" />
+  <rect x="490" y="62" width="220" height="220" rx="52" fill="#18181B" opacity="0.22" filter="url(#glow)" />
+  <rect x="490" y="48" width="220" height="220" rx="52" fill="#18181B" />
+  <g transform="translate(531.5 230) scale(0.0915 -0.0915)">
+    <path fill="#FFFFFF" d="M580 -220V1710H769V-220ZM675 -24Q484 -24 349.0 36.5Q214 97 142.0 212.0Q70 327 70 489H367Q369 407 406.5 349.0Q444 291 513.0 260.0Q582 229 677 229Q763 229 826.5 252.5Q890 276 925.5 319.0Q961 362 961 420Q961 468 933.5 503.5Q906 539 847.5 566.0Q789 593 694 613L537 647Q315 695 207.0 798.0Q99 901 99 1061Q99 1197 170.0 1298.5Q241 1400 368.5 1457.0Q496 1514 665 1514Q836 1514 961.0 1456.0Q1086 1398 1155.5 1290.5Q1225 1183 1230 1033H942Q934 1139 860.0 1200.0Q786 1261 666 1261Q591 1261 532.5 1237.5Q474 1214 440.5 1172.5Q407 1131 407 1076Q407 1030 433.0 996.5Q459 963 516.0 938.0Q573 913 664 893L807 862Q926 836 1013.0 798.5Q1100 761 1156.0 709.5Q1212 658 1239.0 591.0Q1266 524 1266 440Q1266 297 1194.5 192.5Q1123 88 990.5 32.0Q858 -24 675 -24Z"/>
+  </g>
+  <text x="600" y="408" font-size="${titleSize}" font-family="Boltpay Display" font-weight="bold" letter-spacing="-1.5" fill="#111113" text-anchor="middle">${title}</text>
+  <text x="600" y="468" font-size="32" font-family="Boltpay Display" fill="#7A7A80" text-anchor="middle">Any amount \u00B7 Instant \u00B7 Secure</text>
+  <rect x="436" y="510" width="328" height="62" rx="31" fill="#F2F2F4" />
+  <g transform="translate(470 524)">
+    <path d="M7 15V11a9 9 0 0 1 18 0v4" fill="none" stroke="#F5A524" stroke-width="4" />
+    <rect x="2" y="15" width="28" height="21" rx="5" fill="#F5A524" />
+  </g>
+  <text x="621" y="552" font-size="30" font-family="Boltpay Display" fill="#18181B" text-anchor="middle">Secure Payment</text>
 </svg>`;
 }
 
