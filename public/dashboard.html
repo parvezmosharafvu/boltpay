@@ -1911,11 +1911,12 @@ function updateBdtPreview(){
   const box = document.getElementById('wdBdtPreview'); if (!box) return;
   const m = document.getElementById('wdMethod')?.value;
   const amt = parseFloat(document.getElementById('wdAmount').value);
-  if (!MY_BDT_RATE || METHOD_CURRENCY[m] !== 'BDT'){ box.style.display = 'none'; return; }
+  if (METHOD_CURRENCY[m] !== 'BDT'){ box.style.display = 'none'; return; }
+  if (!MY_BDT_RATE){ box.textContent = 'BDT rate not set. Contact support to withdraw in BDT. (BDT রেট সেট করা নেই। BDT-তে উত্তোলনের জন্য সাপোর্টে যোগাযোগ করুন।)'; box.style.display = 'block'; return; }
   const fee = parseFloat((document.getElementById('statFee')?.textContent || '').replace('%','')) || 0;
   const usd = amt > 0 ? amt * (1 - fee/100) : 0;
   const bdt = (usd * MY_BDT_RATE).toFixed(2);
-  box.textContent = `Rate ৳${MY_BDT_RATE} / USD · You receive ≈ ৳${bdt} (রেট ৳${MY_BDT_RATE} / USD · আপনি পাবেন ≈ ৳${bdt})`;
+  box.textContent = `Your rate ৳${MY_BDT_RATE} / USD · You receive ≈ ৳${bdt} (আপনার রেট ৳${MY_BDT_RATE} / USD · আপনি পাবেন ≈ ৳${bdt})`;
   box.style.display = 'block';
 }
 const WALLET_FIELD_METHOD = { wallet_binance_id:'binance', wallet_usdt_bep20:'usdt_bep20', wallet_bkash:'bkash', wallet_nagad:'nagad' };
