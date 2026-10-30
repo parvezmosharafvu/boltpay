@@ -348,10 +348,68 @@ out.headers.set("Cache-Control", "no-store");
 return out;
 }
 
+// ---- Custom (white-label) domains ----------------------------------------
+// An active custom hostname (site_domains.kind = 'custom') serves only its
+// owner's links, never /admin or /moderator, and is branded via
+// /api/domain-info. Platform and unknown hosts resolve to null, so their
+// behaviour is unchanged. Cached for 5 minutes per host.
+async function rpc(fn, args) {
+const res = await fetch(`${SUPABASE_URL}/rest/v1/rpc/${fn}`, {
+method: "POST",
+headers: { apikey: SUPABASE_ANON_KEY, Authorization: `Bearer ${SUPABASE_ANON_KEY}`, "Content-Type": "application/json" },
+body: JSON.stringify(args),
+});
+if (!res.ok) throw new Error(`rpc ${fn} ${res.status}`);
+return res.json();
+}
+async function customDomainInfo(host) {
+const cacheKey = new Request(`https://domain-info.internal/v1/${host.toLowerCase()}`);
+const cache = caches.default;
+try {
+const cached = await cache.match(cacheKey);
+if (cached) { const t = await cached.text(); return t === "-" ? null : JSON.parse(t); }
+const info = await rpc("domain_info", { p_host: host });
+await cache.put(cacheKey, new Response(info ? JSON.stringify(info) : "-", { headers: { "Cache-Control": "max-age=300" } }));
+return info || null;
+} catch (e) {
+console.error("domain_info lookup failed:", e);
+return null;
+}
+}
+async function customDomainAllowsSlug(host, slug) {
+try { return (await rpc("custom_domain_allows_slug", { p_host: host, p_slug: slug })) !== false; }
+catch (e) { return true; }
+}
+function notFound() {
+return new Response(JSON.stringify({ error: { message: "Not found" } }), {
+status: 404, headers: { "Content-Type": "application/json", "Cache-Control": "no-store" },
+});
+}
+
 export default {
                             async fetch(request) {
                             const url = new URL(request.url);
                             const path = url.pathname.replace(/^\/|\/$/g, "");
+
+if (path === "api/domain-info") {
+const info = await customDomainInfo(url.hostname);
+return new Response(JSON.stringify({ data: info }), {
+headers: { "Content-Type": "application/json", "Cache-Control": "public, max-age=300" },
+});
+}
+const custom = await customDomainInfo(url.hostname);
+if (custom) {
+const lower = path.toLowerCase();
+if (["admin", "admin.html", "moderator", "moderator.html"].includes(lower)) return notFound();
+if (path === "") return Response.redirect(`${url.origin}/login`, 302);
+const slug = path.startsWith("pay/") && path.split("/").length === 2 && path.split("/")[1] !== "i" ? path.split("/")[1]
+: path === "api/lnd/link" ? (url.searchParams.get("slug") || "") : null;
+if (slug && slug.toLowerCase() !== "expired" && !(await customDomainAllowsSlug(url.hostname, slug))) {
+return path.startsWith("pay/")
+? new Response((await fetch(new Request(`${url.origin}/lnd-pay`, { headers: request.headers }))).body, { status: 404, headers: { "Content-Type": "text/html; charset=UTF-8", "Cache-Control": "no-store" } })
+: notFound();
+}
+}
 
 if (LND_API[path]) return proxyLnd(request, url, LND_API[path]);
 // Bare /pay stays an ordinary slug; only /pay/... is the checkout.

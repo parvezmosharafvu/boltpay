@@ -68,3 +68,7 @@ verify_jwt = true
 # Admin-only payment and withdrawal actions; checks the admin JWT.
 [functions.admin-actions]
 verify_jwt = true
+
+# custom-domain: admin-only Cloudflare for SaaS custom hostnames. JWT required.
+[functions.custom-domain]
+verify_jwt = true
