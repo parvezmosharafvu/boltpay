@@ -6,9 +6,19 @@ export interface LndSettings {
   minUsd: number;
   maxUsd: number;
   expirySec: number;
+  markupPercent: number;
 }
 
+// Owner decision (pt297u): never below $10 entered, customer pays +10%.
+export const MIN_USD_FLOOR = 10;
+export const DEFAULT_MARKUP_PERCENT = 10;
+
 // Defaults mirror 0067 and are the SAFE values: a missing row means off.
+function markup(v: unknown): number {
+  const n = Number(v);
+  return v != null && Number.isFinite(n) && n >= 0 && n <= 100 ? n : DEFAULT_MARKUP_PERCENT;
+}
+
 export function parseLndSettings(rows: { key: string; value: unknown }[]): LndSettings {
   const m = new Map(rows.map((r) => [r.key, r.value]));
   const num = (k: string, d: number) => {
@@ -19,9 +29,10 @@ export function parseLndSettings(rows: { key: string; value: unknown }[]): LndSe
   return {
     enabled: m.get("lnd_checkout_enabled") === true,
     onchainFallback: m.get("lnd_onchain_fallback") === true,
-    minUsd: num("lnd_pay_min_usd", 10),
+    minUsd: Math.max(num("lnd_pay_min_usd", MIN_USD_FLOOR), MIN_USD_FLOOR),
     maxUsd: num("lnd_pay_max_usd", 1000),
     expirySec: Math.min(Math.max(expiry, 300), 86400),
+    markupPercent: markup(m.get("lnd_customer_markup_percent")),
   };
 }
 
@@ -29,7 +40,7 @@ export async function loadLndSettings(db: SupabaseClient): Promise<LndSettings> 
   const { data, error } = await db
     .from("app_settings")
     .select("key, value")
-    .in("key", ["lnd_checkout_enabled", "lnd_onchain_fallback", "lnd_pay_min_usd", "lnd_pay_max_usd", "lnd_invoice_expiry_sec"]);
+    .in("key", ["lnd_checkout_enabled", "lnd_onchain_fallback", "lnd_pay_min_usd", "lnd_pay_max_usd", "lnd_invoice_expiry_sec", "lnd_customer_markup_percent"]);
   if (error) throw new Error(`settings: ${error.message}`);
   return parseLndSettings(data ?? []);
 }

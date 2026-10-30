@@ -75,7 +75,7 @@ Deno.test("rate sources must agree within 2%", () => {
 
 Deno.test("settings default to off, 10/1000/3600", () => {
   const s = parseLndSettings([]);
-  assertEquals(s, { enabled: false, onchainFallback: false, minUsd: 10, maxUsd: 1000, expirySec: 3600 });
+  assertEquals(s, { enabled: false, onchainFallback: false, minUsd: 10, maxUsd: 1000, expirySec: 3600, markupPercent: 10 });
   assertEquals(parseLndSettings([{ key: "lnd_checkout_enabled", value: "true" }]).enabled, false);
   assertEquals(parseLndSettings([{ key: "lnd_checkout_enabled", value: true }]).enabled, true);
 });
@@ -111,4 +111,17 @@ Deno.test("lndConfig: env wins, else Vault RPC, cached per isolate", async () =>
   const bad = { rpc: () => Promise.resolve({ data: null, error: { message: "denied" } }) };
   assertEquals(await lndConfig(bad, () => undefined), null);
   resetLndConfigCache();
+});
+
+Deno.test("min is floored at $10 and markup defaults to 10%", () => {
+  const s = parseLndSettings([{ key: "lnd_pay_min_usd", value: 1 }, { key: "lnd_customer_markup_percent", value: 7 }]);
+  assertEquals(s.minUsd, 10);
+  assertEquals(s.markupPercent, 7);
+  assertEquals(parseLndSettings([{ key: "lnd_pay_min_usd", value: 25 }]).minUsd, 25);
+  assertEquals(parseLndSettings([{ key: "lnd_customer_markup_percent", value: "bad" }]).markupPercent, 10);
+  assertEquals(parseLndSettings([{ key: "lnd_customer_markup_percent", value: 0 }]).markupPercent, 0);
+});
+
+Deno.test("$10 entered is charged $11.00 at the default markup", () => {
+  assertEquals(chargedAmount(10, parseLndSettings([]).markupPercent), 11);
 });

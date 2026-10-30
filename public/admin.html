@@ -758,7 +758,7 @@ textarea.w-input{ padding:10px 12px !important; }
                                             <div class="panel-head"><div class="panel-title">Checkout limits · চেকআউট সীমা</div></div>
                                             <div class="w-row" style="gap:10px;flex-wrap:wrap;align-items:flex-end">
                                               <label style="font-size:12px">Invoice expiry (minutes) · ইনভয়েসের মেয়াদ (মিনিট)<br><input id="ckExpiry" class="w-input" type="number" min="5" max="1440" step="1"></label>
-                                              <label style="font-size:12px">Minimum (USD) · সর্বনিম্ন (USD)<br><input id="ckMin" class="w-input" type="number" min="1" step="0.01"></label>
+                                              <label style="font-size:12px">Minimum (USD) · সর্বনিম্ন (USD)<br><input id="ckMin" class="w-input" type="number" min="10" step="0.01"></label>
                                               <label style="font-size:12px">Maximum (USD) · সর্বোচ্চ (USD)<br><input id="ckMax" class="w-input" type="number" min="1" step="0.01"></label>
                                               <button class="btn-sm" onclick="saveCheckoutLimits(this)">Save · সংরক্ষণ</button>
                                             </div>
@@ -2208,7 +2208,7 @@ async function saveCheckoutLimits(btn){
   const ex = Math.round(Number(document.getElementById('ckExpiry').value));
   const mn = Number(document.getElementById('ckMin').value), mx = Number(document.getElementById('ckMax').value);
   if (!(ex >= 5 && ex <= 1440)) { showToast('Expiry must be 5–1440 minutes · মেয়াদ ৫–১৪৪০ মিনিট হতে হবে', 'err'); return; }
-  if (!(mn > 0 && mx > 0 && mn <= mx)) { showToast('Minimum must be above 0 and not above maximum · সর্বনিম্ন ০-এর বেশি ও সর্বোচ্চের বেশি নয়', 'err'); return; }
+  if (!(mn >= 10 && mx > 0 && mn <= mx)) { showToast('Minimum must be at least $10 and not above maximum · সর্বনিম্ন অন্তত $10 ও সর্বোচ্চের বেশি নয়', 'err'); return; }
   btn.disabled = true;
   const now = new Date().toISOString();
   const { error } = await window.supabaseClient.from('app_settings').upsert([
