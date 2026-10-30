@@ -19,7 +19,7 @@
 <style>
 :root{ --bg:#F7F5F0; --card:#FFFFFF; --line:#E7E2D6; --text:#1A1712; --dim:#6B6455; --amber:#00D632; --amber-600:#00B82C; --wash:#F0FCF3; --on:#18181B; --err:#C2410C; }
 *{ margin:0; padding:0; box-sizing:border-box; -webkit-tap-highlight-color:transparent; }
-html,body{ min-height:100%; font-family:'Inter',sans-serif; background:var(--bg); color:var(--text); }
+html,body{ min-height:100%; font-family:'Inter',sans-serif; background:#FFFFFF; color:var(--text); }
 body{ display:flex; justify-content:center; align-items:center; min-height:100vh; min-height:100dvh; padding:40px 16px; }
 main{ width:100%; max-width:420px; }
 .top{ display:flex; justify-content:space-between; align-items:center; margin-bottom:14px; }
@@ -43,6 +43,9 @@ h1{ font-size:24px; line-height:32px; font-weight:600; letter-spacing:-.02em; }
 .btn.primary{ background:var(--amber); color:var(--on); }
 .btn.ghost{ background:var(--card); border-color:var(--line); color:var(--text); }
 .btn:disabled{ opacity:.45; cursor:default; }
+/* Disabled Pay Now: faded green with white text, so it reads as waiting, not broken. */
+.btn.go:disabled{ opacity:1; background:#7FE69A; color:#FFFFFF; }
+.btn.go:disabled::before,.btn.go:disabled::after{ filter:brightness(0) invert(1); }
 .err{ color:var(--err); font-size:14px; min-height:18px; }
 #qr{ background:#fff; padding:12px; border:1px solid var(--line); border-radius:16px; align-self:center; }
 .pill{ align-self:center; background:var(--wash); border-radius:999px; padding:6px 14px; font-weight:600; font-variant-numeric:tabular-nums; }
@@ -55,7 +58,7 @@ h1{ font-size:24px; line-height:32px; font-weight:600; letter-spacing:-.02em; }
 @media (max-width:480px){ body{ padding:20px 12px; } .card{ padding:22px; } }
 .trust{ display:flex; justify-content:space-between; align-items:center; gap:8px; }
 .secure{ display:inline-flex; align-items:center; gap:6px; background:var(--wash); color:#008A22; border:1px solid #99EFAD; border-radius:999px; padding:4px 10px; font-size:12px; font-weight:600; }
-.secure::before{ content:""; width:12px; height:12px; background:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='16' height='16' viewBox='0 0 24 24' fill='none' stroke='%232A1F00' stroke-width='2.4' stroke-linecap='round' stroke-linejoin='round'%3E%3Crect x='4' y='11' width='16' height='10' rx='2'/%3E%3Cpath d='M8 11V7a4 4 0 0 1 8 0v4'/%3E%3C/svg%3E") center/contain no-repeat; }
+.secure::before{ content:""; width:13px; height:13px; background:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%2300B82C' stroke-width='2.4' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z'/%3E%3C/svg%3E") center/contain no-repeat; }
 .method{ display:flex; align-items:center; gap:12px; border:1.5px solid var(--amber); background:var(--wash); border-radius:14px; padding:12px 14px; }
 .method .ic{ width:36px; height:36px; border-radius:10px; background:var(--amber); color:var(--on); display:flex; align-items:center; justify-content:center; font-size:18px; flex:none; }
 .method .mt{ font-weight:600; font-size:15px; } .method .ms{ font-size:12px; color:var(--dim); }
@@ -70,14 +73,15 @@ h1{ font-size:24px; line-height:32px; font-weight:600; letter-spacing:-.02em; }
 .amt-panel{ background:var(--wash); border-radius:16px; padding:16px; display:flex; flex-direction:column; gap:10px; }
 .amt-label{ font-size:12px; font-weight:700; letter-spacing:.12em; text-transform:uppercase; color:#008A22; }
 .amt-label::before{ content:"$ "; }
-.amt-panel .amount-row{ background:var(--card); min-height:44px; font-size:16px; font-weight:500; }
+.amt-panel .amount-row{ border-color:rgba(0,214,50,.4); background:var(--card); min-height:44px; font-size:16px; font-weight:500; }
+.amount-row .cur{ color:var(--amber-600); font-weight:600; }
 .amt-panel .err:empty{ display:none; }
 .amt-panel .more{ align-self:stretch; display:flex; align-items:center; justify-content:center; gap:6px; background:rgba(0,214,50,.1); border-radius:10px; min-height:32px; color:var(--amber-600); font:600 12px/16px 'Inter'; transition:background .15s; }
 .amt-panel .more:hover{ background:rgba(0,214,50,.15); }
 .amt-panel .more::after{ content:""; width:12px; height:12px; background:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%2300B82C' stroke-width='2.5' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M6 9l6 6 6-6'/%3E%3C/svg%3E") center/contain no-repeat; transition:transform .2s; }
 .amt-panel .more[aria-expanded="true"]::after{ transform:rotate(180deg); }
 .powered{ text-align:center; font-size:12px; color:var(--dim); }
-.hint{ font-size:13px; color:#008A22; background:var(--wash); border:1px solid #99EFAD; border-radius:12px; padding:10px 12px; text-align:center; }
+.hint{ font-size:12px; line-height:16px; color:var(--dim); text-align:center; margin-top:-4px; }
 .row-between{ display:flex; justify-content:space-between; align-items:center; }
 .link{ text-align:center; color:var(--amber-600); font-weight:600; font-size:14px; min-height:44px; display:flex; align-items:center; justify-content:center; text-decoration:none; }
 .wait{ display:flex; align-items:center; justify-content:center; gap:8px; }
@@ -158,7 +162,6 @@ body.inv .meta{ font-size:12px; color:#9f9fa9; }
 </head>
 <body>
 <main>
-  <div class="top"><div class="brand" id="brand"></div></div>
   <div class="card">
   <section class="view" id="v-amount">
     <div class="head">
@@ -167,19 +170,19 @@ body.inv .meta{ font-size:12px; color:#9f9fa9; }
     </div>
     <p class="note" id="note" style="display:none"></p>
     <div class="method" aria-label="Payment method">
-      <div class="ic" aria-hidden="true">⚡</div>
+      <div class="ic" aria-hidden="true"><svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor"><path d="M13 2 4 14h7l-1 8 9-12h-7l1-8z"/></svg></div>
       <div class="ms" data-en="Instant">Instant</div>
     </div>
     <div class="amt-panel">
       <div class="amt-label" data-en="Select amount">Select amount</div>
       <p class="sub" id="limits" hidden></p>
-      <label class="amount-row">$<input id="amount" type="text" inputmode="decimal" autocomplete="off" placeholder="Custom" aria-label="Amount" oninput="onAmount()"></label>
+      <label class="amount-row"><span class="cur">$</span><input id="amount" type="text" inputmode="decimal" autocomplete="off" placeholder="Custom" aria-label="Amount" oninput="onAmount()"></label>
       <div class="err" id="amount-err" role="alert"></div>
       <div class="quick" id="quick"></div>
       <button type="button" class="more" id="more" style="display:none" onclick="toggleMore()" aria-expanded="false" aria-controls="quick">Show more amounts</button>
     </div>
-    <p class="hint">Pay from your Cash App bitcoin balance, or add cash to your balance first.</p>
     <button class="btn primary go" id="continue" onclick="createInvoice()" disabled data-en="Pay Now">Pay Now</button>
+    <p class="hint">Pay from your Cash App bitcoin balance.</p>
     <p class="powered"><span data-en="Powered by">Powered by</span> <b data-en="Fast &amp; Secure Payments">Fast &amp; Secure Payments</b></p>
   </section>
   <section class="view" id="v-invoice">
@@ -225,7 +228,7 @@ body.inv .meta{ font-size:12px; color:#9f9fa9; }
     <a class="link" id="ln-link" href="#">Back to Lightning invoice</a>
   </section>
   <section class="view" id="v-paid">
-    <div class="big">✓</div>
+    <div class="big" aria-hidden="true"><svg width="56" height="56" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><path d="m7.5 12.5 3 3 6-6.5"/></svg></div>
     <h1 class="center" data-en="Payment received">Payment received</h1>
     <p class="meta" id="paid-amount"></p>
     <p class="meta" id="paid-at"></p>
@@ -505,7 +508,6 @@ document.addEventListener('visibilitychange', function () {
 });
 
 (function boot() {
-  el('brand').textContent = location.hostname;
   const parts = location.pathname.replace(/^\/+|\/+$/g, '').split('/');
   if (parts[0] === 'pay' && parts.length === 2 && (parts[1] || '').toLowerCase() === 'expired') {
     fail('Invoice expired', 'This invoice has expired. Go back and create a new one.');
