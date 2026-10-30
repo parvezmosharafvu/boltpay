@@ -50,3 +50,31 @@ export function resolveMarkup(
   if (!Number.isFinite(l) || l <= 0) return 0;
   return Math.min(Math.max(l, lo), hi);
 }
+
+export type FeeMode = "creator" | "buyer" | "split";
+
+/** Buyer/creator share of the conversion fee % for a mode (0107). */
+export function feeShares(mode: unknown, feePercent: unknown): { mode: FeeMode; buyer: number; creator: number } {
+  const f = clampCostPercent(feePercent);
+  const m: FeeMode = mode === "buyer" || mode === "split" ? mode : "creator";
+  if (m === "buyer") return { mode: m, buyer: f, creator: 0 };
+  if (m === "split") {
+    // Integer thousandths so it matches SQL round(f / 2, 3) (half up).
+    const fm = Math.round(f * 1000), bm = Math.round(fm / 2);
+    return { mode: m, buyer: bm / 1000, creator: (fm - bm) / 1000 };
+  }
+  return { mode: m, buyer: 0, creator: f };
+}
+
+/**
+ * Buyer total for a checkout (0107). G = base + link extra fee (cents);
+ * buyer fee = round(G * buyer% / 100); total = G + buyer fee.
+ */
+export function quote(amountUsd: number, linkMarkup: unknown, mode: unknown, feePercent: unknown) {
+  const s = feeShares(mode, feePercent);
+  const gross = chargedAmount(amountUsd, linkMarkup);
+  const buyerFeeUsd = roundCents(gross * s.buyer / 100);
+  const total = roundCents(gross + buyerFeeUsd);
+  const creatorFeeUsd = roundCents(gross * s.creator / 100);
+  return { ...s, gross, buyerFeeUsd, total, creatorFeeUsd, creatorNet: roundCents(gross - creatorFeeUsd) };
+}

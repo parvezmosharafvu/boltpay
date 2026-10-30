@@ -1424,11 +1424,23 @@ function payNet(p){
 async function loadConvFee(){
   const el = document.getElementById('convFeeNote');
   if (!el) return;
-  const { data, error } = await window.supabaseClient.rpc('conversion_fee_percent');
-  const pct = Number(data);
+  const { data, error } = await window.supabaseClient.rpc('conversion_fee_config');
+  const c = Array.isArray(data) ? data[0] : data;
+  const pct = Number(c && c.fee_percent);
   if (error || !(pct > 0)) { el.style.display = 'none'; return; }
-  el.dataset.en = 'Conversion fee ' + pct + '% \u2014 deducted from each payment you receive. It covers BTC\u2192USDT conversion and BTC price movement. Your balance and invoices show the amount after this fee.';
-  el.dataset.bn = 'কনভার্সন ফি ' + pct + '% \u2014 প্রতিটি প্রাপ্ত পেমেন্ট থেকে কাটা হয়। এটি BTC\u2192USDT কনভার্সন ও BTC দামের ওঠানামা কভার করে। আপনার ব্যালেন্স ও ইনভয়েসে ফি বাদে পরিমাণ দেখানো হয়।';
+  const mode = c.mode, b = Number(c.buyer_percent), k = Number(c.creator_percent);
+  const why = ' It covers BTC\u2192USDT conversion and BTC price movement.';
+  const whyBn = ' এটি BTC\u2192USDT কনভার্সন ও BTC দামের ওঠানামা কভার করে।';
+  if (mode === 'buyer') {
+    el.dataset.en = 'Conversion fee ' + pct + '% \u2014 paid by the buyer on top of the price. You receive the full amount.' + why;
+    el.dataset.bn = 'কনভার্সন ফি ' + pct + '% \u2014 ক্রেতা দামের উপর পরিশোধ করেন। আপনি পুরো পরিমাণ পান।' + whyBn;
+  } else if (mode === 'split') {
+    el.dataset.en = 'Conversion fee ' + pct + '% \u2014 shared: buyer pays ' + b + '% on top, ' + k + '% is deducted from what you receive.' + why;
+    el.dataset.bn = 'কনভার্সন ফি ' + pct + '% \u2014 ভাগাভাগি: ক্রেতা ' + b + '% বেশি দেন, আপনার প্রাপ্ত পরিমাণ থেকে ' + k + '% কাটা হয়।' + whyBn;
+  } else {
+    el.dataset.en = 'Conversion fee ' + pct + '% \u2014 deducted from each payment you receive.' + why + ' Your balance and invoices show the amount after this fee.';
+    el.dataset.bn = 'কনভার্সন ফি ' + pct + '% \u2014 প্রতিটি প্রাপ্ত পেমেন্ট থেকে কাটা হয়।' + whyBn + ' আপনার ব্যালেন্স ও ইনভয়েসে ফি বাদে পরিমাণ দেখানো হয়।';
+  }
   el.style.display = '';
   if (window.applyUiLang) window.applyUiLang();
 }
@@ -2068,7 +2080,7 @@ function renderPayments(){
         <div class="pay-summary">
           <div style="min-width:0;">
             <div class="pay-amt">$${payNet(p).toFixed(2)}</div>
-            ${Number(p.fee_percent) > 0 ? `<div class="pay-meta">${qiT('Paid', 'পরিশোধ')} $${parseFloat(p.amount_settled ?? p.amount_requested ?? 0).toFixed(2)} \u2212 $${Number(p.fee_usd || 0).toFixed(2)} ${qiT('conversion fee', 'কনভার্সন ফি')} (${Number(p.fee_percent)}%)</div>` : ''}
+            ${Number(p.fee_percent) > 0 ? `<div class="pay-meta">${qiT('Paid', 'পরিশোধ')} $${(Number(p.net_amount || 0) + Number(p.fee_usd || 0)).toFixed(2)} \u2212 $${Number(p.fee_usd || 0).toFixed(2)} ${qiT('conversion fee', 'কনভার্সন ফি')} (${Number(p.fee_percent)}%)</div>` : ''}
             <div class="pay-meta">${escapeHtml((p.method||'lightning').toUpperCase())} \u00b7 ${fmtDate(p.created_at)}</div>
           </div>
           <div class="pay-summary-right">
