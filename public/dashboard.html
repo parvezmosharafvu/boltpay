@@ -2398,7 +2398,7 @@ async function loadInvoicesTab(){
     : '<div style="opacity:.7">No payments yet.</div>');
   const il = document.getElementById('invList');
   il.innerHTML = inv.error ? 'Could not load invoices.' : (inv.data.length
-    ? '<table style="width:100%;font-size:13px"><tr><th align="left">Day</th><th>Payments</th><th align="right">Gross</th><th align="right">${qiT('Conversion fee', 'কনভার্সন ফি')}</th><th align="right">Net</th></tr>'
+    ? '<table style="width:100%;font-size:13px"><tr><th align="left">Day</th><th>Payments</th><th align="right">Gross</th><th align="right">' + qiT('Conversion fee', 'কনভার্সন ফি') + '</th><th align="right">Net</th></tr>'
       + inv.data.map(r => `<tr><td>${esc(r.cycle_date)}</td><td align="center">${r.payment_count}</td><td align="right">${m(r.gross_usd)}</td><td align="right">${m(r.commission_usd)}</td><td align="right">${m(r.net_usd)}</td></tr>`).join('') + '</table>'
     : '<div style="opacity:.7">No invoices yet.</div>');
   const mi = await window.supabaseClient.rpc('my_manual_invoices');
