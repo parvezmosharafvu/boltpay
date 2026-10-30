@@ -38,6 +38,8 @@ body{ font-family:'Inter',sans-serif; background:var(--bg); color:var(--text); m
 .login-card{ background:var(--panel); border:1px solid var(--line); border-radius:20px; padding:32px 28px; width:100%; max-width:360px; }
 .login-mark{ width:48px; height:48px; border-radius:13px; background:linear-gradient(155deg,#FFD466,#FFB800);
   display:flex; align-items:center; justify-content:center; margin-bottom:18px; box-shadow:0 0 18px rgba(255,184,0,0.28); }
+.login-card{ position:relative; }
+.login-card .lang{ position:absolute; top:14px; right:14px; min-height:44px; min-width:44px; padding:0 12px; border-radius:10px; border:1px solid var(--line); background:transparent; color:var(--text); font:500 13px Inter,sans-serif; cursor:pointer; }
 .login-title{ font-size:19px; font-weight:700; margin-bottom:4px; }
 .login-sub{ font-size:12px; color:var(--text-dim); margin-bottom:22px; }
 .field{ margin-bottom:12px; }
@@ -389,7 +391,8 @@ textarea.w-input{ padding:10px 12px !important; }
 .device-item{padding:4px 0;border-top:1px dashed rgba(0,0,0,.08)}
 </style>
     <link rel="stylesheet" href="dash.css">
-  </head>
+  <script src="auth.js"></script>
+</head>
           <body>
             <div id="loginScreen">
               <div class="login-card">
@@ -398,17 +401,18 @@ textarea.w-input{ padding:10px 12px !important; }
                     <path d="M13 2L4 14h6l-1 8 9-12h-6l1-8z" fill="#2A1F00"/>
                   </svg>
                 </div>
-                <div class="login-title">Boltpay Admin</div>
-                <div class="login-sub">Restricted access — admin accounts only</div>
+                <button type="button" class="lang" id="langBtn" onclick="toggleLang()">বাংলা</button>
+                <div class="login-title" data-en="Boltpay Admin" data-bn="বোল্টপে অ্যাডমিন">Boltpay Admin</div>
+                <div class="login-sub" data-en="Restricted access — admin accounts only" data-bn="সীমিত প্রবেশাধিকার — শুধু অ্যাডমিন অ্যাকাউন্ট">Restricted access — admin accounts only</div>
                 <div class="field">
-                  <label>Email</label>
+                  <label data-en="Email" data-bn="ইমেইল">Email</label>
                   <input type="email" id="loginEmail" placeholder="admin@example.com">
                   </div>
                   <div class="field">
-                    <label>Password</label>
+                    <label data-en="Password" data-bn="পাসওয়ার্ড">Password</label>
                     <input type="password" id="loginPassword" placeholder="••••••••">
                     </div>
-                    <button class="btn-primary" onclick="doLogin()">Secure login</button>
+                    <button class="btn-primary" onclick="doLogin()" data-en="Secure login" data-bn="নিরাপদ লগইন">Secure login</button>
                     <div class="login-error" id="loginError">
                     </div>
                   </div>
@@ -928,7 +932,7 @@ if (new URLSearchParams(window.location.search).get('timeout') === '1'){
   window.addEventListener('DOMContentLoaded', () => {
     const err = document.getElementById('loginError');
     if (err){
-      err.textContent = 'Signed out after 20 minutes of inactivity.';
+      err.textContent = t('Signed out after 20 minutes of inactivity.', '২০ মিনিট নিষ্ক্রিয় থাকায় সাইন আউট হয়েছে।');
       err.style.display = 'block';
     }
   });
@@ -941,12 +945,12 @@ async function doLogin(){
   errEl.style.display = 'none';
 
   const { data, error } = await window.supabaseClient.auth.signInWithPassword({ email, password });
-  if (error){ errEl.textContent = error.message; errEl.style.display = 'block'; return; }
+  if (error){ errEl.textContent = authErrorText(error.message); errEl.style.display = 'block'; return; }
 
   const { data: profile } = await window.supabaseClient.from('profiles').select('role').eq('id', data.user.id).single();
   if (profile?.role !== 'admin'){
     await window.supabaseClient.auth.signOut();
-    errEl.textContent = 'This account does not have admin access.';
+    errEl.textContent = t('This account does not have admin access.', 'এই অ্যাকাউন্টে অ্যাডমিন অ্যাক্সেস নেই।');
     errEl.style.display = 'block'; return;
   }
 
