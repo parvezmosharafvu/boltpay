@@ -2080,7 +2080,7 @@ function renderPayments(){
         <div class="pay-summary">
           <div style="min-width:0;">
             <div class="pay-amt">$${payNet(p).toFixed(2)}</div>
-            ${Number(p.fee_percent) > 0 ? `<div class="pay-meta">${qiT('Paid', 'পরিশোধ')} $${(Number(p.net_amount || 0) + Number(p.fee_usd || 0)).toFixed(2)} \u2212 $${Number(p.fee_usd || 0).toFixed(2)} ${qiT('conversion fee', 'কনভার্সন ফি')} (${Number(p.fee_percent)}%)</div>` : ''}
+            ${Number(p.fee_usd) > 0 ? `<div class="pay-meta">${p.status === 'settled' ? qiT('Buyer paid', 'ক্রেতা পরিশোধ করেছেন') : qiT('Invoice', 'ইনভয়েস')} $${(Number(p.net_amount || 0) + Number(p.fee_usd || 0)).toFixed(2)} \u2212 $${Number(p.fee_usd || 0).toFixed(2)} ${qiT('conversion fee', 'কনভার্সন ফি')} (${Number(p.fee_percent)}%)${p.status === 'settled' ? '' : ' \u00b7 ' + qiT('not paid', 'পরিশোধ হয়নি')}</div>` : ''}
             <div class="pay-meta">${escapeHtml((p.method||'lightning').toUpperCase())} \u00b7 ${fmtDate(p.created_at)}</div>
           </div>
           <div class="pay-summary-right">

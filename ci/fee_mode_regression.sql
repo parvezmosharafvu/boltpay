@@ -40,7 +40,7 @@ begin
   assert r.conversion_fee_mode = 'buyer' and r.commission_usd = 2.5 and r.net_usd = 100, format('buyer mode %s', r.net_usd);
   perform set_config('test.uid', u::text, true);
   select * into g from get_my_payments(10, 0, null, null) where id = pid;
-  assert g.fee_usd = 0 and g.net_amount = 100, 'buyer mode list';
+  assert g.fee_usd = 2.5 and g.fee_percent = 2.5 and g.net_amount = 100, 'buyer mode list (total fee)';
   perform set_config('test.uid', a::text, true);
 
   -- split mode with rounding: base 33.33 -> buyer fee 0.42, total 33.75, net 32.91
@@ -54,7 +54,7 @@ begin
     returning id into pid;
   perform set_config('test.uid', u::text, true);
   select * into g from get_my_payments(10, 0, null, null) where id = pid;
-  assert g.fee_usd = 0.42 and g.net_amount = 32.91, format('split estimate %s %s', g.fee_usd, g.net_amount);
+  assert g.fee_usd = 0.84 and g.fee_percent = 2.5 and g.net_amount = 32.91, format('split estimate %s %s', g.fee_usd, g.net_amount);
   update payments set status='settled', amount_settled=33.75, settled_at=now() where id=pid;
   select * into r from payments where id=pid;
   assert r.commission_usd = 0.84 and r.net_usd = 32.91, format('split settle %s %s', r.commission_usd, r.net_usd);
