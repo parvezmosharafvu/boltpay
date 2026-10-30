@@ -133,7 +133,7 @@ return fallback;
 // iMessage and WhatsApp builds refuse to scrape an og:image that is
 // cross-origin or carries no image extension.
 function generatedImage(origin, slug) {
-return `${origin}/og-image/${encodeURIComponent(slug)}.png?v=4`;
+return `${origin}/og-image/${encodeURIComponent(slug)}.png?v=5`;
 }
 
 /**
