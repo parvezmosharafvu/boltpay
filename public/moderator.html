@@ -636,8 +636,6 @@ function render(){
     const ln = p.lightning_invoice || '';
     const shortLn = ln.length > 26 ? ln.slice(0,16) + '\u2026' + ln.slice(-10) : ln;
     const where = [p.customer_city, p.customer_country].filter(Boolean).join(', ') || 'Unknown location';
-    const cost = p.surcharge_percent != null
-      ? ` <span class="cost-chip">${parseFloat(p.surcharge_percent)}%</span>` : '';
     const amt = parseFloat(p.amount_settled ?? p.amount_requested).toFixed(2);
     const status = String(p.status || '').toLowerCase();
     // Status-driven badge — same colour vocabulary the admin panel uses,
@@ -660,7 +658,7 @@ function render(){
         <div class="pay-grid">
           <div class="pay-field">
             <div class="pay-field-label">Link &amp; payer cost</div>
-            <div class="pay-field-value">&#127758; ${safeText(p.link_slug)}${cost}</div>
+            <div class="pay-field-value">&#127758; ${safeText(p.link_slug)}</div>
           </div>
           <div class="pay-field">
             <div class="pay-field-label">Method</div>

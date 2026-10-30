@@ -1800,14 +1800,13 @@ async function exportPayments(btn){
       return '"' + str.replace(/"/g, '""') + '"';
     };
     const header = ['Date','Settled at','Status','Amount requested','Amount settled',
-                    'Link','Payer cost %','Method','Location','Invoice ID','Lightning invoice','Checked'];
+                    'Link','Method','Location','Invoice ID','Lightning invoice','Checked'];
     const lines = [header.map(esc).join(',')];
     for (const r of rows){
       lines.push([
         r.created_at, r.settled_at || '', r.status,
         r.amount_requested, r.amount_settled ?? '',
         r.link_name || r.link_slug || '',
-        r.surcharge_percent ?? '',
         r.method,
         [r.customer_city, r.customer_country].filter(Boolean).join(' '),
         r.id || '', r.lightning_invoice || '',
@@ -2011,8 +2010,6 @@ function renderPayments(){
     const shortInv = inv.length > 15 ? inv.slice(0, 8) + '...' + inv.slice(-7) : (inv || '\u2014');
     const ln = p.lightning_invoice || '';
     const shortLn = ln.length > 25 ? ln.slice(0, 16) + '...' + ln.slice(-10) : ln;
-    // get_my_payments returns these flat rather than as a nested join.
-    const surcharge = p.surcharge_percent;
 
     const staffMark = paymentMarks[p.id];
     const localMark = localMarks[p.id];
@@ -2049,7 +2046,7 @@ function renderPayments(){
       <div class="pay-grid">
         <div class="pay-field">
           <div class="pay-field-label">Link &amp; payer cost</div>
-          <div class="pay-field-value">\ud83c\udf0e ${escapeHtml(p.link_name || p.link_slug || '\u2014')}${surcharge != null ? ` <span class="cost-chip">${parseFloat(surcharge)}%</span>` : ''}</div>
+          <div class="pay-field-value">\ud83c\udf0e ${escapeHtml(p.link_name || p.link_slug || '\u2014')}</div>
         </div>
         <div class="pay-field">
           <div class="pay-field-label">Method</div>
