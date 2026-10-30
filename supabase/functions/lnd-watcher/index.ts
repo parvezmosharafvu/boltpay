@@ -22,7 +22,7 @@ Deno.serve(async (req) => {
   // payment landed just before the deadline and nobody was polling.
   const { data: rows, error } = await db
     .from("payments")
-    .select("id, user_id, status, lnd_r_hash, expires_at")
+    .select("id, user_id, status, lnd_r_hash, expires_at, btc_address, amount_sats")
     .eq("backend", "lnd")
     .in("status", ["new", "pending"])
     .gte("expires_at", new Date(Date.now() - 86_400_000).toISOString())
@@ -30,8 +30,22 @@ Deno.serve(async (req) => {
     .limit(200);
   if (error) return new Response(`query failed: ${error.message}`, { status: 500 });
 
+  // Lightning-expired invoices with an on-chain address stay watchable for
+  // 3 days, so a late on-chain payment is still credited.
+  const { data: late, error: lateErr } = await db
+    .from("payments")
+    .select("id, user_id, status, lnd_r_hash, expires_at, btc_address, amount_sats")
+    .eq("backend", "lnd")
+    .eq("status", "expired")
+    .not("btc_address", "is", null)
+    .gte("expires_at", new Date(Date.now() - 3 * 86_400_000).toISOString())
+    .order("created_at", { ascending: true })
+    .limit(100);
+  if (lateErr) return new Response(`query failed: ${lateErr.message}`, { status: 500 });
+  const all = [...(rows ?? []), ...(late ?? [])];
+
   const tally: Record<string, number> = { settled: 0, expired: 0, open: 0, unchanged: 0, errors: 0 };
-  for (const row of rows ?? []) {
+  for (const row of all) {
     try {
       tally[await syncLndPayment(db, lnd, row)]++;
     } catch (e) {
@@ -39,5 +53,5 @@ Deno.serve(async (req) => {
       console.error("watcher:", row.id, (e as Error).message);
     }
   }
-  return Response.json({ checked: rows?.length ?? 0, ...tally }, { status: tally.errors ? 207 : 200 });
+  return Response.json({ checked: all.length, ...tally }, { status: tally.errors ? 207 : 200 });
 });

@@ -13,7 +13,8 @@ begin
   select value into v_flag from app_settings where key = 'lnd_checkout_enabled';
   if v_flag is distinct from 'false'::jsonb then raise exception 'lnd_checkout_enabled is not false'; end if;
   select value into v_flag from app_settings where key = 'lnd_onchain_fallback';
-  if v_flag is distinct from 'false'::jsonb then raise exception 'lnd_onchain_fallback is not false'; end if;
+  -- 0101 turns the on-chain fallback on (owner pt297u)
+  if v_flag is distinct from 'true'::jsonb then raise exception 'lnd_onchain_fallback is not true'; end if;
   if (select value from app_settings where key = 'lnd_pay_min_usd') <> '10'::jsonb then raise exception 'min'; end if;
   if (select value from app_settings where key = 'lnd_pay_max_usd') <> '1000'::jsonb then raise exception 'max'; end if;
   if (select value from app_settings where key = 'lnd_invoice_expiry_sec') <> '3600'::jsonb then raise exception 'expiry'; end if;
