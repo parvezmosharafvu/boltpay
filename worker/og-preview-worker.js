@@ -152,7 +152,8 @@ const hit = await cache.match(cacheKey);
 if (hit) return hit;
 
 const slug = url.pathname.split("/").pop();
-const res = await fetch(`${SUPABASE_URL}/functions/v1/og-image/${slug}`, {
+// Pass ?v= through so a design bump also misses Supabase's CDN cache.
+const res = await fetch(`${SUPABASE_URL}/functions/v1/og-image/${slug}${url.search}`, {
 headers: { apikey: SUPABASE_ANON_KEY, Authorization: `Bearer ${SUPABASE_ANON_KEY}` },
 redirect: "follow",
 });
