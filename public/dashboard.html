@@ -1117,7 +1117,6 @@ let paymentRealtimeChannel = null;
 let withdrawalRealtimeChannel = null;
 let messageRealtimeChannel = null;
 let editingMessageId = null;
-let isAutoWithdrawEnabled = false;
 let paymentMarks = {};
 let localMarks = {};       // NEW: localStorage-backed marks for instant UI feedback
 let localMarkTotals = 0;
@@ -1351,26 +1350,8 @@ async function fetchProfile(){
 
   maxLinks = data?.max_payment_links ?? 5;
 
-  // Auto-withdraw (instant Lightning payouts) is retired; the flags stay in the DB as history.
-  isAutoWithdrawEnabled = false;
-
-  const methodDropdown = document.getElementById('wdMethod');
-  const hasLightningOption = Array.from(methodDropdown.options).some(opt => opt.value === 'lightning');
-
-  if (isAutoWithdrawEnabled && !hasLightningOption) {
-    const lnOpt = document.createElement('option');
-    lnOpt.value = 'lightning';
-    lnOpt.text = 'Lightning Network (Instant)';
-    methodDropdown.insertBefore(lnOpt, methodDropdown.firstChild);
-    methodDropdown.value = 'lightning';
-  } else if (!isAutoWithdrawEnabled && hasLightningOption) {
-    // Was remove(0) — which deletes whatever happens to sit first, not
-    // necessarily the Lightning entry. Correct only while Lightning is
-    // inserted at the front and nothing else ever is; removing it by
-    // value can't pick the wrong one.
-    const lnIndex = Array.from(methodDropdown.options).findIndex(o => o.value === 'lightning');
-    if (lnIndex >= 0) methodDropdown.remove(lnIndex);
-  }
+  // Lightning and USDT are both manual requests: they land in the admin
+  // queue as pending and an admin pays them out. There is no instant path.
   await applyEnabledWithdrawalMethods();
   toggleInvoiceInput();
 
@@ -1906,7 +1887,6 @@ async function applyEnabledWithdrawalMethods(){
   Array.from(dd.options).forEach(o => { if (!enabled.has(o.value)) o.remove(); });
   data.forEach(r => {
     if (!LIVE_METHODS.includes(r.code)) return;
-    if (r.code === 'lightning') return; // Lightning appears only with auto-withdraw (above)
     if (!Array.from(dd.options).some(o => o.value === r.code)){
       const o = document.createElement('option'); o.value = r.code; o.text = r.label_en + ' · ' + r.label_bn; dd.appendChild(o);
     }
@@ -2211,7 +2191,6 @@ async function submitWithdrawal(){
 
   let destination = "";
   if (method === 'lightning') {
-    if (!isAutoWithdrawEnabled) return showToast('Method unavailable', 'err');
     if (!invoice) return showToast('Lightning Invoice is required', 'err');
     destination = invoice;
   } else {
