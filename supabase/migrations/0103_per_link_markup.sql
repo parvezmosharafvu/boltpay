@@ -81,7 +81,7 @@ grant execute on function admin_set_link_markup_enabled(boolean) to authenticate
 
 -- Link creation: optional markup % for the whole new group.
 drop function if exists create_link_variants(text, text[]);
-create function create_link_variants(p_display_name text, p_styles text[], p_cost_percent numeric default null)
+create or replace function create_link_variants(p_display_name text, p_styles text[], p_cost_percent numeric default null)
 returns table (slug text, style text, created boolean)
 language plpgsql security definer set search_path = public
 as $function$
@@ -153,7 +153,7 @@ grant execute on function set_link_markup(uuid, numeric) to authenticated;
 
 -- Checkout lookup: expose link and profile % separately.
 drop function if exists system_lnd_link_for_invoice(text);
-create function system_lnd_link_for_invoice(p_slug text)
+create or replace function system_lnd_link_for_invoice(p_slug text)
 returns table (
   link_id uuid, user_id uuid, slug text, display_name text, is_active boolean,
   checkout_backend text, cost_percent numeric,
