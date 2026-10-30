@@ -362,6 +362,21 @@ input:focus-visible,select:focus-visible,button:focus-visible{ outline:2px solid
   .content > .tabs{ grid-column:1; grid-row:1 / span 50; position:sticky; top:16px; flex-direction:column; align-items:stretch; overflow:visible; margin:0 !important; padding:10px; background:var(--panel); border:1px solid var(--line); border-radius:16px; }
   .content > .tabs .tab-btn{ justify-content:flex-start; text-align:left; width:100%; }
 }
+
+/* Design spec §1 primitives (amber tokens §0). Loaded last so it wins over the compact overrides above. */
+body{ font-size:16px; line-height:24px; }
+h1,h2,h3,.page-title,.panel-title{ font-weight:600 !important; letter-spacing:-0.02em; }
+.panel{ background:var(--panel); border:1px solid var(--line); border-radius:16px !important; padding:24px !important; margin-bottom:16px !important; box-shadow:none; }
+.stat-card{ background:var(--panel); border:1px solid var(--line); border-radius:16px; box-shadow:none; }
+.w-input, .w-select, .filter-select{ min-height:44px; padding:0 12px !important; border-radius:10px !important; background:var(--bg) !important; border:1px solid var(--line-strong) !important; font-size:14px !important; line-height:20px; }
+textarea.w-input{ padding:10px 12px !important; }
+.w-input:focus, .w-select:focus, .filter-select:focus{ border-color:var(--amber) !important; box-shadow:0 0 0 3px var(--accent-ring) !important; }
+.btn-primary{ min-height:48px; padding:12px 20px !important; border-radius:14px !important; font-size:14px !important; font-weight:600 !important; background:var(--amber); color:var(--on-accent); box-shadow:none; }
+.btn-primary:hover{ background:var(--amber-600); filter:none; box-shadow:none; }
+.btn-ghost{ min-height:40px; border-radius:10px; background:var(--panel); border:1px solid var(--line); font-weight:500; }
+.detail-section-title, .w-label{ font-size:14px !important; font-weight:500 !important; text-transform:none !important; letter-spacing:0 !important; color:var(--text) !important; margin:20px 0 8px !important; }
+.page-sub, .stat-sub, .hint{ color:var(--text-dim); }
+@media (min-width:1024px){ .content{ max-width:1280px !important; padding-left:32px !important; padding-right:32px !important; } }
 </style>
           </head>
           <body>
