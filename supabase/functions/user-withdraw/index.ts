@@ -94,7 +94,7 @@ if (!authHeader) return json({ error: "Unauthorized" }, 401, cors);
 const callerClient = createClient(SUPABASE_URL, SUPABASE_ANON_KEY, {
 global: { headers: { Authorization: authHeader } },
 });
-const { data: { user }, error: userErr } = await callerClient.auth.getUser();
+const { data: { user }, error: userErr } = await callerClient.auth.getUser(authHeader.replace(/^Bearer\s+/i, ""));
 if (userErr || !user) return json({ error: "Invalid session" }, 401, cors);
 let body: { amount?: unknown; method?: unknown; destination?: unknown; request_key?: unknown };
 try {
