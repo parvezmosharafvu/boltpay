@@ -44,7 +44,7 @@ Deno.serve(async (req) => {
   const auth = req.headers.get("Authorization");
   if (!auth) return json({ error: "Unauthorized" }, 401, cors);
   const caller = createClient(SUPABASE_URL, SUPABASE_ANON_KEY, { global: { headers: { Authorization: auth } } });
-  const { data: { user } } = await caller.auth.getUser();
+  const { data: { user } } = await caller.auth.getUser(auth.replace(/^Bearer\s+/i, ""));
   if (!user) return json({ error: "Invalid session" }, 401, cors);
   const { data: prof } = await supabaseAdmin.from("profiles").select("role").eq("id", user.id).single();
   if (prof?.role !== "admin") return json({ error: "Not authorized" }, 403, cors);

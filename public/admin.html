@@ -2440,7 +2440,7 @@ async function tgAdmin(action, btn){
       body: JSON.stringify({ action })
     });
     const r = await res.json();
-    if (!res.ok) { showToast(r.error || 'Failed / ব্যর্থ', 'err'); if (action === 'status') document.getElementById('tgAdminStatus').textContent = r.error || '—'; return; }
+    if (!res.ok) { if (res.status === 401) r.error = 'Session expired — please sign in again · সেশন শেষ, আবার লগইন করুন'; showToast(r.error || 'Failed / ব্যর্থ', 'err'); if (action === 'status') document.getElementById('tgAdminStatus').textContent = r.error || '—'; return; }
     if (action === 'status') {
       const st = document.getElementById('tgAdminStatus');
       st.textContent = `Bot: ${r.bot ? '@' + r.bot : '—'} · Webhook / ওয়েবহুক: ${r.webhook_points_here ? 'OK' : (r.webhook_set ? 'other URL / অন্য URL' : 'not set / সেট নেই')} · Pending / অপেক্ষমাণ: ${Number(r.pending_updates || 0)} · Linked users / যুক্ত ইউজার: ${Number(r.linked_users || 0)}${r.last_error ? ' · Last error / শেষ ত্রুটি: ' + r.last_error : ''}`;
