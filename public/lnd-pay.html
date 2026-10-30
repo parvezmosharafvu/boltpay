@@ -17,7 +17,7 @@
 :root{ --bg:#F7F5F0; --card:#FFFFFF; --line:#E7E2D6; --text:#1A1712; --dim:#6B6455; --amber:#FFB800; --amber-600:#E0A200; --wash:#FFF6DC; --on:#2A1F00; --err:#C2410C; }
 *{ margin:0; padding:0; box-sizing:border-box; -webkit-tap-highlight-color:transparent; }
 html,body{ min-height:100%; font-family:'Inter',sans-serif; background:var(--bg); color:var(--text); }
-body{ display:flex; justify-content:center; align-items:flex-start; padding:40px 16px; }
+body{ display:flex; justify-content:center; align-items:center; min-height:100vh; min-height:100dvh; padding:40px 16px; }
 main{ width:100%; max-width:420px; }
 .top{ display:flex; justify-content:space-between; align-items:center; margin-bottom:14px; }
 .brand{ font-size:13px; color:var(--dim); font-weight:500; }
@@ -49,6 +49,16 @@ h1{ font-size:24px; line-height:32px; font-weight:600; letter-spacing:-.02em; }
 .center{ text-align:center; }
 .foot{ text-align:center; font-size:12px; color:var(--dim); margin-top:16px; }
 @media (max-width:480px){ body{ padding:20px 12px; } .card{ padding:22px; } }
+.trust{ display:flex; justify-content:space-between; align-items:center; gap:8px; }
+.secure{ display:inline-flex; align-items:center; gap:6px; background:var(--wash); color:#7A5600; border:1px solid #F5DFA0; border-radius:999px; padding:4px 10px; font-size:12px; font-weight:600; }
+.secure::before{ content:""; width:12px; height:12px; background:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='16' height='16' viewBox='0 0 24 24' fill='none' stroke='%232A1F00' stroke-width='2.4' stroke-linecap='round' stroke-linejoin='round'%3E%3Crect x='4' y='11' width='16' height='10' rx='2'/%3E%3Cpath d='M8 11V7a4 4 0 0 1 8 0v4'/%3E%3C/svg%3E") center/contain no-repeat; }
+.method{ display:flex; align-items:center; gap:12px; border:1.5px solid var(--amber); background:var(--wash); border-radius:14px; padding:12px 14px; }
+.method .ic{ width:36px; height:36px; border-radius:10px; background:var(--amber); color:var(--on); display:flex; align-items:center; justify-content:center; font-size:18px; flex:none; }
+.method .mt{ font-weight:600; font-size:15px; } .method .ms{ font-size:12px; color:var(--dim); }
+.method .tag{ margin-left:auto; font-size:11px; font-weight:700; color:#7A5600; background:#FFE9A8; border-radius:999px; padding:3px 8px; }
+.btn.go::before{ content:""; width:16px; height:16px; margin-right:8px; background:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='16' height='16' viewBox='0 0 24 24' fill='none' stroke='%232A1F00' stroke-width='2.4' stroke-linecap='round' stroke-linejoin='round'%3E%3Crect x='4' y='11' width='16' height='10' rx='2'/%3E%3Cpath d='M8 11V7a4 4 0 0 1 8 0v4'/%3E%3C/svg%3E") center/contain no-repeat; }
+.btn.go::after{ content:""; width:16px; height:16px; margin-left:8px; background:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='16' height='16' viewBox='0 0 24 24' fill='none' stroke='%232A1F00' stroke-width='2.4' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M5 12h14M13 6l6 6-6 6'/%3E%3C/svg%3E") center/contain no-repeat; }
+.btn.go:not(:disabled):hover{ background:var(--amber-600); }
 </style>
 </head>
 <body>
@@ -56,14 +66,20 @@ h1{ font-size:24px; line-height:32px; font-weight:600; letter-spacing:-.02em; }
   <div class="top"><div class="brand" id="brand"></div><button type="button" class="lang" id="langBtn" onclick="toggleLang()">বাংলা</button></div>
   <div class="card">
   <section class="view" id="v-amount">
+    <div class="trust"><span class="secure" data-en="Secure payment" data-bn="নিরাপদ পেমেন্ট">Secure payment</span></div>
     <h1 id="payee" data-en="Pay" data-bn="পেমেন্ট">Pay</h1>
     <p class="note" id="note" style="display:none"></p>
     <p class="sub" id="limits" data-en="Choose an amount" data-bn="অ্যামাউন্ট বেছে নিন">Choose an amount</p>
-    <div class="quick" id="quick"></div>
-    <button type="button" class="more" id="more" style="display:none" onclick="showMore()" data-en="Show more" data-bn="আরও দেখুন">Show more</button>
     <label class="amount-row">$<input id="amount" type="text" inputmode="decimal" autocomplete="off" placeholder="0" aria-label="Amount" oninput="onAmount()"></label>
     <div class="err" id="amount-err" role="alert"></div>
-    <button class="btn primary" id="continue" onclick="createInvoice()" disabled data-en="Continue" data-bn="এগিয়ে যান">Continue</button>
+    <div class="quick" id="quick"></div>
+    <button type="button" class="more" id="more" style="display:none" onclick="showMore()" data-en="Show more" data-bn="আরও দেখুন">Show more</button>
+    <div class="method" aria-label="Payment method">
+      <div class="ic" aria-hidden="true">⚡</div>
+      <div><div class="mt" data-en="Lightning" data-bn="লাইটনিং">Lightning</div><div class="ms" data-en="Pay with Cash App or any Lightning wallet" data-bn="ক্যাশ অ্যাপ বা যেকোনো লাইটনিং ওয়ালেট দিয়ে পে করুন">Pay with Cash App or any Lightning wallet</div></div>
+      <span class="tag" data-en="Instant" data-bn="তাৎক্ষণিক">Instant</span>
+    </div>
+    <button class="btn primary go" id="continue" onclick="createInvoice()" disabled data-en="Continue" data-bn="এগিয়ে যান">Continue</button>
   </section>
   <section class="view" id="v-invoice">
     <h1 class="center" data-en="Scan or tap to pay" data-bn="স্ক্যান বা ট্যাপ করে পে করুন">Scan or tap to pay</h1>
