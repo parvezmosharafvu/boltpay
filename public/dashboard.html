@@ -862,17 +862,70 @@ textarea.w-input{ padding:10px 12px !important; }
                rather than midnight-to-midnight. Nothing here is a cron
                job or a backup — reload the page and it recomputes. -->
           <div class="section" id="sec-invoices">
-            <div class="page-header">
-              <div>
-                <div class="page-title">Invoices</div>
-                <div class="page-sub">One invoice per day, 7pm–7pm (Asia/Dhaka)</div>
+            <style>
+              /* Invoices section redesign, scoped: every rule is under #sec-invoices and uses inv- classes. */
+              #sec-invoices{--inv-g:#00D632;--inv-bg:#0E1110;--inv-card:#151917;--inv-line:rgba(255,255,255,.07);--inv-mut:rgba(236,242,238,.58);--inv-tx:#ECF2EE}
+              #sec-invoices .inv-wrap{display:flex;flex-direction:column;gap:14px;color:var(--inv-tx)}
+              #sec-invoices .inv-head{display:flex;align-items:flex-start;justify-content:space-between;gap:12px}
+              #sec-invoices .inv-title{font-size:24px;font-weight:800;letter-spacing:-.02em;line-height:1.15}
+              #sec-invoices .inv-sub{margin-top:4px;font-size:12.5px;color:var(--inv-mut)}
+              #sec-invoices .inv-refresh{flex:none;display:inline-flex;align-items:center;gap:6px;height:36px;padding:0 14px;border-radius:999px;border:1px solid rgba(0,214,50,.35);background:rgba(0,214,50,.08);color:var(--inv-g);font-weight:700;font-size:13px;cursor:pointer}
+              #sec-invoices .inv-refresh:active{transform:scale(.97)}
+              #sec-invoices .inv-card{background:linear-gradient(180deg,#171C19,var(--inv-card));border:1px solid var(--inv-line);border-radius:20px;padding:16px;box-shadow:0 10px 30px rgba(0,0,0,.25)}
+              #sec-invoices .inv-card-h{display:flex;align-items:baseline;justify-content:space-between;gap:8px;margin-bottom:12px}
+              #sec-invoices .inv-card-t{font-size:15px;font-weight:750}
+              #sec-invoices .inv-card-k{font-size:11px;letter-spacing:.06em;text-transform:uppercase;color:var(--inv-mut)}
+              #sec-invoices .inv-hero{display:flex;align-items:flex-end;justify-content:space-between;gap:10px;margin-bottom:12px}
+              #sec-invoices .inv-hero-v{font-size:30px;font-weight:800;letter-spacing:-.02em;font-variant-numeric:tabular-nums}
+              #sec-invoices .inv-hero-l{font-size:12px;color:var(--inv-mut)}
+              #sec-invoices .inv-chip{display:inline-flex;align-items:center;gap:5px;padding:4px 10px;border-radius:999px;background:rgba(0,214,50,.12);color:var(--inv-g);font-size:12px;font-weight:700}
+              #sec-invoices .inv-chart svg{display:block;width:100%;height:auto}
+              #sec-invoices .inv-axis{display:flex;justify-content:space-between;margin-top:6px;font-size:11px;color:var(--inv-mut);font-variant-numeric:tabular-nums}
+              #sec-invoices .inv-row{display:flex;align-items:center;gap:12px;padding:12px 0;border-top:1px solid var(--inv-line)}
+              #sec-invoices .inv-row:first-child{border-top:0;padding-top:2px}
+              #sec-invoices .inv-rank{flex:none;width:30px;height:30px;border-radius:10px;display:grid;place-items:center;background:rgba(0,214,50,.1);color:var(--inv-g);font-weight:800;font-size:13px}
+              #sec-invoices .inv-main{flex:1;min-width:0}
+              #sec-invoices .inv-name{font-weight:650;font-size:14.5px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+              #sec-invoices .inv-meta{margin-top:2px;font-size:12px;color:var(--inv-mut);font-variant-numeric:tabular-nums}
+              #sec-invoices .inv-amt{flex:none;text-align:right;font-weight:800;font-size:15px;font-variant-numeric:tabular-nums}
+              #sec-invoices .inv-amt-s{display:block;font-size:11.5px;font-weight:500;color:var(--inv-mut)}
+              #sec-invoices .inv-pos{color:var(--inv-g)}
+              #sec-invoices .inv-day{padding:12px 0;border-top:1px solid var(--inv-line)}
+              #sec-invoices .inv-day:first-child{border-top:0;padding-top:2px}
+              #sec-invoices .inv-day-top{display:flex;justify-content:space-between;align-items:baseline;gap:10px}
+              #sec-invoices .inv-break{display:grid;grid-template-columns:repeat(3,1fr);gap:6px;margin-top:8px}
+              #sec-invoices .inv-cell{background:rgba(255,255,255,.03);border:1px solid var(--inv-line);border-radius:12px;padding:7px 9px}
+              #sec-invoices .inv-cell-l{font-size:10.5px;color:var(--inv-mut);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+              #sec-invoices .inv-cell-v{font-size:13px;font-weight:700;font-variant-numeric:tabular-nums;margin-top:1px}
+              #sec-invoices .inv-status{display:inline-block;margin-top:4px;padding:2px 8px;border-radius:999px;font-size:11px;font-weight:700;text-transform:capitalize;background:rgba(255,255,255,.06);color:var(--inv-mut)}
+              #sec-invoices .inv-status.inv-paid{background:rgba(0,214,50,.12);color:var(--inv-g)}
+              #sec-invoices .inv-empty{padding:18px 4px;text-align:center;font-size:13px;color:var(--inv-mut)}
+            </style>
+            <div class="inv-wrap">
+              <div class="inv-head">
+                <div>
+                  <div class="inv-title" data-en="Invoices" data-bn="ইনভয়েস">Invoices</div>
+                  <div class="inv-sub" data-en="One invoice per day, 7pm–7pm (Asia/Dhaka)" data-bn="প্রতিদিন একটি ইনভয়েস, সন্ধ্যা ৭টা–সন্ধ্যা ৭টা (এশিয়া/ঢাকা)">One invoice per day, 7pm–7pm (Asia/Dhaka)</div>
+                </div>
+                <button class="inv-refresh" onclick="loadInvoicesTab()" data-en="↻ Refresh" data-bn="↻ রিফ্রেশ">↻ Refresh</button>
               </div>
-              <button class="btn-ghost" onclick="loadInvoicesTab()">Refresh</button>
+              <div class="inv-card">
+                <div class="inv-card-h"><div class="inv-card-t" data-en="Last 30 days" data-bn="গত ৩০ দিন">Last 30 days</div><div class="inv-card-k" data-en="Settled" data-bn="সেটেলড">Settled</div></div>
+                <div id="invChart" class="inv-chart"></div>
+              </div>
+              <div class="inv-card">
+                <div class="inv-card-h"><div class="inv-card-t" data-en="Top links" data-bn="শীর্ষ লিংক">Top links</div><div class="inv-card-k" data-en="30 days" data-bn="৩০ দিন">30 days</div></div>
+                <div id="invTopLinks"></div>
+              </div>
+              <div class="inv-card">
+                <div class="inv-card-h"><div class="inv-card-t" data-en="Daily invoices" data-bn="দৈনিক ইনভয়েস">Daily invoices</div><div class="inv-card-k" data-en="Net after fee" data-bn="ফি বাদে নিট">Net after fee</div></div>
+                <div id="invList"></div>
+              </div>
+              <div class="inv-card">
+                <div class="inv-card-h"><div class="inv-card-t" data-en="Other invoices" data-bn="অন্যান্য ইনভয়েস">Other invoices</div></div>
+                <div id="manualInvList"></div>
+              </div>
             </div>
-            <div class="card" style="margin-bottom:14px"><div style="font-weight:700;margin-bottom:8px">Last 30 days</div><div id="invChart"></div></div>
-            <div class="card" style="margin-bottom:14px"><div style="font-weight:700;margin-bottom:8px">Top links (30 days)</div><div id="invTopLinks"></div></div>
-            <div class="card" style="overflow-x:auto"><div id="invList"></div></div>
-            <div class="card" style="overflow-x:auto;margin-top:14px"><div style="font-weight:700;margin-bottom:8px">Other invoices · অন্যান্য ইনভয়েস</div><div id="manualInvList"></div></div>
           </div>
           <div class="section" id="sec-daily">
             <div class="page-header">
@@ -2369,37 +2422,42 @@ async function sendReply(){
 async function loadInvoicesTab(){
   const esc = s => String(s ?? '').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
   const m = n => '$' + Number(n || 0).toFixed(2);
+  const T = qiT;
+  const empty = (en, bn) => `<div class="inv-empty">${T(en, bn)}</div>`;
   const [days, inv, top] = await Promise.all([
     window.supabaseClient.rpc('my_daily_settled', { p_days: 30 }),
     window.supabaseClient.rpc('my_daily_invoices', { p_days: 30 }),
     window.supabaseClient.rpc('my_top_links', { p_days: 30 }),
   ]);
   const chart = document.getElementById('invChart');
-  if (days.error) chart.textContent = 'Could not load chart.';
+  if (days.error) chart.innerHTML = empty('Could not load chart.', 'চার্ট লোড হয়নি।');
   else {
     const rows = [...days.data].reverse();
+    // Display-only sum of the same per-day settled values the bars show.
+    const total = rows.reduce((a, r) => a + Number(r.settled || 0), 0);
+    const active = rows.filter(r => Number(r.settled) > 0).length;
     const max = Math.max(1, ...rows.map(r => Number(r.settled)));
     const w = 600, h = 140, bw = w / Math.max(rows.length, 1);
-    chart.innerHTML = `<svg viewBox="0 0 ${w} ${h + 16}" style="width:100%;height:auto">` + rows.map((r, i) => {
-      const bh = Math.round(Number(r.settled) / max * h);
-      return `<rect x="${i * bw + 1}" y="${h - bh}" width="${Math.max(bw - 2, 1)}" height="${bh}" fill="var(--accent, #6c5ce7)"><title>${esc(r.cycle_date)}: ${m(r.settled)}</title></rect>`;
-    }).join('') + `<text x="0" y="${h + 14}" font-size="11" fill="currentColor">${esc(rows[0]?.cycle_date)}</text><text x="${w}" y="${h + 14}" font-size="11" text-anchor="end" fill="currentColor">${esc(rows[rows.length - 1]?.cycle_date)}</text></svg>`;
+    chart.innerHTML = `<div class="inv-hero"><div><div class="inv-hero-v">${m(total)}</div><div class="inv-hero-l">${T('Settled in the last 30 days', 'গত ৩০ দিনে সেটেলড')}</div></div><span class="inv-chip">${active} ${T('active days', 'সক্রিয় দিন')}</span></div>`
+      + `<svg viewBox="0 0 ${w} ${h}" preserveAspectRatio="none" style="height:120px"><defs><linearGradient id="invBarGrad" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#00D632"/><stop offset="1" stop-color="#00D632" stop-opacity=".35"/></linearGradient></defs>` + rows.map((r, i) => {
+      const bh = Math.max(Math.round(Number(r.settled) / max * h), Number(r.settled) > 0 ? 3 : 2);
+      return `<rect x="${i * bw + 2}" y="${h - bh}" width="${Math.max(bw - 4, 1)}" height="${bh}" rx="3" fill="${Number(r.settled) > 0 ? 'url(#invBarGrad)' : 'rgba(255,255,255,.08)'}"><title>${esc(r.cycle_date)}: ${m(r.settled)}</title></rect>`;
+    }).join('') + `</svg><div class="inv-axis"><span>${esc(rows[0]?.cycle_date)}</span><span>${esc(rows[rows.length - 1]?.cycle_date)}</span></div>`;
   }
   const tl = document.getElementById('invTopLinks');
-  tl.innerHTML = top.error ? 'Could not load top links.' : (top.data.length
-    ? top.data.map(r => `<div style="display:flex;justify-content:space-between;padding:4px 0"><span>${esc(r.display_name || r.slug)}</span><span>${r.payment_count} · ${m(r.settled_usd)}</span></div>`).join('')
-    : '<div style="opacity:.7">No payments yet.</div>');
+  tl.innerHTML = top.error ? empty('Could not load top links.', 'শীর্ষ লিংক লোড হয়নি।') : (top.data.length
+    ? top.data.map((r, i) => `<div class="inv-row"><div class="inv-rank">${i + 1}</div><div class="inv-main"><div class="inv-name">${esc(r.display_name || r.slug)}</div><div class="inv-meta">${r.payment_count} ${T('payments', 'পেমেন্ট')}</div></div><div class="inv-amt">${m(r.settled_usd)}</div></div>`).join('')
+    : empty('No payments yet.', 'এখনো কোনো পেমেন্ট নেই।'));
   const il = document.getElementById('invList');
-  il.innerHTML = inv.error ? 'Could not load invoices.' : (inv.data.length
-    ? '<table style="width:100%;font-size:13px"><tr><th align="left">Day</th><th>Payments</th><th align="right">Gross</th><th align="right">' + qiT('Conversion fee', 'কনভার্সন ফি') + '</th><th align="right">Net</th></tr>'
-      + inv.data.map(r => `<tr><td>${esc(r.cycle_date)}</td><td align="center">${r.payment_count}</td><td align="right">${m(r.gross_usd)}</td><td align="right">${m(r.commission_usd)}</td><td align="right">${m(r.net_usd)}</td></tr>`).join('') + '</table>'
-    : '<div style="opacity:.7">No invoices yet.</div>');
+  il.innerHTML = inv.error ? empty('Could not load invoices.', 'ইনভয়েস লোড হয়নি।') : (inv.data.length
+    ? inv.data.map(r => `<div class="inv-day"><div class="inv-day-top"><div><div class="inv-name">${esc(r.cycle_date)}</div><div class="inv-meta">${r.payment_count} ${T('payments', 'পেমেন্ট')}</div></div><div class="inv-amt inv-pos">${m(r.net_usd)}<span class="inv-amt-s">${T('Net', 'নিট')}</span></div></div>`
+      + `<div class="inv-break"><div class="inv-cell"><div class="inv-cell-l">${T('Gross', 'মোট')}</div><div class="inv-cell-v">${m(r.gross_usd)}</div></div><div class="inv-cell"><div class="inv-cell-l">${T('Conversion fee', 'কনভার্সন ফি')}</div><div class="inv-cell-v">${m(r.commission_usd)}</div></div><div class="inv-cell"><div class="inv-cell-l">${T('Net', 'নিট')}</div><div class="inv-cell-v inv-pos">${m(r.net_usd)}</div></div></div></div>`).join('')
+    : empty('No invoices yet.', 'এখনো কোনো ইনভয়েস নেই।'));
   const mi = await window.supabaseClient.rpc('my_manual_invoices');
   const ml = document.getElementById('manualInvList');
-  if (ml) ml.innerHTML = mi.error ? 'Could not load invoices. · ইনভয়েস লোড হয়নি।' : (mi.data.length
-    ? '<table style="width:100%;font-size:13px"><tr><th align="left">Date</th><th align="left">Description</th><th align="right">Amount</th><th>Status</th></tr>'
-      + mi.data.map(r => `<tr><td>${esc(r.invoice_date)}</td><td>${esc(r.description)}</td><td align="right">${m(r.amount_usd)}</td><td align="center">${esc(r.status)}</td></tr>`).join('') + '</table>'
-    : '<div style="opacity:.7">No other invoices. · কোনো ইনভয়েস নেই।</div>');
+  if (ml) ml.innerHTML = mi.error ? empty('Could not load invoices.', 'ইনভয়েস লোড হয়নি।') : (mi.data.length
+    ? mi.data.map(r => `<div class="inv-row"><div class="inv-main"><div class="inv-name">${esc(r.description)}</div><div class="inv-meta">${esc(r.invoice_date)}</div></div><div class="inv-amt">${m(r.amount_usd)}<br><span class="inv-status${String(r.status) === 'paid' ? ' inv-paid' : ''}">${esc(r.status)}</span></div></div>`).join('')
+    : empty('No other invoices.', 'কোনো ইনভয়েস নেই।'));
 }
 
 let tgPollTimer = null, tgTickTimer = null;
