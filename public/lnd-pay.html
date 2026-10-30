@@ -9,7 +9,10 @@
      Per-customer URLs: never indexed, never leak via Referer. -->
 <meta name="robots" content="noindex, nofollow">
 <meta name="referrer" content="no-referrer">
+<link rel="icon" href="/favicon.ico" sizes="48x48">
 <link rel="icon" type="image/svg+xml" href="/favicon.svg">
+<link rel="apple-touch-icon" href="/apple-touch-icon.png">
+<link rel="manifest" href="/site.webmanifest">
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
 <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
 <script src="/brand.js"></script>
@@ -28,8 +31,9 @@ h1{ font-size:24px; line-height:32px; font-weight:600; letter-spacing:-.02em; }
 .sub{ color:var(--dim); font-size:14px; }
 .note{ color:var(--dim); font-size:14px; white-space:pre-wrap; background:var(--wash); border-radius:12px; padding:10px 12px; }
 .quick{ display:grid; grid-template-columns:repeat(3,1fr); gap:8px; }
-.quick button{ min-height:48px; border:1px solid var(--line); border-radius:12px; background:var(--card); color:var(--text); font:600 15px 'Inter'; cursor:pointer; }
-.quick button.on{ background:var(--wash); border-color:var(--amber); }
+.quick button{ min-height:40px; border:0; border-radius:10px; background:var(--card); color:#18181B; font:700 14px/20px 'Inter'; cursor:pointer; box-shadow:inset 0 0 0 1px rgba(0,214,50,.4); transition:box-shadow .15s, color .15s; }
+.quick button:hover{ box-shadow:inset 0 0 0 1px rgba(0,214,50,.7); }
+.quick button.on{ background:var(--card); color:var(--amber-600); box-shadow:inset 0 0 0 2px var(--amber); }
 .quick button.extra{ display:none; } .quick.all button.extra{ display:block; }
 .more{ align-self:flex-start; background:none; border:0; color:var(--amber-600); font:600 14px 'Inter'; cursor:pointer; min-height:44px; }
 .amount-row{ display:flex; align-items:center; border:1px solid var(--line); border-radius:14px; padding:0 16px; min-height:56px; font-size:24px; font-weight:600; }
@@ -68,8 +72,10 @@ h1{ font-size:24px; line-height:32px; font-weight:600; letter-spacing:-.02em; }
 .amt-label::before{ content:"$ "; }
 .amt-panel .amount-row{ background:var(--card); min-height:44px; font-size:16px; font-weight:500; }
 .amt-panel .err:empty{ display:none; }
-.amt-panel .more{ align-self:stretch; background:rgba(0,214,50,.18); border-radius:10px; min-height:36px; color:#008A22; font-size:13px; }
-.amt-panel .more::after{ content:" ⌄"; }
+.amt-panel .more{ align-self:stretch; display:flex; align-items:center; justify-content:center; gap:6px; background:rgba(0,214,50,.1); border-radius:10px; min-height:32px; color:var(--amber-600); font:600 12px/16px 'Inter'; transition:background .15s; }
+.amt-panel .more:hover{ background:rgba(0,214,50,.15); }
+.amt-panel .more::after{ content:""; width:12px; height:12px; background:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%2300B82C' stroke-width='2.5' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M6 9l6 6 6-6'/%3E%3C/svg%3E") center/contain no-repeat; transition:transform .2s; }
+.amt-panel .more[aria-expanded="true"]::after{ transform:rotate(180deg); }
 .powered{ text-align:center; font-size:12px; color:var(--dim); }
 .hint{ font-size:13px; color:#008A22; background:var(--wash); border:1px solid #99EFAD; border-radius:12px; padding:10px 12px; text-align:center; }
 .row-between{ display:flex; justify-content:space-between; align-items:center; }
@@ -170,7 +176,7 @@ body.inv .meta{ font-size:12px; color:#9f9fa9; }
       <label class="amount-row">$<input id="amount" type="text" inputmode="decimal" autocomplete="off" placeholder="Custom" aria-label="Amount" oninput="onAmount()"></label>
       <div class="err" id="amount-err" role="alert"></div>
       <div class="quick" id="quick"></div>
-      <button type="button" class="more" id="more" style="display:none" onclick="showMore()" data-en="Show more amounts">Show more amounts</button>
+      <button type="button" class="more" id="more" style="display:none" onclick="toggleMore()" aria-expanded="false" aria-controls="quick">Show more amounts</button>
     </div>
     <p class="hint">Pay from your Cash App bitcoin balance, or add cash to your balance first.</p>
     <button class="btn primary go" id="continue" onclick="createInvoice()" disabled data-en="Pay Now">Pay Now</button>
@@ -312,7 +318,7 @@ async function loadLink() {
     // Links without their own quick amounts get sensible defaults inside
     // the link's min/max, so the payer always has one-tap choices.
     let quick = (d.quickAmounts || []).slice();
-    if (!quick.length) quick = [10, 25, 50, 100, 250, 500].filter(function (q) { return q >= limits.min && q <= limits.max; }).slice(0, 4);
+    if (!quick.length) quick = [10, 15, 20, 25, 29.99, 39.99, 49.99, 74.99, 99.99, 149.99, 199.99, 299.99].filter(function (q) { return q >= limits.min && q <= limits.max; });
     quick.forEach(function (q, i) {
       const b = document.createElement('button');
       b.type = 'button'; b.dataset.v = q;
@@ -321,6 +327,7 @@ async function loadLink() {
       b.onclick = function () { el('amount').value = String(q); onAmount(); };
       el('quick').appendChild(b);
     });
+    el('quick').classList.remove('all'); setMore(false);
     el('more').style.display = quick.length > 3 ? '' : 'none';
     document.title = 'Pay ' + d.displayName;
     show('v-amount');
@@ -459,7 +466,14 @@ async function openInvoice() {
   }
 }
 
-function showMore() { el('quick').classList.add('all'); el('more').style.display = 'none'; }
+// Collapsed: first row of three. Expanded: every amount; the same pill
+// toggles back (Show more amounts / Show fewer amounts).
+function setMore(open) {
+  el('quick').classList.toggle('all', open);
+  el('more').setAttribute('aria-expanded', open ? 'true' : 'false');
+  el('more').textContent = open ? 'Show fewer amounts' : 'Show more amounts';
+}
+function toggleMore() { setMore(!el('quick').classList.contains('all')); }
 
 function payClick() {
   track('pay-click');
