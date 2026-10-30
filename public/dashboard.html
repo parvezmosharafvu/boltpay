@@ -980,76 +980,121 @@ textarea.w-input{ padding:10px 12px !important; }
           </div>
 
           <!-- ============ CASH OUT ============ -->
-          <div class="section" id="sec-cashout">
+          <div class="section cashout-root" id="sec-cashout">
+            <style>
+/* Cash out — scoped to #sec-cashout only. Green accent matches the pay pages. */
+#sec-cashout{ --cashout-accent:#00D632; --cashout-accent-ink:#00230A; --cashout-wash:rgba(0,214,50,.10); --cashout-ring:rgba(0,214,50,.28); --cashout-card:#121212; --cashout-line:rgba(255,255,255,.08); --cashout-dim:rgba(255,255,255,.62); --cashout-faint:rgba(255,255,255,.40); }
+#sec-cashout .cashout-hero{ position:relative; overflow:hidden; border-radius:22px; padding:22px 20px 20px; margin-bottom:14px; background:radial-gradient(120% 90% at 100% 0%, rgba(0,214,50,.22) 0%, rgba(0,214,50,0) 60%), #0E0F0E; border:1px solid var(--cashout-line); }
+#sec-cashout .cashout-hero-label{ font-size:12px; letter-spacing:.06em; text-transform:uppercase; color:var(--cashout-dim); font-weight:600; }
+#sec-cashout .cashout-hero-amount{ font-size:40px; line-height:1.1; font-weight:700; color:#fff; margin:6px 0 4px; letter-spacing:-.02em; }
+#sec-cashout .cashout-hero-sub{ font-size:13px; color:var(--cashout-dim); display:flex; align-items:center; gap:6px; }
+#sec-cashout .cashout-dot{ width:7px; height:7px; border-radius:50%; background:var(--cashout-accent); box-shadow:0 0 0 4px var(--cashout-wash); flex:none; }
+#sec-cashout .cashout-card{ background:var(--cashout-card); border:1px solid var(--cashout-line); border-radius:20px; padding:18px 16px; margin-bottom:14px; }
+#sec-cashout .cashout-card-title{ font-size:16px; font-weight:700; color:#fff; }
+#sec-cashout .cashout-card-sub{ font-size:12.5px; color:var(--cashout-dim); margin-top:3px; line-height:1.45; }
+#sec-cashout .cashout-card-head{ margin-bottom:14px; }
+#sec-cashout .cashout-field{ display:flex; flex-direction:column; gap:6px; margin-bottom:12px; }
+#sec-cashout .cashout-label{ font-size:12px; font-weight:600; color:var(--cashout-dim); }
+#sec-cashout .cashout-field .w-input, #sec-cashout .cashout-field .w-select{ width:100%; min-height:50px; border-radius:14px !important; background:#0A0A0A !important; border:1px solid var(--cashout-line) !important; font-size:15px !important; }
+#sec-cashout .cashout-field .w-input:focus, #sec-cashout .cashout-field .w-select:focus{ border-color:var(--cashout-accent) !important; box-shadow:0 0 0 3px var(--cashout-ring); outline:none; }
+#sec-cashout .cashout-amount .w-input{ font-size:22px !important; font-weight:600; min-height:58px; }
+#sec-cashout .cashout-hint{ font-size:12px; color:var(--cashout-faint); line-height:1.5; }
+#sec-cashout .cashout-hint b{ color:var(--cashout-dim); font-weight:600; }
+#sec-cashout .cashout-details summary{ cursor:pointer; color:var(--cashout-accent); font-size:12.5px; font-weight:600; list-style:none; }
+#sec-cashout .cashout-details summary::-webkit-details-marker{ display:none; }
+#sec-cashout .cashout-details[open] summary{ margin-bottom:6px; }
+#sec-cashout .cashout-btn{ width:100%; min-height:52px; border-radius:999px; font-size:15px; font-weight:700; cursor:pointer; transition:transform .08s ease, opacity .15s; }
+#sec-cashout .cashout-btn:active{ transform:scale(.98); }
+#sec-cashout .cashout-btn-primary{ background:var(--cashout-accent) !important; color:var(--cashout-accent-ink) !important; border:0 !important; box-shadow:0 8px 24px rgba(0,214,50,.22); }
+#sec-cashout .cashout-btn-primary:disabled{ opacity:.55; box-shadow:none; }
+#sec-cashout .cashout-btn-ghost{ background:transparent !important; color:#fff !important; border:1px solid var(--cashout-line) !important; }
+#sec-cashout .cashout-help{ color:var(--cashout-accent) !important; font-size:12.5px; font-weight:600; margin:-4px 0 12px; line-height:1.45; }
+#sec-cashout .cashout-preview{ font-size:13px; color:var(--cashout-dim); margin:-4px 0 12px; }
+#sec-cashout .cashout-eta{ display:flex; align-items:center; justify-content:center; gap:6px; margin-top:12px; font-size:12px; color:var(--cashout-dim); }
+#sec-cashout .cashout-saved{ text-align:center; color:var(--cashout-accent); font-size:12px; margin-top:8px; }
+#sec-cashout .cashout-tg{ display:flex; align-items:center; justify-content:space-between; gap:12px; flex-wrap:wrap; }
+#sec-cashout .cashout-tg .cashout-btn{ width:auto; min-height:40px; padding:0 16px; font-size:13px; }
+#sec-cashout .cashout-tg-code{ display:none; margin-top:10px; font-size:13px; }
+#sec-cashout .cashout-history .tx-row{ background:#0A0A0A; border:1px solid var(--cashout-line); border-radius:14px; }
+#sec-cashout .cashout-history .tx-amt{ color:#fff !important; }
+@media (min-width:768px){ #sec-cashout .cashout-hero-amount{ font-size:48px; } }
+            </style>
             <div class="page-header">
               <div>
-                <div class="page-title">Cash out</div>
-                <div class="page-sub">Manage your withdrawal wallets and request payouts</div>
+                <div class="page-title" data-en="Cash out" data-bn="ক্যাশ আউট">Cash out</div>
+                <div class="page-sub" data-en="Manage your withdrawal wallets and request payouts" data-bn="আপনার উইথড্র ওয়ালেট পরিচালনা করুন এবং পেআউটের অনুরোধ করুন">Manage your withdrawal wallets and request payouts</div>
               </div>
-            </div>
-            <div class="card" id="tgCard" style="margin-bottom:14px">
-              <div style="display:flex;justify-content:space-between;align-items:center;gap:8px">
-                <div><div style="font-weight:700">Telegram notifications</div><div id="tgStatus" style="font-size:13px;opacity:.8">Checking…</div></div>
-                <div><button class="btn-ghost" id="tgConnectBtn" onclick="connectTelegram()">Connect Telegram · যুক্ত করুন</button>
-                <button class="btn-ghost" id="tgDisconnectBtn" style="display:none" onclick="disconnectTelegram()">Disconnect · বিচ্ছিন্ন</button></div>
-              </div>
-              <div id="tgCode" style="display:none;margin-top:10px;font-size:13px"></div>
-            </div>
-            <!-- 0105: profile-wide pricing removed; extra fee is set per link at creation -->
-
-            <div class="panel">
-              <div class="panel-head">
-                <div class="panel-title">Your withdrawal wallets</div>
-              </div>
-              <div class="w-row" style="display:flex; flex-direction:column; gap:10px;">
-                <input type="text" class="w-input" id="wallet_lightning_address" placeholder="Lightning Address  (you@walletofsatoshi.com)">
-                <div class="hint" style="font-size:11px; color:var(--text-faint); margin:-4px 0 2px;">
-                  Set this and Lightning payouts can be sent automatically &mdash; no pasting a fresh invoice each time.
-                  A Lightning Address looks like an email and never expires.
-                  <b>Wallets that give you one:</b> Wallet of Satoshi, Alby, Phoenix, Zeus, Coinos, Primal, Bitkit.
-                  Open your wallet, find "Lightning Address" or "Receive &rarr; Address", copy it, paste it here.
-                </div>
-                <input type="text" class="w-input" id="wallet_usdt_bep20" placeholder="USDT (BEP20) Address">
-              </div>
-              <button class="btn-secondary" onclick="saveWallets()" style="width:100%; margin-top:10px;">💾 Save Wallet Details</button>
-              <div class="saved-tag" id="walletSavedTag">✓ Saved successfully</div>
             </div>
 
-            <div class="panel">
-              <div class="panel-head">
-                <div class="panel-title">Request a withdrawal</div>
-                <div style="text-align:right;">
-                  <div style="font-size:11px; color:var(--text-faint);">Available balance</div>
-                  <div id="statAvailableUSD2" class="mono" style="color:var(--amber); font-weight:700; font-size:18px;">$0.00</div>
-                </div>
+            <div class="cashout-hero">
+              <div class="cashout-hero-label" data-en="Available balance" data-bn="উত্তোলনযোগ্য ব্যালেন্স">Available balance</div>
+              <div id="statAvailableUSD2" class="cashout-hero-amount mono">$0.00</div>
+              <div class="cashout-hero-sub"><span class="cashout-dot"></span><span data-en="Ready to cash out" data-bn="ক্যাশ আউটের জন্য প্রস্তুত">Ready to cash out</span></div>
+            </div>
+
+            <div class="cashout-card">
+              <div class="cashout-card-head">
+                <div class="cashout-card-title" data-en="Request a withdrawal" data-bn="উইথড্রর অনুরোধ করুন">Request a withdrawal</div>
               </div>
-              <div class="w-row">
+              <div class="cashout-field">
+                <label class="cashout-label" for="wdMethod" data-en="Payout method" data-bn="পেআউট পদ্ধতি">Payout method</label>
                 <select class="w-select" id="wdMethod" onchange="toggleInvoiceInput()">
                   <option value="usdt_bep20">USDT BEP20</option>
                 </select>
               </div>
-              <div class="w-row">
-                <input type="number" class="w-input mono" id="wdAmount" placeholder="Amount (USD)">
+              <div class="cashout-field cashout-amount">
+                <label class="cashout-label" for="wdAmount" data-en="Amount (USD)" data-bn="পরিমাণ (USD)">Amount (USD)</label>
+                <input type="number" inputmode="decimal" class="w-input mono" id="wdAmount" placeholder="$0.00">
               </div>
-              <div class="w-row" id="wdBdtPreview" style="display:none;font-size:13px;color:var(--text-dim);" aria-live="polite"></div>
-              <div class="w-row" id="invoiceRow" style="display:none;">
-                <input type="text" class="w-input mono" id="wdInvoice" placeholder="Paste Lightning Invoice here (Matches USD amount)">
+              <div class="cashout-preview" id="wdBdtPreview" style="display:none;" aria-live="polite"></div>
+              <div class="cashout-field" id="invoiceRow" style="display:none;">
+                <label class="cashout-label" for="wdInvoice" data-en="Lightning invoice or address" data-bn="লাইটনিং ইনভয়েস বা অ্যাড্রেস">Lightning invoice or address</label>
+                <input type="text" class="w-input mono" id="wdInvoice" data-ph-en="Paste Lightning Invoice here (Matches USD amount)" data-ph-bn="এখানে লাইটনিং ইনভয়েস পেস্ট করুন (USD পরিমাণের সাথে মিলবে)" placeholder="Paste Lightning Invoice here (Matches USD amount)">
               </div>
-              <div id="invoiceHelpText" class="hint" style="color:var(--ok); font-weight:bold; margin-top:4px; display:none;"></div>
-              <button class="btn-primary" id="withdrawBtn" onclick="submitWithdrawal()" style="width:100%;">Submit request</button>
-              <div class="hint" style="text-align:center; margin-top:14px; color:var(--text-dim); font-size:12px;">
-                ⏱️ Withdrawals are processed within <b>30 minutes</b>.
-              </div>
+              <div id="invoiceHelpText" class="hint cashout-help" style="display:none;"></div>
+              <button class="btn-primary cashout-btn cashout-btn-primary" id="withdrawBtn" onclick="submitWithdrawal()" data-en="Submit request" data-bn="অনুরোধ জমা দিন">Submit request</button>
+              <div class="cashout-eta">⏱️ <span data-en="Withdrawals are processed within 30 minutes." data-bn="উইথড্র ৩০ মিনিটের মধ্যে প্রসেস করা হয়।">Withdrawals are processed within 30 minutes.</span></div>
             </div>
 
-            <div class="panel">
-              <div class="panel-head">
-                <div class="panel-title">Withdrawal history</div>
+            <div class="cashout-card">
+              <div class="cashout-card-head">
+                <div class="cashout-card-title" data-en="Your withdrawal wallets" data-bn="আপনার উইথড্র ওয়ালেট">Your withdrawal wallets</div>
+                <div class="cashout-card-sub" data-en="Saved once, used for every payout." data-bn="একবার সেভ করুন, প্রতিটি পেআউটে ব্যবহার হবে।">Saved once, used for every payout.</div>
+              </div>
+              <div class="cashout-field">
+                <label class="cashout-label" for="wallet_lightning_address" data-en="Lightning Address" data-bn="লাইটনিং অ্যাড্রেস">Lightning Address</label>
+                <input type="text" class="w-input" id="wallet_lightning_address" placeholder="you@walletofsatoshi.com">
+                <details class="cashout-details cashout-hint">
+                  <summary data-en="What is a Lightning Address?" data-bn="লাইটনিং অ্যাড্রেস কী?">What is a Lightning Address?</summary>
+                  <div data-en="It looks like an email and never expires, so Lightning payouts can be sent without pasting a fresh invoice each time. Wallets that give you one: Wallet of Satoshi, Alby, Phoenix, Zeus, Coinos, Primal, Bitkit. Open your wallet, find &quot;Lightning Address&quot; or &quot;Receive → Address&quot;, copy it and paste it here." data-bn="এটি দেখতে ইমেইলের মতো এবং কখনো মেয়াদ শেষ হয় না, তাই প্রতিবার নতুন ইনভয়েস পেস্ট না করেই লাইটনিং পেআউট পাঠানো যায়। যেসব ওয়ালেট এটি দেয়: Wallet of Satoshi, Alby, Phoenix, Zeus, Coinos, Primal, Bitkit। আপনার ওয়ালেট খুলে &quot;Lightning Address&quot; বা &quot;Receive → Address&quot; খুঁজুন, কপি করে এখানে পেস্ট করুন।">It looks like an email and never expires, so Lightning payouts can be sent without pasting a fresh invoice each time. Wallets that give you one: Wallet of Satoshi, Alby, Phoenix, Zeus, Coinos, Primal, Bitkit. Open your wallet, find "Lightning Address" or "Receive → Address", copy it and paste it here.</div>
+                </details>
+              </div>
+              <div class="cashout-field">
+                <label class="cashout-label" for="wallet_usdt_bep20" data-en="USDT (BEP20) address" data-bn="USDT (BEP20) অ্যাড্রেস">USDT (BEP20) address</label>
+                <input type="text" class="w-input mono" id="wallet_usdt_bep20" placeholder="0x…">
+              </div>
+              <button class="btn-secondary cashout-btn cashout-btn-ghost" onclick="saveWallets()" data-en="Save wallet details" data-bn="ওয়ালেটের তথ্য সেভ করুন">Save wallet details</button>
+              <div class="saved-tag cashout-saved" id="walletSavedTag" data-en="✓ Saved successfully" data-bn="✓ সফলভাবে সেভ হয়েছে">✓ Saved successfully</div>
+            </div>
+
+            <div class="cashout-card cashout-history">
+              <div class="cashout-card-head">
+                <div class="cashout-card-title" data-en="Withdrawal history" data-bn="উইথড্রর ইতিহাস">Withdrawal history</div>
               </div>
               <div id="withdrawalsList">
                 <div class="empty-state">No withdrawal history</div>
               </div>
             </div>
+
+            <div class="cashout-card" id="tgCard">
+              <div class="cashout-tg">
+                <div><div class="cashout-card-title" data-en="Telegram notifications" data-bn="টেলিগ্রাম নোটিফিকেশন">Telegram notifications</div><div id="tgStatus" class="cashout-card-sub">Checking…</div></div>
+                <div><button class="btn-ghost cashout-btn cashout-btn-ghost" id="tgConnectBtn" onclick="connectTelegram()">Connect Telegram · যুক্ত করুন</button>
+                <button class="btn-ghost cashout-btn cashout-btn-ghost" id="tgDisconnectBtn" style="display:none" onclick="disconnectTelegram()">Disconnect · বিচ্ছিন্ন</button></div>
+              </div>
+              <div id="tgCode" class="cashout-tg-code"></div>
+            </div>
+            <!-- 0105: profile-wide pricing removed; extra fee is set per link at creation -->
           </div>
 
           <!-- ============ MESSAGES ============ -->
