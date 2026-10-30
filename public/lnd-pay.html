@@ -89,6 +89,41 @@ h1{ font-size:24px; line-height:32px; font-weight:600; letter-spacing:-.02em; }
 .await{ font-size:11px; font-weight:700; text-transform:uppercase; letter-spacing:.04em; color:#008A22; background:var(--wash); border:1px solid #99EFAD; border-radius:999px; padding:4px 10px; }
 .small{ font-size:13px; }
 .powered b{ color:var(--text); font-weight:600; border-bottom:2px solid var(--amber); }
+/* Invoice + on-chain views: sheet layout matching the reference checkout. */
+body.inv{ background:#fff; align-items:flex-start; padding:16px 12px 24px; }
+body.inv .top{ display:none; }
+body.inv .card{ position:relative; border-radius:22px; padding:30px 16px 20px; border-color:#E5E7EB; box-shadow:0 4px 18px rgba(0,0,0,.07); }
+body.inv .card::before{ content:""; position:absolute; top:10px; left:50%; width:40px; height:4px; margin-left:-20px; border-radius:4px; background:#E5E7EB; }
+body.inv .view{ gap:12px; }
+body.inv .pill.tr{ padding:5px 12px; font-size:13px; }
+body.inv .due{ gap:2px; }
+body.inv .due-amt{ font-size:38px; line-height:44px; }
+body.inv .due .sub{ font-size:13px; }
+body.inv .qr-card{ border-color:#E5E7EB; border-radius:18px; padding:22px 14px; position:relative; margin:0 -14px; }
+body.inv .qr-card #qr img, body.inv .qr-card #qr-btc img, body.inv .qr-card canvas{ width:296px; height:296px; max-width:100%; }
+.qr-wrap{ position:relative; display:inline-block; line-height:0; }
+.qr-badge{ position:absolute; top:50%; left:50%; width:64px; height:64px; margin:-32px 0 0 -32px; border-radius:14px; background:#00D632; border:4px solid #fff; display:flex; align-items:center; justify-content:center; }
+.qr-badge svg{ width:30px; height:30px; }
+body.inv .inv-row{ background:#F9FAFB; padding:12px 16px; }
+body.inv .await{ display:inline-flex; align-items:center; gap:5px; font-size:10.5px; }
+body.inv .await::before{ content:""; width:11px; height:11px; border:1.5px solid currentColor; border-radius:50%; box-sizing:border-box; }
+body.inv .row-between{ padding:2px 0 4px; font-size:13px; }
+body.inv .row-between .sub{ font-size:13px; }
+body.inv .btn{ min-height:46px; border-radius:12px; font-size:17px; }
+body.inv .btn.ghost{ font-size:15px; font-weight:500; border-color:#E5E7EB; }
+.btn.ico::before{ content:""; width:20px; height:20px; margin-right:12px; background:var(--i) center/contain no-repeat; }
+.btn.arrow::after{ content:""; width:16px; height:16px; margin-left:14px; background:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%2318181B' stroke-width='2.4' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M5 12h14M13 6l6 6-6 6'/%3E%3C/svg%3E") center/contain no-repeat; }
+.i-phone{ --i:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%2318181B' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Crect x='6' y='2' width='12' height='20' rx='2.5'/%3E%3Cpath d='M11 18h2'/%3E%3C/svg%3E"); }
+.i-copy{ --i:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%2318181B' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Crect x='9' y='9' width='12' height='12' rx='2'/%3E%3Cpath d='M5 15V5a2 2 0 0 1 2-2h10'/%3E%3C/svg%3E"); }
+.btn-pair{ display:grid; grid-template-columns:1fr 1fr; gap:8px; }
+body.inv .btn-pair .btn{ font-size:14px; }
+body.inv .btn-pair .btn.ico::before{ width:16px; height:16px; margin-right:8px; }
+body.inv .settle{ text-align:center; font-size:13px; color:var(--dim); }
+body.inv .link{ min-height:36px; font-size:13px; }
+.inv-foot{ display:none; text-align:center; font-size:12.5px; color:var(--dim); margin-top:16px; align-items:center; justify-content:center; gap:6px; }
+body.inv .inv-foot{ display:flex; }
+.inv-foot::before{ content:""; width:10px; height:10px; border:1.5px solid #9CA3AF; border-radius:50%; }
+.inv-foot b{ color:var(--text); font-weight:600; border-bottom:2px solid var(--amber); }
 </style>
 </head>
 <body>
@@ -124,18 +159,17 @@ h1{ font-size:24px; line-height:32px; font-weight:600; letter-spacing:-.02em; }
       <div class="due-amt" id="inv-title">$0.00</div>
       <div class="sub">Scan or tap to pay</div>
     </div>
-    <div class="qr-card"><div id="qr"></div></div>
+    <div class="qr-card"><div class="qr-wrap"><div id="qr"></div><span class="qr-badge" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><rect x="6" y="2" width="12" height="20" rx="2.5"/><path d="M11 18h2"/></svg></span></div></div>
     <div class="inv-row">
       <div><div class="eyebrow">Invoice ID</div><div class="mono" id="inv-id"></div></div>
       <span class="await">Awaiting payment</span>
     </div>
     <div class="row-between small"><span class="sub">lightning:</span><span class="mono" id="inv-short"></span></div>
-    <p class="meta" id="inv-amount"></p>
-    <a class="btn primary go-ln" id="cashapp" href="#" rel="noopener" onclick="payClick()">Open in Cash App</a>
-    <button class="btn ghost" id="copy" onclick="copyInvoice()">Copy Lightning invoice</button>
-    <p class="hint">Pay from your Cash App bitcoin balance, or add cash to your balance first.</p>
+    <p class="meta" id="inv-amount" hidden></p>
+    <a class="btn primary go-ln ico i-phone arrow" id="cashapp" href="#" rel="noopener" onclick="payClick()">Open in Cash App</a>
+    <button class="btn ghost ico i-copy" id="copy" onclick="copyInvoice()">Copy Invoice</button>
+    <p class="settle">Payments usually settle in seconds</p>
     <a class="link" id="btc-link" href="#" style="display:none">Pay with on-chain Bitcoin instead</a>
-    <p class="meta wait"><span class="dot"></span>Payments usually settle in seconds</p>
   </section>
   <section class="view" id="v-btc">
     <div class="pill tr"><span class="eyebrow">Time remaining</span> <span id="timer-btc">--:--</span></div>
@@ -144,20 +178,21 @@ h1{ font-size:24px; line-height:32px; font-weight:600; letter-spacing:-.02em; }
       <div class="due-amt" id="btc-title">$0.00</div>
       <div class="sub">Scan or tap to pay</div>
     </div>
-    <div class="qr-card"><div id="qr-btc"></div></div>
+    <div class="qr-card"><div class="qr-wrap"><div id="qr-btc"></div><span class="qr-badge" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><rect x="6" y="2" width="12" height="20" rx="2.5"/><path d="M11 18h2"/></svg></span></div></div>
     <div class="inv-row">
       <div><div class="eyebrow">Invoice ID</div><div class="mono" id="btc-inv-id"></div></div>
       <span class="await">Awaiting payment</span>
     </div>
     <div class="row-between small"><span class="sub">bitcoin:</span><span class="mono" id="btc-addr-short"></span></div>
     <p class="meta" id="btc-amt"></p>
-    <a class="btn primary" id="btc-open" href="#">Open in wallet</a>
-    <button class="btn ghost" id="copy-addr" onclick="copyAddr()">Copy address</button>
-    <button class="btn ghost" id="copy-amt" onclick="copyAmt()">Copy amount</button>
-    <p class="hint">Send exactly this amount. It is credited after 1 network confirmation.</p>
+    <a class="btn primary ico i-phone arrow" id="btc-open" href="#">Open in wallet</a>
+    <div class="btn-pair">
+      <button class="btn ghost ico i-copy" id="copy-addr" onclick="copyAddr()">Copy address</button>
+      <button class="btn ghost ico i-copy" id="copy-amt" onclick="copyAmt()">Copy amount</button>
+    </div>
+    <p class="settle">Send the exact amount. Credited after 1 confirmation.</p>
     <p class="addr" id="btc-addr" style="display:none"></p>
     <a class="link" id="ln-link" href="#">Back to Lightning invoice</a>
-    <p class="meta wait"><span class="dot"></span>This page updates automatically</p>
   </section>
   <section class="view" id="v-paid">
     <div class="big">✓</div>
@@ -172,6 +207,7 @@ h1{ font-size:24px; line-height:32px; font-weight:600; letter-spacing:-.02em; }
     <a class="btn ghost" id="retry" href="/" data-en="Start again">Start again</a>
   </section>
   </div>
+  <p class="inv-foot"><span>Powered by</span> <b>Fast &amp; Secure Payments</b></p>
 </main>
 
 <script>
@@ -193,6 +229,7 @@ function deviceId() {
 
 function show(view) {
   for (const v of ['v-amount', 'v-invoice', 'v-btc', 'v-paid', 'v-expired']) el(v).classList.toggle('on', v === view);
+  document.body.classList.toggle('inv', view === 'v-invoice' || view === 'v-btc');
 }
 
 // English only on the pay pages.
@@ -310,7 +347,7 @@ function render(d) {
     bolt11 = d.bolt11;
     el('qr').innerHTML = '';
     // Lowercase, like the invoice itself (what Cash App's scanner expects).
-    new QRCode(el('qr'), { text: 'lightning:' + bolt11.toLowerCase(), width: 240, height: 240, correctLevel: QRCode.CorrectLevel.L });
+    new QRCode(el('qr'), { text: 'lightning:' + bolt11.toLowerCase(), width: 296, height: 296, correctLevel: QRCode.CorrectLevel.M });
     el('cashapp').href = 'https://cash.app/launch/lightning/' + encodeURIComponent(bolt11);
   }
   el('inv-amount').textContent = money(d.amountUSD) + (d.amountSats ? ' · ' + Number(d.amountSats).toLocaleString() + ' sats' : '');
@@ -321,7 +358,7 @@ function render(d) {
     btcAddr = d.btcAddress; btcAmt = d.amountBtc;
     const uri = 'bitcoin:' + btcAddr + '?amount=' + btcAmt;
     el('qr-btc').innerHTML = '';
-    new QRCode(el('qr-btc'), { text: uri, width: 240, height: 240, correctLevel: QRCode.CorrectLevel.M });
+    new QRCode(el('qr-btc'), { text: uri, width: 296, height: 296, correctLevel: QRCode.CorrectLevel.M });
     el('btc-addr').textContent = btcAddr;
     el('btc-amt').textContent = btcAmt + ' BTC · ' + money(d.amountUSD);
     el('btc-addr-short').textContent = btcAddr.slice(0, 10) + '…' + btcAddr.slice(-10);
@@ -394,7 +431,7 @@ function payClick() {
 
 async function copyInvoice() {
   if (!bolt11) return;
-  await copyTo('copy', bolt11, 'Copy Lightning invoice');
+  await copyTo('copy', bolt11, 'Copy Invoice');
 }
 async function copyTo(id, text, label) {
   try { await navigator.clipboard.writeText(text); setT(id, 'Copied'); }
