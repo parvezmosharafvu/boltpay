@@ -4,26 +4,26 @@ import { parseLndSettings } from "./settings.ts";
 
 const base = { linkMarkupEnabled: true, linkMarkupMin: 0, linkMarkupMax: 50 };
 
-Deno.test("flag off: no buyer markup (global markup removed in 0104)", () => {
+Deno.test("flag irrelevant: link fee applies, no global markup (0104/0105)", () => {
   const s = { ...base, linkMarkupEnabled: false };
-  assertEquals(resolveMarkup({ link_cost_percent: 20, profile_cost_percent: 7 }, s), 0);
+  assertEquals(resolveMarkup({ link_cost_percent: 20, profile_cost_percent: 7 }, s), 20);
   assertEquals(resolveMarkup({}, s), 0);
   assertEquals(chargedAmount(100, resolveMarkup({}, s)), 100);
 });
 
-Deno.test("flag on: link, then profile (>0), then 0", () => {
+Deno.test("0105: link % only, no profile fallback", () => {
   assertEquals(resolveMarkup({ link_cost_percent: 20, profile_cost_percent: 7 }, base), 20);
   assertEquals(resolveMarkup({ link_cost_percent: "0", profile_cost_percent: 7 }, base), 0);
-  assertEquals(resolveMarkup({ link_cost_percent: null, profile_cost_percent: "7" }, base), 7);
-  assertEquals(resolveMarkup({ link_cost_percent: null, profile_cost_percent: 0 }, base), 0);
+  assertEquals(resolveMarkup({ link_cost_percent: null, profile_cost_percent: "7" }, base), 0);
   assertEquals(resolveMarkup({}, base), 0);
 });
 
-Deno.test("flag on: link/profile clamped to the admin range", () => {
+Deno.test("link % clamped to the admin range; 0 stays 0", () => {
   const s = { ...base, linkMarkupMin: 5, linkMarkupMax: 15 };
   assertEquals(resolveMarkup({ link_cost_percent: 40 }, s), 15);
   assertEquals(resolveMarkup({ link_cost_percent: 1 }, s), 5);
-  assertEquals(resolveMarkup({ profile_cost_percent: 500 }, s), 15);
+  assertEquals(resolveMarkup({ link_cost_percent: 0 }, s), 0);
+  assertEquals(resolveMarkup({ profile_cost_percent: 500 }, s), 0);
 });
 
 Deno.test("settings: flag defaults off, range defaults 0-50", () => {

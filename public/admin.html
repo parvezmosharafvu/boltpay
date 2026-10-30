@@ -655,12 +655,14 @@ textarea.w-input{ padding:10px 12px !important; }
                                   <b>USDT (BEP20):</b> <span id="wUsdt">—</span>
                                 </div>
                               </div>
+                              <div style="display:none" data-note="0105: per-user markup no longer used at checkout">
                               <div class="detail-section-title">Pricing markup for this user</div>
                                 <div class="w-row">
                                   <input type="number" step="0.001" class="w-input" id="detailCostInput" placeholder="0">
                                   <button class="btn-primary" style="flex:0 0 auto;" onclick="saveDetailCost()">Save cost %</button>
                                 </div>
                                 <div class="hint" style="font-size:11px; color:var(--text-faint); margin-top:6px;">Added on top of every payment link this user owns. At 3%, a $100 link invoices the payer $103.00 and credits them $103.00. They can change this themselves up to the platform ceiling; setting it here overrides whatever they chose.</div>
+                              </div>
 
                                 <div class="detail-section-title">BDT rate · BDT রেট <span id="detailBdtRateLabel" style="font-weight:500;color:var(--text-dim);margin-left:6px;"></span></div>
                                 <div class="w-row">
@@ -830,14 +832,14 @@ textarea.w-input{ padding:10px 12px !important; }
                                             <div class="hint" style="font-size:11px; color:var(--text-faint); margin-top:8px;" id="markupHint">Deducted from the creator's amount on new payments. · নতুন পেমেন্টে ক্রিয়েটরের পরিমাণ থেকে কাটা হয়।</div>
                                           </div>
                                           <div class="panel" id="linkMarkupPanel">
-                                            <div class="panel-head"><div class="panel-title">Per-link markup · লিংক অনুযায়ী মার্কআপ</div></div>
+                                            <div class="panel-head"><div class="panel-title">Per-link extra fee · লিংক অনুযায়ী অতিরিক্ত ফি</div></div>
                                             <div class="w-row" style="gap:10px;flex-wrap:wrap;align-items:flex-end">
                                               <label style="font-size:12px">Creator min (%) · সর্বনিম্ন (%)<br><input id="lmMin" class="w-input" type="number" min="0" max="100" step="0.01"></label>
                                               <label style="font-size:12px">Creator max (%) · সর্বোচ্চ (%)<br><input id="lmMax" class="w-input" type="number" min="0" max="100" step="0.01"></label>
                                               <button class="btn-sm" onclick="saveLinkMarkupRange(this)">Save range · রেঞ্জ সংরক্ষণ</button>
                                             </div>
                                             <label style="font-size:12px;display:flex;gap:8px;align-items:center;margin-top:10px"><input type="checkbox" id="lmEnabled" onchange="toggleLinkMarkup(this)"> Use per-link markup at checkout · চেকআউটে লিংক অনুযায়ী মার্কআপ ব্যবহার</label>
-                                            <div class="hint" style="font-size:11px; color:var(--text-faint); margin-top:8px;">On: link % → creator % → global fee. Off: global fee only. · চালু: লিংক % → ক্রিয়েটর % → গ্লোবাল ফি। বন্ধ: শুধু গ্লোবাল ফি।</div>
+                                            <div class="hint" style="font-size:11px; color:var(--text-faint); margin-top:8px;">Buyer pays the link's extra fee (set at creation, locked for creators), else 0%. Range limits new links. The conversion fee is separate and deducted from the creator. · ক্রেতা লিংকের অতিরিক্ত ফি দেন (তৈরির সময় নির্ধারিত, ক্রিয়েটরের জন্য লক), নইলে 0%। কনভার্সন ফি আলাদা, ক্রিয়েটর থেকে কাটা হয়।</div>
                                           </div>
                                           <div class="panel" id="paymentsCsvPanel">
                                             <div class="panel-head"><div class="panel-title">Export payments (CSV) · পেমেন্ট এক্সপোর্ট (CSV)</div></div>
