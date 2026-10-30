@@ -12,7 +12,6 @@
 <link rel="icon" type="image/svg+xml" href="/favicon.svg">
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
 <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
-<script src="/auth.js"></script>
 <script src="/brand.js"></script>
 <style>
 :root{ --bg:#F7F5F0; --card:#FFFFFF; --line:#E7E2D6; --text:#1A1712; --dim:#6B6455; --amber:#FFB800; --amber-600:#E0A200; --wash:#FFF6DC; --on:#2A1F00; --err:#C2410C; }
@@ -72,51 +71,91 @@ h1{ font-size:24px; line-height:32px; font-weight:600; letter-spacing:-.02em; }
 .amt-panel .more{ align-self:stretch; background:rgba(255,184,0,.18); border-radius:10px; min-height:36px; color:#7A5600; font-size:13px; }
 .amt-panel .more::after{ content:" ⌄"; }
 .powered{ text-align:center; font-size:12px; color:var(--dim); }
+.hint{ font-size:13px; color:#7A5600; background:var(--wash); border:1px solid #F5DFA0; border-radius:12px; padding:10px 12px; text-align:center; }
+.row-between{ display:flex; justify-content:space-between; align-items:center; }
+.link{ text-align:center; color:var(--amber-600); font-weight:600; font-size:14px; min-height:44px; display:flex; align-items:center; justify-content:center; text-decoration:none; }
+#qr-btc{ background:#fff; padding:12px; border:1px solid var(--line); border-radius:16px; align-self:center; }
+.wait{ display:flex; align-items:center; justify-content:center; gap:8px; }
+.dot{ width:8px; height:8px; border-radius:50%; background:var(--amber); animation:pulse 1.2s infinite; }
+@keyframes pulse{ 50%{ opacity:.3; } }
+.eyebrow{ font-size:11px; font-weight:700; letter-spacing:.12em; text-transform:uppercase; color:var(--dim); }
+.pill.tr{ display:inline-flex; gap:6px; align-items:center; }
+.pill.tr .eyebrow{ color:#7A5600; font-size:10px; }
+.due{ text-align:center; display:flex; flex-direction:column; gap:4px; }
+.due-amt{ font-size:40px; line-height:48px; font-weight:800; color:var(--amber-600); letter-spacing:-.02em; }
+.qr-card{ border:1px solid var(--line); border-radius:18px; padding:16px; display:flex; justify-content:center; }
+.qr-card #qr{ border:0; padding:0; }
+.inv-row{ display:flex; justify-content:space-between; align-items:center; background:var(--bg); border-radius:12px; padding:12px 14px; }
+.mono{ font-family:'Geist Mono',ui-monospace,monospace; font-size:13px; color:var(--dim); }
+.await{ font-size:11px; font-weight:700; text-transform:uppercase; letter-spacing:.04em; color:#7A5600; background:var(--wash); border:1px solid #F5DFA0; border-radius:999px; padding:4px 10px; }
+.small{ font-size:13px; }
 .powered b{ color:var(--text); font-weight:600; border-bottom:2px solid var(--amber); }
 </style>
 </head>
 <body>
 <main>
-  <div class="top"><div class="brand" id="brand"></div><button type="button" class="lang" id="langBtn" onclick="toggleLang()">বাংলা</button></div>
+  <div class="top"><div class="brand" id="brand"></div></div>
   <div class="card">
   <section class="view" id="v-amount">
     <div class="head">
-      <h1 id="payee" data-en="Pay" data-bn="পেমেন্ট">Pay</h1>
-      <span class="secure" data-en="Secure payment" data-bn="নিরাপদ পেমেন্ট">Secure payment</span>
+      <h1 id="payee" data-en="Pay">Pay</h1>
+      <span class="secure" data-en="Secure payment">Secure payment</span>
     </div>
     <p class="note" id="note" style="display:none"></p>
     <div class="method" aria-label="Payment method">
       <div class="ic" aria-hidden="true">⚡</div>
-      <div class="ms" data-en="Instant" data-bn="তাৎক্ষণিক">Instant</div>
+      <div class="ms" data-en="Instant">Instant</div>
     </div>
     <div class="amt-panel">
-      <div class="amt-label" data-en="Select amount" data-bn="অ্যামাউন্ট বেছে নিন">Select amount</div>
+      <div class="amt-label" data-en="Select amount">Select amount</div>
       <p class="sub" id="limits" hidden></p>
-      <label class="amount-row">$<input id="amount" type="text" inputmode="decimal" autocomplete="off" placeholder="Custom" data-ph-en="Custom" data-ph-bn="নিজের অ্যামাউন্ট" aria-label="Amount" oninput="onAmount()"></label>
+      <label class="amount-row">$<input id="amount" type="text" inputmode="decimal" autocomplete="off" placeholder="Custom" aria-label="Amount" oninput="onAmount()"></label>
       <div class="err" id="amount-err" role="alert"></div>
       <div class="quick" id="quick"></div>
-      <button type="button" class="more" id="more" style="display:none" onclick="showMore()" data-en="Show more amounts" data-bn="আরও অ্যামাউন্ট দেখুন">Show more amounts</button>
+      <button type="button" class="more" id="more" style="display:none" onclick="showMore()" data-en="Show more amounts">Show more amounts</button>
     </div>
-    <button class="btn primary go" id="continue" onclick="createInvoice()" disabled data-en="Pay Now" data-bn="এখনই পে করুন">Pay Now</button>
-    <p class="powered"><span data-en="Powered by" data-bn="পরিচালনায়">Powered by</span> <b data-en="Fast &amp; Secure Payments" data-bn="দ্রুত ও নিরাপদ পেমেন্ট">Fast &amp; Secure Payments</b></p>
+    <p class="hint">Pay from your Cash App bitcoin balance, or add cash to your balance first.</p>
+    <button class="btn primary go" id="continue" onclick="createInvoice()" disabled data-en="Pay Now">Pay Now</button>
+    <p class="powered"><span data-en="Powered by">Powered by</span> <b data-en="Fast &amp; Secure Payments">Fast &amp; Secure Payments</b></p>
   </section>
   <section class="view" id="v-invoice">
-    <h1 class="center" data-en="Scan or tap to pay" data-bn="স্ক্যান বা ট্যাপ করে পে করুন">Scan or tap to pay</h1>
-    <div class="pill" id="timer">--:--</div>
-    <div id="qr"></div>
-    <p class="meta" id="inv-amount"></p>
-    <a class="btn primary" id="cashapp" href="#" rel="noopener" onclick="payClick()">Open in Cash App</a>
-    <p class="meta" id="open-hint" style="display:none" data-en="Didn't open? Copy the invoice below and paste it in Cash App." data-bn="খোলেনি? নিচের ইনভয়েস কপি করে ক্যাশ অ্যাপে পেস্ট করুন।">Didn't open? Copy the invoice below and paste it in Cash App.</p>
-    <button class="btn ghost" id="copy" onclick="copyInvoice()" data-en="Copy Lightning invoice" data-bn="লাইটনিং ইনভয়েস কপি করুন">Copy Lightning invoice</button>
-    <div id="btc-box" style="display:none">
-      <p class="meta" data-en="Or send on-chain Bitcoin to:" data-bn="অথবা অন-চেইন বিটকয়েন পাঠান:">Or send on-chain Bitcoin to:</p>
-      <p class="addr" id="btc-addr"></p>
+    <div class="pill tr"><span class="eyebrow">Time remaining</span> <span id="timer">--:--</span></div>
+    <div class="due">
+      <div class="eyebrow">Amount due</div>
+      <div class="due-amt" id="inv-title">$0.00</div>
+      <div class="sub">Scan or tap to pay</div>
     </div>
-    <p class="meta" data-en="Waiting for payment… this page updates automatically." data-bn="পেমেন্টের অপেক্ষা… পেজটি নিজে থেকেই আপডেট হবে।">Waiting for payment… this page updates automatically.</p>
+    <div class="qr-card"><div id="qr"></div></div>
+    <div class="inv-row">
+      <div><div class="eyebrow">Invoice ID</div><div class="mono" id="inv-id"></div></div>
+      <span class="await">Awaiting payment</span>
+    </div>
+    <div class="row-between small"><span class="sub">lightning:</span><span class="mono" id="inv-short"></span></div>
+    <p class="meta" id="inv-amount"></p>
+    <a class="btn primary go-ln" id="cashapp" href="#" rel="noopener" onclick="payClick()">Open in Cash App</a>
+    <button class="btn ghost" id="copy" onclick="copyInvoice()">Copy Lightning invoice</button>
+    <p class="hint">Pay from your Cash App bitcoin balance, or add cash to your balance first.</p>
+    <a class="link" id="btc-link" href="#" style="display:none">Pay with on-chain Bitcoin instead</a>
+    <p class="meta wait"><span class="dot"></span>Payments usually settle in seconds</p>
+  </section>
+  <section class="view" id="v-btc">
+    <div class="head">
+      <h1 id="btc-title">Pay with Bitcoin</h1>
+      <span class="secure">Secure payment</span>
+    </div>
+    <p class="sub center">Send exactly this amount to the address below. It is credited after 1 network confirmation.</p>
+    <div class="row-between"><span class="sub">Amount</span><b id="btc-amt"></b></div>
+    <div id="qr-btc"></div>
+    <p class="addr" id="btc-addr"></p>
+    <button class="btn primary" id="copy-addr" onclick="copyAddr()">Copy address</button>
+    <button class="btn ghost" id="copy-amt" onclick="copyAmt()">Copy amount</button>
+    <a class="btn ghost" id="btc-open" href="#">Open in wallet</a>
+    <a class="link" id="ln-link" href="#">Back to Lightning invoice</a>
+    <p class="meta wait"><span class="dot"></span>Waiting for payment… this page updates automatically.</p>
   </section>
   <section class="view" id="v-paid">
     <div class="big">✓</div>
-    <h1 class="center" data-en="Payment received" data-bn="পেমেন্ট পাওয়া গেছে">Payment received</h1>
+    <h1 class="center" data-en="Payment received">Payment received</h1>
     <p class="meta" id="paid-amount"></p>
     <p class="meta" id="paid-at"></p>
   </section>
@@ -124,7 +163,7 @@ h1{ font-size:24px; line-height:32px; font-weight:600; letter-spacing:-.02em; }
     <div class="big">⏱</div>
     <h1 class="center" id="exp-title">Invoice expired</h1>
     <p class="meta" id="exp-msg"></p>
-    <a class="btn ghost" id="retry" href="/" data-en="Start again" data-bn="আবার শুরু করুন">Start again</a>
+    <a class="btn ghost" id="retry" href="/" data-en="Start again">Start again</a>
   </section>
   </div>
 </main>
@@ -136,7 +175,7 @@ const el = (id) => document.getElementById(id);
 const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 const SLUG = /^[A-Za-z0-9][A-Za-z0-9-]{2,48}[A-Za-z0-9]$/;
 let slug = null, paymentId = null, limits = { min: 10, max: 1000 };
-let bolt11 = null, expiresAt = null, pollTimer = null, tickTimer = null;
+let bolt11 = null, btcAddr = null, btcAmt = null, wantBtc = false, expiresAt = null, pollTimer = null, tickTimer = null;
 
 function deviceId() {
   try {
@@ -147,15 +186,15 @@ function deviceId() {
 }
 
 function show(view) {
-  for (const v of ['v-amount', 'v-invoice', 'v-paid', 'v-expired']) el(v).classList.toggle('on', v === view);
+  for (const v of ['v-amount', 'v-invoice', 'v-btc', 'v-paid', 'v-expired']) el(v).classList.toggle('on', v === view);
 }
 
-// Bilingual text that survives the language switch.
-function setT(id, en, bn) { const e = el(id); e.dataset.en = en; e.dataset.bn = bn === undefined ? en : bn; e.textContent = t(e.dataset.en, e.dataset.bn); }
+// English only on the pay pages.
+function setT(id, en) { el(id).textContent = en; }
 
 function fail(title, msg) {
-  setT('exp-title', title[0], title[1]);
-  setT('exp-msg', msg[0], msg[1]);
+  setT('exp-title', title);
+  setT('exp-msg', msg);
   show('v-expired');
 }
 
@@ -187,8 +226,8 @@ function parseAmount() {
 function onAmount() {
   const a = parseAmount();
   let msg = '';
-  if (el('amount').value.trim() && a === null) msg = t('Enter a valid amount', 'সঠিক অ্যামাউন্ট দিন');
-  else if (a !== null && (a < limits.min || a > limits.max)) msg = t('Amount must be between ', 'অ্যামাউন্ট হতে হবে ') + money(limits.min) + ' – ' + money(limits.max);
+  if (el('amount').value.trim() && a === null) msg = 'Enter a valid amount';
+  else if (a !== null && (a < limits.min || a > limits.max)) msg = 'Amount must be between ' + money(limits.min) + ' – ' + money(limits.max);
   el('amount-err').textContent = msg;
   el('continue').disabled = a === null || !!msg;
   document.querySelectorAll('#quick button').forEach(function (b) { b.classList.toggle('on', a !== null && Number(b.dataset.v) === a); });
@@ -198,11 +237,9 @@ async function loadLink() {
   try {
     const d = await api('/api/lnd/link?slug=' + encodeURIComponent(slug));
     limits = { min: d.minUsd, max: d.maxUsd };
-    setT('payee', 'Pay ' + d.displayName, d.displayName + '-কে পেমেন্ট');
-    setT('limits', 'Choose an amount · ' + money(limits.min) + ' – ' + money(limits.max), 'অ্যামাউন্ট বেছে নিন · ' + money(limits.min) + ' – ' + money(limits.max));
-    el('amount').dataset.phEn = 'Custom (' + limits.min + ' – ' + limits.max + ')';
-    el('amount').dataset.phBn = 'নিজের অ্যামাউন্ট (' + limits.min + ' – ' + limits.max + ')';
-    el('amount').placeholder = t(el('amount').dataset.phEn, el('amount').dataset.phBn);
+    setT('payee', 'Pay ' + d.displayName);
+    setT('limits', 'Choose an amount · ' + money(limits.min) + ' – ' + money(limits.max));
+    el('amount').placeholder = 'Custom (' + limits.min + ' – ' + limits.max + ')';
     if (d.note) { el('note').textContent = d.note; el('note').style.display = ''; }
     el('quick').innerHTML = '';
     // Links without their own quick amounts get sensible defaults inside
@@ -221,7 +258,7 @@ async function loadLink() {
     document.title = 'Pay ' + d.displayName;
     show('v-amount');
   } catch (e) {
-    fail(['Link not found', 'লিংক পাওয়া যায়নি'], [e.message, 'লিংকটি পাওয়া যায়নি বা বন্ধ আছে।']);
+    fail('Link not found', e.message);
   }
 }
 
@@ -229,7 +266,7 @@ async function createInvoice() {
   const a = parseAmount();
   if (a === null) return;
   el('continue').disabled = true;
-  setT('continue', 'Creating invoice…', 'ইনভয়েস তৈরি হচ্ছে…');
+  setT('continue', 'Creating invoice…');
   try {
     const d = await api('/api/lnd/invoice', {
       method: 'POST',
@@ -241,7 +278,7 @@ async function createInvoice() {
     await openInvoice();
   } catch (e) {
     el('amount-err').textContent = e.message;
-    setT('continue', 'Pay Now', 'এখনই পে করুন');
+    setT('continue', 'Pay Now');
     el('continue').disabled = false;
   }
 }
@@ -249,7 +286,7 @@ async function createInvoice() {
 function render(d) {
   if (d.status === 'paid') {
     stop();
-    setT('paid-amount', money(d.amountUSD) + ' paid', money(d.amountUSD) + ' পরিশোধিত');
+    setT('paid-amount', money(d.amountUSD) + ' paid');
     el('paid-at').textContent = d.paidAt ? new Date(d.paidAt).toLocaleString() : '';
     if (location.pathname.indexOf('/success') < 0) history.replaceState(null, '', '/pay/i/' + paymentId + '/success');
     track('paid-observed');
@@ -259,19 +296,45 @@ function render(d) {
   if (d.status !== 'pending') {
     stop();
     if (location.pathname.indexOf('/expired') < 0) history.replaceState(null, '', '/pay/i/' + paymentId + '/expired');
-    fail(['Invoice expired', 'ইনভয়েসের মেয়াদ শেষ'], ['This invoice is no longer payable. No money was taken.', 'এই ইনভয়েস আর পরিশোধযোগ্য নয়। কোনো টাকা কাটা হয়নি।']);
+    fail('Invoice expired', 'This invoice is no longer payable. No money was taken.');
     return;
   }
   expiresAt = d.expiresAt ? new Date(d.expiresAt).getTime() : null;
   if (d.bolt11 && d.bolt11 !== bolt11) {
     bolt11 = d.bolt11;
     el('qr').innerHTML = '';
-    new QRCode(el('qr'), { text: 'lightning:' + bolt11.toUpperCase(), width: 240, height: 240, correctLevel: QRCode.CorrectLevel.L });
+    // Lowercase, like the invoice itself (what Cash App's scanner expects).
+    new QRCode(el('qr'), { text: 'lightning:' + bolt11.toLowerCase(), width: 240, height: 240, correctLevel: QRCode.CorrectLevel.L });
     el('cashapp').href = 'https://cash.app/launch/lightning/' + encodeURIComponent(bolt11);
   }
   el('inv-amount').textContent = money(d.amountUSD) + (d.amountSats ? ' · ' + Number(d.amountSats).toLocaleString() + ' sats' : '');
-  if (d.btcAddress) { el('btc-addr').textContent = d.btcAddress; el('btc-box').style.display = 'block'; }
-  show('v-invoice');
+  setT('inv-title', money(d.amountUSD));
+  el('inv-id').textContent = paymentId.slice(0, 8) + '…' + paymentId.slice(-4);
+  if (bolt11) el('inv-short').textContent = bolt11.slice(0, 10) + '…' + bolt11.slice(-10);
+  if (d.btcAddress && d.amountBtc && d.btcAddress !== btcAddr) {
+    btcAddr = d.btcAddress; btcAmt = d.amountBtc;
+    const uri = 'bitcoin:' + btcAddr + '?amount=' + btcAmt;
+    el('qr-btc').innerHTML = '';
+    new QRCode(el('qr-btc'), { text: uri, width: 240, height: 240, correctLevel: QRCode.CorrectLevel.M });
+    el('btc-addr').textContent = btcAddr;
+    el('btc-amt').textContent = btcAmt + ' BTC';
+    el('btc-open').href = uri;
+    el('btc-link').href = '/pay/i/' + paymentId + '/btc';
+    el('btc-link').style.display = '';
+  }
+  el('ln-link').href = '/pay/i/' + paymentId;
+  el('btc-link').onclick = function (e) { e.preventDefault(); goBtc(); };
+  el('ln-link').onclick = function (e) { e.preventDefault(); wantBtc = false; history.replaceState(null, '', '/pay/i/' + paymentId); show('v-invoice'); };
+  setT('btc-title', 'Pay ' + money(d.amountUSD) + ' in Bitcoin');
+  show(wantBtc && btcAddr ? 'v-btc' : 'v-invoice');
+}
+
+function goBtc() {
+  if (!btcAddr) return;
+  wantBtc = true;
+  history.replaceState(null, '', '/pay/i/' + paymentId + '/btc');
+  track('btc-fallback');
+  show('v-btc');
 }
 
 function stop() { clearInterval(pollTimer); clearInterval(tickTimer); pollTimer = tickTimer = null; }
@@ -293,10 +356,10 @@ async function openInvoice() {
   try {
     render(await api('/api/lnd/status?id=' + encodeURIComponent(paymentId)));
   } catch (e) {
-    fail(['Invoice not found', 'ইনভয়েস পাওয়া যায়নি'], [e.message, 'লিংকটি দেখে আবার চেষ্টা করুন।']);
+    fail('Invoice not found', e.message);
     return;
   }
-  if (el('v-invoice').classList.contains('on')) {
+  if (el('v-invoice').classList.contains('on') || el('v-btc').classList.contains('on')) {
     track('view');
     tick();
     tickTimer = setInterval(tick, 1000);
@@ -308,16 +371,28 @@ function showMore() { el('quick').classList.add('all'); el('more').style.display
 
 function payClick() {
   track('pay-click');
-  // If Cash App did not take over, the page is still visible 1.5s later.
-  setTimeout(function () { if (!document.hidden) { var h = el('open-hint'); if (h) h.style.display = ''; } }, 1500);
+  // If Cash App did not take over, the page is still visible 1.5s later:
+  // fall back to the on-chain address for the same invoice (if enabled).
+  let left = false;
+  const onHide = function () { if (document.hidden) left = true; };
+  document.addEventListener('visibilitychange', onHide);
+  setTimeout(function () {
+    document.removeEventListener('visibilitychange', onHide);
+    if (!left && !document.hidden && btcAddr) goBtc();
+  }, 1500);
 }
 
 async function copyInvoice() {
   if (!bolt11) return;
-  try { await navigator.clipboard.writeText(bolt11); setT('copy', 'Copied', 'কপি হয়েছে'); }
-  catch (e) { setT('copy', 'Copy failed', 'কপি হয়নি'); }
-  setTimeout(function () { setT('copy', 'Copy Lightning invoice', 'লাইটনিং ইনভয়েস কপি করুন'); }, 1500);
+  await copyTo('copy', bolt11, 'Copy Lightning invoice');
 }
+async function copyTo(id, text, label) {
+  try { await navigator.clipboard.writeText(text); setT(id, 'Copied'); }
+  catch (e) { setT(id, 'Copy failed'); }
+  setTimeout(function () { setT(id, label); }, 1500);
+}
+function copyAddr() { if (btcAddr) copyTo('copy-addr', btcAddr, 'Copy address'); }
+function copyAmt() { if (btcAmt) copyTo('copy-amt', btcAmt, 'Copy amount'); }
 
 document.addEventListener('visibilitychange', function () {
   if (!document.hidden && pollTimer) poll();
@@ -327,18 +402,19 @@ document.addEventListener('visibilitychange', function () {
   el('brand').textContent = location.hostname;
   const parts = location.pathname.replace(/^\/+|\/+$/g, '').split('/');
   if (parts[0] === 'pay' && parts.length === 2 && (parts[1] || '').toLowerCase() === 'expired') {
-    fail(['Invoice expired', 'ইনভয়েসের মেয়াদ শেষ'], ['This invoice has expired. Go back and create a new one.', 'এই ইনভয়েসের মেয়াদ শেষ হয়ে গেছে। ফিরে গিয়ে নতুন একটি তৈরি করুন।']);
+    fail('Invoice expired', 'This invoice has expired. Go back and create a new one.');
   } else if (parts[0] === 'pay' && (parts[1] === 'i' || parts[1] === 'invoice') && !(parts[1] === 'i' && UUID.test(parts[2] || ''))) {
-    fail(['Invoice not found', 'ইনভয়েস পাওয়া যায়নি'], ['Check the link and try again.', 'লিংকটি দেখে আবার চেষ্টা করুন।']);
+    fail('Invoice not found', 'Check the link and try again.');
   } else if (parts[0] === 'pay' && parts[1] === 'i' && UUID.test(parts[2] || '')) {
     paymentId = parts[2];
+    wantBtc = parts[3] === 'btc';
     openInvoice();
   } else if (parts[0] === 'pay' && SLUG.test(parts[1] || '') && parts.length === 2) {
     slug = parts[1];
     el('retry').href = '/pay/' + slug;
     loadLink();
   } else {
-    fail(['Link not found', 'লিংক পাওয়া যায়নি'], ['Check the link and try again.', 'লিংকটি দেখে আবার চেষ্টা করুন।']);
+    fail('Link not found', 'Check the link and try again.');
   }
 })();
 </script>

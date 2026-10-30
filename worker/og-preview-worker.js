@@ -337,9 +337,9 @@ if (parts.length === 2 && parts[1].toLowerCase() === "expired") {
 // Generic "invoice expired" landing page, like /pay/expired elsewhere.
 return page;
 } else if (parts[1] === "i") {
-// /pay/i/<uuid>[/success|/expired] is an invoice; anything else is missing.
+// /pay/i/<uuid>[/success|/expired|/btc] is an invoice; anything else is missing.
 const tail = parts[3];
-if (parts.length < 3 || parts.length > 4 || !UUID_RE.test(parts[2]) || (tail && tail !== "success" && tail !== "expired")) {
+if (parts.length < 3 || parts.length > 4 || !UUID_RE.test(parts[2]) || (tail && tail !== "success" && tail !== "expired" && tail !== "btc")) {
 missing = true;
 } else {
 const api = new URL(`${url.origin}/api/lnd/status?id=${encodeURIComponent(parts[2])}`);
