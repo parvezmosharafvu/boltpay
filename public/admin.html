@@ -829,6 +829,16 @@ textarea.w-input{ padding:10px 12px !important; }
                                             </div>
                                             <div class="hint" style="font-size:11px; color:var(--text-faint); margin-top:8px;" id="markupHint">Applies to new invoices. $10 is charged as $11.00 at 10%. · নতুন ইনভয়েসে প্রযোজ্য।</div>
                                           </div>
+                                          <div class="panel" id="linkMarkupPanel">
+                                            <div class="panel-head"><div class="panel-title">Per-link markup · লিংক অনুযায়ী মার্কআপ</div></div>
+                                            <div class="w-row" style="gap:10px;flex-wrap:wrap;align-items:flex-end">
+                                              <label style="font-size:12px">Creator min (%) · সর্বনিম্ন (%)<br><input id="lmMin" class="w-input" type="number" min="0" max="100" step="0.01"></label>
+                                              <label style="font-size:12px">Creator max (%) · সর্বোচ্চ (%)<br><input id="lmMax" class="w-input" type="number" min="0" max="100" step="0.01"></label>
+                                              <button class="btn-sm" onclick="saveLinkMarkupRange(this)">Save range · রেঞ্জ সংরক্ষণ</button>
+                                            </div>
+                                            <label style="font-size:12px;display:flex;gap:8px;align-items:center;margin-top:10px"><input type="checkbox" id="lmEnabled" onchange="toggleLinkMarkup(this)"> Use per-link markup at checkout · চেকআউটে লিংক অনুযায়ী মার্কআপ ব্যবহার</label>
+                                            <div class="hint" style="font-size:11px; color:var(--text-faint); margin-top:8px;">On: link % → creator % → global fee. Off: global fee only. · চালু: লিংক % → ক্রিয়েটর % → গ্লোবাল ফি। বন্ধ: শুধু গ্লোবাল ফি।</div>
+                                          </div>
                                           <div class="panel" id="paymentsCsvPanel">
                                             <div class="panel-head"><div class="panel-title">Export payments (CSV) · পেমেন্ট এক্সপোর্ট (CSV)</div></div>
                                             <div class="w-row" style="gap:10px;align-items:center">
@@ -2265,6 +2275,32 @@ function markupHint(v){
   const charged = (10 * (1 + v / 100)).toFixed(2);
   document.getElementById('markupHint').textContent = 'Applies to new invoices. $10 is charged as $' + charged + ' at ' + v + '%. · নতুন ইনভয়েসে প্রযোজ্য। ' + v + '% এ $10 এর জন্য $' + charged + ' নেওয়া হবে।';
 }
+async function loadLinkMarkup(){
+  const { data } = await window.supabaseClient.from('app_settings').select('key, value')
+    .in('key', ['link_markup_enabled', 'link_markup_min_percent', 'link_markup_max_percent']);
+  const m = Object.fromEntries((data || []).map(r => [r.key, r.value]));
+  document.getElementById('lmMin').value = m.link_markup_min_percent ?? 0;
+  document.getElementById('lmMax').value = m.link_markup_max_percent ?? 50;
+  document.getElementById('lmEnabled').checked = m.link_markup_enabled === true;
+}
+async function saveLinkMarkupRange(btn){
+  const mn = Number(document.getElementById('lmMin').value), mx = Number(document.getElementById('lmMax').value);
+  if (!(mn >= 0 && mx <= 100 && mn <= mx)) { showToast('Range must be 0–100, min ≤ max · রেঞ্জ ০–১০০, সর্বনিম্ন ≤ সর্বোচ্চ', 'err'); return; }
+  btn.disabled = true;
+  const { error } = await window.supabaseClient.rpc('admin_set_link_markup_range', { p_min: mn, p_max: mx });
+  btn.disabled = false;
+  if (error) { showToast('Failed · ব্যর্থ: ' + error.message, 'err'); return; }
+  showToast('Range saved · রেঞ্জ সংরক্ষিত', 'ok');
+}
+async function toggleLinkMarkup(el){
+  const want = el.checked;
+  if (want && !confirm('Turn on per-link markup for live checkout? · লাইভ চেকআউটে লিংক অনুযায়ী মার্কআপ চালু করবেন?')) { el.checked = false; return; }
+  el.disabled = true;
+  const { error } = await window.supabaseClient.rpc('admin_set_link_markup_enabled', { p_enabled: want });
+  el.disabled = false;
+  if (error) { el.checked = !want; showToast('Failed · ব্যর্থ: ' + error.message, 'err'); return; }
+  showToast(want ? 'Per-link markup on · চালু' : 'Per-link markup off · বন্ধ', 'ok');
+}
 async function saveMarkup(btn){
   const v = Number(document.getElementById('markupPct').value);
   if (!(v >= 0 && v <= 50) || document.getElementById('markupPct').value.trim() === '') { showToast('Fee must be 0–50% · ফি ০–৫০% হতে হবে', 'err'); return; }
@@ -2311,6 +2347,7 @@ async function exportPaymentsCsv(btn){
 async function loadSettings(){
   loadCheckoutLimits();
   loadMarkup();
+  loadLinkMarkup();
   const { data } = await window.supabaseClient.from('app_settings').select('key, value');
   const notice = data?.find(s => s.key === 'platform_notice')?.value;
 

@@ -8,7 +8,7 @@
 // checkout_backend is 'lnd'. Otherwise it refuses.
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 import { LndClient, lndConfig } from "../_shared/lnd.ts";
-import { chargedAmount, parseUsd, usdToSats, withinLimits } from "../_shared/pricing.ts";
+import { chargedAmount, parseUsd, resolveMarkup, usdToSats, withinLimits } from "../_shared/pricing.ts";
 import { btcUsdRate } from "../_shared/rate.ts";
 import { loadLndSettings } from "../_shared/settings.ts";
 
@@ -117,8 +117,8 @@ Deno.serve(async (req) => {
   const lim = linkLimits(link, settings);
   if (!withinLimits(amount, lim.min, lim.max)) return err(`Amount must be between $${lim.min} and $${lim.max}`, 400);
 
-  // One global customer markup (default +10%), not the per-link cost_percent.
-  const charged = chargedAmount(amount, settings.markupPercent);
+  // Flag OFF: one global markup. Flag ON: link -> profile -> global (0103).
+  const charged = chargedAmount(amount, resolveMarkup(link, settings));
   if (charged > settings.maxUsd * 11) return err("This link's current price is too high to invoice", 400);
 
   // Same per-owner brake as create-invoice; fails closed.

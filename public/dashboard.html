@@ -751,6 +751,10 @@ textarea.w-input{ padding:10px 12px !important; }
                 <div class="w-row">
                   <input type="text" class="w-input" id="newSlug" placeholder="Name — e.g. Sophia or Taylor James">
                 </div>
+                <div class="w-row">
+                  <input type="number" class="w-input" id="newLinkMarkup" min="0" max="100" step="0.01" inputmode="decimal" placeholder="Markup % (optional)" data-ph-en="Markup % (optional)" data-ph-bn="মার্কআপ % (ঐচ্ছিক)">
+                </div>
+                <div class="hint" id="linkMarkupHint" style="margin:-4px 0 10px;"></div>
                 <button class="btn-primary" onclick="openStylePicker()" style="width:100%;">Choose link style</button>
                 <div class="hint" id="linkFormMsg" style="display:none;"></div>
               </div>
@@ -1509,7 +1513,9 @@ function renderLinks(){
 
     return `<div class="model-card">
       <div class="model-head">
-        <div><div class="model-name">🌐 ${escapeHtml(head.display_name || head.slug)}</div></div>
+        <div><div class="model-name">🌐 ${escapeHtml(head.display_name || head.slug)}</div>
+          <div class="variant-note" style="margin:2px 0 0;">${qiT('Markup', 'মার্কআপ')}: ${head.cost_percent == null ? qiT('default', 'ডিফল্ট') : escapeHtml(String(Number(head.cost_percent))) + '%'}
+            <button class="btn-copy" title="${qiT('Edit markup', 'মার্কআপ এডিট')}" onclick="editLinkMarkup('${escapeAttr(head.id)}')">%</button></div></div>
         <span class="badge ${anyActive ? 'settled' : 'expired'}"><span class="badge-dot"></span>${anyActive ? 'active' : 'disabled'}</span>
       </div>
       ${note}${rows}
@@ -1544,7 +1550,40 @@ async function editAmountOptions(linkId){
   await fetchLinks();
 }
 
+// Per-link markup (0103): admin range, shown as a hint and checked here;
+// the server enforces it again.
+let linkMarkupRange = { min: 0, max: 50 };
+async function loadLinkMarkupRange(){
+  const { data } = await window.supabaseClient.rpc('link_markup_range');
+  const r = Array.isArray(data) ? data[0] : data;
+  if (r) linkMarkupRange = { min: Number(r.min_pct), max: Number(r.max_pct) };
+  const h = document.getElementById('linkMarkupHint');
+  if (h) h.textContent = qiT(
+    `Extra % the payer pays on this link (${linkMarkupRange.min}–${linkMarkupRange.max}%). Blank = your default.`,
+    `এই লিংকে পেয়ার অতিরিক্ত যত % দেবে (${linkMarkupRange.min}–${linkMarkupRange.max}%)। খালি রাখলে ডিফল্ট।`);
+}
+
+async function editLinkMarkup(linkId){
+  const l = allLinks.find(x => x.id === linkId);
+  if (!l) return;
+  const v = prompt(qiT(
+    `Markup % for this link and its styles (${linkMarkupRange.min}–${linkMarkupRange.max}). Blank = default.`,
+    `এই লিংক ও এর সব স্টাইলের মার্কআপ % (${linkMarkupRange.min}–${linkMarkupRange.max})। খালি = ডিফল্ট।`),
+    l.cost_percent ?? '');
+  if (v === null) return;
+  const raw = v.trim();
+  const pct = raw === '' ? null : Number(raw);
+  if (pct !== null && !(isFinite(pct) && pct >= linkMarkupRange.min && pct <= linkMarkupRange.max)){
+    showToast(qiT(`Markup must be ${linkMarkupRange.min}–${linkMarkupRange.max}%`, `মার্কআপ ${linkMarkupRange.min}–${linkMarkupRange.max}% হতে হবে`), 'err'); return;
+  }
+  const { error } = await window.supabaseClient.rpc('set_link_markup', { p_link_id: linkId, p_percent: pct });
+  if (error){ showToast(qiT('Failed: ', 'ব্যর্থ: ') + error.message, 'err'); return; }
+  showToast(qiT('Markup saved', 'মার্কআপ সংরক্ষিত'), 'ok');
+  await fetchLinks();
+}
+
 function toggleLinkForm(){
+  loadLinkMarkupRange();
   const form = document.getElementById('newLinkForm');
   form.style.display = form.style.display === 'none' ? 'block' : 'none';
 }
@@ -1618,9 +1657,16 @@ async function createPaymentLink(){
   btn.disabled = true;
 
   try {
+    const mkRaw = (document.getElementById('newLinkMarkup')?.value || '').trim();
+    const mk = mkRaw === '' ? null : Number(mkRaw);
+    if (mk !== null && !(isFinite(mk) && mk >= linkMarkupRange.min && mk <= linkMarkupRange.max)){
+      msgEl.textContent = qiT(`Markup must be ${linkMarkupRange.min}–${linkMarkupRange.max}%`, `মার্কআপ ${linkMarkupRange.min}–${linkMarkupRange.max}% হতে হবে`);
+      msgEl.style.color = 'var(--alert)'; msgEl.style.display = 'block'; btn.disabled = false; return;
+    }
     const { data, error } = await window.supabaseClient.rpc('create_link_variants', {
       p_display_name: name,
       p_styles: styles,
+      p_cost_percent: mk,
     });
 
     if (error){
@@ -1643,6 +1689,7 @@ async function createPaymentLink(){
 
     closeStylePicker();
     document.getElementById('newSlug').value = '';
+    const mkEl = document.getElementById('newLinkMarkup'); if (mkEl) mkEl.value = '';
     const formMsg = document.getElementById('linkFormMsg');
     formMsg.textContent = skipped.length
       ? `${created.length} link${created.length === 1 ? '' : 's'} created. Already taken: ${skipped.map(r => '/' + r.slug).join(', ')}.`

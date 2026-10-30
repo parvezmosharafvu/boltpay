@@ -75,7 +75,7 @@ Deno.test("rate sources must agree within 2%", () => {
 
 Deno.test("settings default to off, 10/1000/3600", () => {
   const s = parseLndSettings([]);
-  assertEquals(s, { enabled: false, onchainFallback: false, minUsd: 10, maxUsd: 1000, expirySec: 3600, markupPercent: 10 });
+  assertEquals(s, { enabled: false, onchainFallback: false, minUsd: 10, maxUsd: 1000, expirySec: 3600, markupPercent: 10, linkMarkupEnabled: false, linkMarkupMin: 0, linkMarkupMax: 50 });
   assertEquals(parseLndSettings([{ key: "lnd_checkout_enabled", value: "true" }]).enabled, false);
   assertEquals(parseLndSettings([{ key: "lnd_checkout_enabled", value: true }]).enabled, true);
 });
