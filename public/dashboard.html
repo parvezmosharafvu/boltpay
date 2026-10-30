@@ -548,6 +548,14 @@ body{
 .header{ padding:11px 16px !important; }
 .content{ padding:14px 14px !important; }
 .msg-bubble{ padding:8px 11px !important; font-size:12px !important; margin-bottom:6px !important; }
+
+/* Sidebar layout on wide screens: the tab list becomes a sticky left rail. */
+@media (min-width:1024px){
+  .content{ display:grid; grid-template-columns:220px minmax(0,1fr); column-gap:22px; align-items:start; }
+  .content > *{ grid-column:2; }
+  .content > .tabs{ grid-column:1; grid-row:1 / span 50; position:sticky; top:16px; flex-direction:column; align-items:stretch; overflow:visible; margin:0 !important; padding:10px; background:var(--panel); border:1px solid var(--line); border-radius:16px; }
+  .content > .tabs .tab-btn{ justify-content:flex-start; text-align:left; width:100%; }
+}
 </style>
   </head>
   <body>
@@ -585,30 +593,7 @@ body{
           <button class="tab-btn" data-sec="messages" onclick="showSection('messages', this)">💬 Messages <span class="tab-badge" id="msgBadge">0</span></button>
         </div>
 
-          <div class="section" id="sec-overview">
-            <!-- Shown only while there is nothing to pay out to.
-                 A creator can share links and take payments before ever
-                 setting this up, and the first they would learn of the
-                 gap is the moment they try to withdraw. Saying it here,
-                 once, costs nothing and saves that. -->
-            <div class="setup-banner" id="setupBanner" style="display:none;">
-              <div>
-                <b>Add a payout method</b>
-                <span>You can take payments now, but you will need this before you can withdraw.</span>
-              </div>
-              <button class="btn-ghost" onclick="showSection('cashout', document.querySelector('.tab-btn[data-sec=cashout]'))">Set up</button>
-            </div>
-            <div class="page-header">
-              <div>
-                <div class="page-title">Account overview</div>
-                <div class="page-sub">Live snapshot of your earnings, balance and account tier</div>
-              </div>
-              <div style="display:flex; align-items:center; gap:10px;">
-                <span class="sync-pill" id="creatorLiveStatus">Live sync</span>
-              </div>
-            </div>
-
-            <!-- ===== STAT CARDS ===== -->
+          <!-- ===== STAT CARDS ===== -->
             <div class="stats-grid">
               <div class="stat-card">
                 <div class="stat-head">
@@ -683,6 +668,31 @@ body{
                 <div class="stat-sub">Set by Boltpay admin</div>
               </div>
             </div>
+
+          <div class="section" id="sec-overview">
+            <!-- Shown only while there is nothing to pay out to.
+                 A creator can share links and take payments before ever
+                 setting this up, and the first they would learn of the
+                 gap is the moment they try to withdraw. Saying it here,
+                 once, costs nothing and saves that. -->
+            <div class="setup-banner" id="setupBanner" style="display:none;">
+              <div>
+                <b>Add a payout method</b>
+                <span>You can take payments now, but you will need this before you can withdraw.</span>
+              </div>
+              <button class="btn-ghost" onclick="showSection('cashout', document.querySelector('.tab-btn[data-sec=cashout]'))">Set up</button>
+            </div>
+            <div class="page-header">
+              <div>
+                <div class="page-title">Account overview</div>
+                <div class="page-sub">Live snapshot of your earnings, balance and account tier</div>
+              </div>
+              <div style="display:flex; align-items:center; gap:10px;">
+                <span class="sync-pill" id="creatorLiveStatus">Live sync</span>
+              </div>
+            </div>
+
+
 
             <div class="meter-notice" id="platformNoticeWrap">
               <div class="meter-notice-box">
