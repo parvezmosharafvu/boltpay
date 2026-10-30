@@ -605,11 +605,6 @@ input:focus-visible,select:focus-visible,button:focus-visible{ outline:2px solid
                                 </div>
                                 <div class="hint" style="font-size:11px; color:var(--text-faint); margin-top:6px;">উপরের global switch-কে override করে, শুধু এই creator-এর জন্য। "Use global default" নির্বাচন করলে override মুছে যাবে।</div>
 
-                                <div class="detail-section-title">Withdrawal fee for this creator</div>
-                                <div class="w-row">
-                                  <input type="number" step="0.1" class="w-input" id="detailFeeInput" placeholder="3.0">
-                                    <button class="btn-primary" style="flex:0 0 auto;" onclick="saveDetailFee()">Save fee %</button>
-                                  </div>
                                   <div class="detail-section-title">Payment link limit for this creator</div>
                                   <div class="w-row">
                                     <input type="number" step="1" class="w-input" id="detailLimitInput" placeholder="5">
@@ -757,16 +752,6 @@ input:focus-visible,select:focus-visible,button:focus-visible{ outline:2px solid
                                                 </div>
                                                 <button class="btn-primary" style="max-width:200px;" onclick="saveNotice()">Save notice</button>
                                               </div>
-                                              <div class="panel">
-                                                <div class="panel-head">
-                                                  <div class="panel-title">Default fee for new creators</div>
-                                                </div>
-                                                <div class="w-row" style="margin-bottom:12px;">
-                                                  <input type="number" step="0.1" class="w-input" id="defaultFeeInput" placeholder="3.0">
-                                                  </div>
-                                                  <button class="btn-primary" style="max-width:200px;" onclick="saveDefaultFee()">Save default fee</button>
-                                                  <div class="hint" style="font-size:11px; color:var(--text-faint); margin-top:8px;">Applies to accounts created from now on. Existing creators keep their current fee — edit those individually from Customers.</div>
-                                                </div>
                                                 <div class="panel">
                                                   <div class="panel-head">
                                                     <div class="panel-title">Default link limit for new creators</div>
@@ -1395,7 +1380,6 @@ async function openCustomerDetail(creatorId){
   document.getElementById('wNagad').textContent = cu.w_nagad || '—';
 
   const { data: profileRow } = await window.supabaseClient.from('profiles').select('withdrawal_fee_percent, cost_percent, show_buyer_amount_override, bdt_rate').eq('id', creatorId).single();
-  document.getElementById('detailFeeInput').value = profileRow?.withdrawal_fee_percent ?? 3;
   document.getElementById('detailCostInput').value = profileRow?.cost_percent ?? 0;
   document.getElementById('detailBdtRateInput').value = profileRow?.bdt_rate ?? '';
   document.getElementById('detailBdtRateLabel').textContent = fmtBdtRate(profileRow?.bdt_rate ?? null);
@@ -1443,17 +1427,6 @@ async function saveDetailAmountDisplay(){
   showToast(error ? 'Failed: ' + error.message : 'Amount display updated', error ? 'err' : 'ok');
 }
 
-async function saveDetailFee(){
-  const fee = parseFloat(document.getElementById('detailFeeInput').value);
-  // No policy ceiling — the admin decides this number. 100 is the
-  // arithmetic limit: request_withdrawal() pays out amount*(1-fee/100),
-  // so beyond 100% the payout would go negative.
-  if (isNaN(fee) || fee < 0 || fee > 100){ showToast('Enter a fee between 0-100', 'err'); return; }
-  const { error } = await window.supabaseClient.rpc('admin_update_creator_fee', { p_creator_id: currentDetailCreatorId, p_fee_percent: fee });
-  showToast(error ? 'Failed: ' + error.message : 'Fee updated', error ? 'err' : 'ok');
-  if (!error) await loadCustomers();
-}
-
 function closeCustomerDetail(){
   document.getElementById('customerDetailView').classList.remove('show');
   document.getElementById('customerListView').style.display = 'block';
@@ -1480,7 +1453,7 @@ function renderPending(){
       <div class="wd-row">
         <div class="wd-top">
           <div>
-            <div class="wd-amt">$${parseFloat(w.amount_requested).toFixed(2)} <span style="font-size:12px;color:var(--text-faint);">→ $${parseFloat(w.amount_after_fee).toFixed(2)} after fee</span></div>
+            <div class="wd-amt">$${parseFloat(w.amount_requested).toFixed(2)} ${parseFloat(w.amount_after_fee) !== parseFloat(w.amount_requested) ? `<span style="font-size:12px;color:var(--text-faint);">→ $${parseFloat(w.amount_after_fee).toFixed(2)} payout (পেআউট)</span>` : ""}</div>
             <div class="wd-meta">${safeText(who)} · ${safeMethod(w.method)} · ${fmtDate(w.requested_at)}</div>
             <div class="wd-dest" style="font-family:'Geist Mono'; color:var(--amber); font-weight:700;">${escapeHtml(w.destination)}</div>
           </div>
@@ -2071,12 +2044,10 @@ async function revokeModerator(id, btn){
 async function loadSettings(){
   const { data } = await window.supabaseClient.from('app_settings').select('key, value');
   const notice = data?.find(s => s.key === 'platform_notice')?.value;
-  const defaultFee = data?.find(s => s.key === 'default_withdrawal_fee_percent')?.value;
 
   const bdt = data?.find(s => s.key === 'bdt_rate')?.value;
   document.getElementById('globalBdtRate').value = bdt && bdt.rate != null ? bdt.rate : '';
   document.getElementById('noticeInput').value = notice?.text || ''; document.getElementById('noticeActiveToggle').checked = notice?.active || false;
-  if (defaultFee){ document.getElementById('defaultFeeInput').value = defaultFee.percent; }
   const manual = data?.find(s => s.key === 'manual_withdrawals_enabled')?.value;
   const feed = data?.find(s => s.key === 'public_feed_enabled')?.value;
   const hideSmall = data?.find(s => s.key === 'hide_small_payments_enabled')?.value;
@@ -2117,7 +2088,6 @@ function parseBdtRate(id){ const v = document.getElementById(id).value.trim(); i
 function fmtBdtRate(r){ return r != null ? '৳' + Number(r).toFixed(2) + ' / USD' : 'BDT rate not set · BDT রেট সেট করা নেই'; }
 async function saveGlobalBdtRate(){ const p = parseBdtRate('globalBdtRate'); if (p.err){ showToast('Enter 50–1000 or leave empty · ৫০–১০০০ দিন বা খালি রাখুন', 'err'); return; } const { error } = await window.supabaseClient.rpc('admin_set_global_bdt_rate', { p_rate: p.rate }); showToast(error ? 'Failed: ' + error.message : 'BDT rate saved · সেভ হয়েছে', error ? 'err' : 'ok'); }
 async function saveDetailBdtRate(){ const p = parseBdtRate('detailBdtRateInput'); if (p.err){ showToast('Enter 50–1000 or leave empty · ৫০–১০০০ দিন বা খালি রাখুন', 'err'); return; } const { error } = await window.supabaseClient.rpc('admin_set_bdt_rate', { p_user_id: currentDetailCreatorId, p_rate: p.rate }); showToast(error ? 'Failed: ' + error.message : 'BDT rate saved · সেভ হয়েছে', error ? 'err' : 'ok'); if (!error) document.getElementById('detailBdtRateLabel').textContent = fmtBdtRate(p.rate); }
-async function saveDefaultFee(){ const percent = parseFloat(document.getElementById('defaultFeeInput').value); if (isNaN(percent) || percent < 0 || percent > 100){ showToast('Enter a fee between 0-100', 'err'); return; } const { error } = await window.supabaseClient.from('app_settings').upsert({ key: 'default_withdrawal_fee_percent', value: { percent }, updated_at: new Date().toISOString() }); showToast(error ? 'Failed' : 'Default fee saved', error ? 'err' : 'ok'); }
 
 
 
