@@ -17,7 +17,7 @@ begin
   begin perform admin_set_role(u,'moderator'); raise exception 'set_role moderator allowed';
   exception when others then if sqlerrm like '%allowed' then raise; end if; end;
   insert into payments(id,user_id,backend,lnd_r_hash,amount_sats,expires_at,amount_requested,status)
-    values (gen_random_uuid(),u,'lnd',md5(random()::text),1000,now()+interval '1 hour',10,'new') returning id into pid;
+    values (gen_random_uuid(),u,'lnd',md5(random()::text)||md5(random()::text),1000,now()+interval '1 hour',10,'new') returning id into pid;
   update payments set status='settled', amount_settled=10, settled_at=now() where id=pid;
   perform mark_payment(pid, 'ok');                          -- admin can mark
   perform set_config('test.uid', u::text, true);
