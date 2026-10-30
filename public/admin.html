@@ -431,7 +431,6 @@ input:focus-visible,select:focus-visible,button:focus-visible{ outline:2px solid
                         <button class="tab-btn" data-tab="messages" onclick="switchTab('messages', this)">Messages <span class="tab-badge" id="msgTabBadge">0</span>
                       </button>
                       <button class="tab-btn" data-tab="earnings" onclick="switchTab('earnings', this)">Earnings</button>
-                      <button class="tab-btn" data-tab="shops" style="display:none" onclick="switchTab('shops', this)">Shops</button>
                       <button class="tab-btn" data-tab="domains" onclick="switchTab('domains', this)">Domains</button>
                       <button class="tab-btn" data-tab="methods" onclick="switchTab('methods', this)">Payment methods</button>
                       <button class="tab-btn" data-tab="settings" onclick="switchTab('settings', this)">Settings</button>
@@ -621,13 +620,7 @@ input:focus-visible,select:focus-visible,button:focus-visible{ outline:2px solid
                                       <button class="btn-primary" style="flex:0 0 auto;" onclick="saveDetailLimit()">Save limit</button>
                                     </div>
                                     <div class="hint" style="font-size:11px; color:var(--text-faint); margin-top:6px;">How many models/payment links this creator may create. Each link is automatically available on every active payment domain.</div>
-                                    <div class="detail-section-title">Payment cost for this creator</div>
-                                  <div class="w-row">
-                                    <select class="w-input" id="detailShopSelect"></select>
-                                    <button class="btn-primary" style="flex:0 0 auto;" onclick="saveShopLock()" id="detailShopLockBtn">Lock</button>
-                                  </div>
-                                  <div class="hint" style="font-size:11px; color:var(--text-faint); margin-top:6px;" id="detailShopLockHint">Locking moves every link this creator owns onto the chosen cost and stops them changing it. Unlocked, they pick per link themselves.</div>
-                                  <div class="detail-section-title">Models & earnings per link</div>
+                                    <div class="detail-section-title">Models & earnings per link</div>
                                     <div id="detailModels">
                                       <div class="empty-state">No models</div>
                                     </div>
@@ -743,54 +736,6 @@ input:focus-visible,select:focus-visible,button:focus-visible{ outline:2px solid
                                             </div>
                                             <div id="domainsList">
                                               <div class="empty-state">No domains registered</div>
-                                            </div>
-                                          </div>
-                                        </div>
-                                        <!-- SHOPS TAB -->
-                                        <div id="tab-shops" style="display:none;">
-                                          <div class="panel">
-                                            <div class="panel-head">
-                                              <div class="panel-title" id="shopFormTitle">Add a BTCPay shop</div>
-                                            </div>
-                                            <div style="font-size:12px; color:var(--text-dim); margin-bottom:12px; line-height:1.6;">
-                                              One BTCPay server, several stores. <b>BTCPay applies the rate itself</b>
-                                              through the store's rate spread (Store &rarr; Rates &rarr; add a percentage) &mdash;
-                                              the number here is only so this panel and the payment page can show what
-                                              the payer will be charged. Set it in BTCPay first, then mirror it here.<br><br>
-                                              The API key itself is <b>never stored here</b> &mdash; pick which Edge Function
-                                              secret holds it, and add that secret in Supabase under
-                                              Edge Functions &rarr; Secrets.<br><br>
-                                              Link styles are chosen by the creator, per link &mdash; not here. A shop is a BTCPay store and a cost; creators pick which cost each of their links runs on. Add or disable a shop and their dashboards follow immediately.
-                                            </div>
-                                            <div class="w-row" style="margin-bottom:10px;">
-                                              <input type="text" class="w-input" id="shopName" placeholder="Shop name (e.g. Standard 2%)">
-                                            </div>
-                                            <div class="w-row" style="margin-bottom:10px;">
-                                              <input type="text" class="w-input" id="shopStoreId" placeholder="BTCPay store ID">
-                                            </div>
-                                            <div class="w-row" style="margin-bottom:10px;">
-                                              <input type="number" step="0.01" min="0" max="100" class="w-input" id="shopSurcharge" placeholder="Rate the payer is charged, e.g. 2">
-                                            </div>
-                                            <div class="w-row" style="margin-bottom:10px;">
-                                              <select class="w-input" id="shopApiKeyEnv">
-                                                <option value="BTCPAY_API_KEY">API key secret: BTCPAY_API_KEY</option>
-                                                <option value="BTCPAY_API_KEY_2">API key secret: BTCPAY_API_KEY_2</option>
-                                                <option value="BTCPAY_API_KEY_3">API key secret: BTCPAY_API_KEY_3</option>
-                                                <option value="BTCPAY_API_KEY_4">API key secret: BTCPAY_API_KEY_4</option>
-                                                <option value="BTCPAY_API_KEY_5">API key secret: BTCPAY_API_KEY_5</option>
-                                              </select>
-                                            </div>
-                                            <div class="pay-actions">
-                                              <button class="act-btn act-approve" id="shopSaveBtn" onclick="saveShop(this)">Add shop</button>
-                                              <button class="act-btn act-reject" id="shopCancelBtn" style="display:none;" onclick="resetShopForm()">Cancel edit</button>
-                                            </div>
-                                          </div>
-                                          <div class="panel">
-                                            <div class="panel-head">
-                                              <div class="panel-title">Shops</div>
-                                            </div>
-                                            <div id="shopsList">
-                                              <div class="empty-state">No shops configured</div>
                                             </div>
                                           </div>
                                         </div>
@@ -1163,29 +1108,17 @@ async function loadWithdrawals(){
   renderPending(); renderHistory();
 }
 
-async function moveLinkToShop(linkId, shopId, sel){
-  sel.disabled = true;
-  try {
-    const { error } = await window.supabaseClient
-      .rpc('admin_set_link_shop', { p_link_id: linkId, p_shop_id: shopId || null });
-    if (error) return showToast('Failed: ' + error.message, 'err');
-    // The slug is left alone on purpose — it may already be in a bio or on
-    // a printed card. Only the rate on NEW invoices changes; invoices
-    // already issued keep the store recorded on the payment row.
-    showToast('Rate changed for new invoices', 'ok');
-    loadLinks();
-  } catch (e) {
-    console.error('moveLinkToShop failed:', e);
-    showToast('Could not change the rate — see the browser console', 'err');
-  } finally {
-    sel.disabled = false;
+function fieldValue(id, fallback = ''){
+  const el = document.getElementById(id);
+  if (!el){
+    console.error('Missing form field:', id);
+    showToast(`This page is out of date (missing "${id}") — hard-refresh it`, 'err');
+    return null;
   }
+  return el.value ?? fallback;
 }
 
 async function loadLinks(){
-  // The per-link dropdown is built from allShops, which the Shops tab
-  // fills. Opening Links first would otherwise render empty selects.
-  if (!allShops.length) await loadShops();
   const { data, error } = await window.supabaseClient.rpc('admin_list_payment_links');
   if (error){ showToast('Failed to load links: ' + error.message, 'err'); return; }
   allLinks = data || [];
@@ -1449,7 +1382,6 @@ function renderCustomers(){
 }
 
 async function openCustomerDetail(creatorId){
-  loadShopLock(creatorId);
   const cu = allCustomers.find(c => c.id === creatorId);
   if (!cu) return;
   currentDetailCreatorId = creatorId;
@@ -1608,19 +1540,10 @@ function renderLinks(){
         <div>
           <div class="link-slug">🌎 ${safeText(l.slug)}</div>
           <div class="link-owner">${safeText(l.owner_email)}</div>
-          <div class="link-stats">${l.shop_name
-            ? escapeHtml(l.shop_name) + ' · ' + (parseFloat(l.surcharge_percent) === 0 ? 'no extra cost' : 'payer +' + parseFloat(l.surcharge_percent) + '%')
-            : '<span style="color:var(--alert);">no shop — invoices will fail</span>'}</div>
+
           <div class="link-stats">$${parseFloat(l.total_earned).toFixed(2)} earned · ${l.payment_count} payments</div>
         </div>
         <span class="badge ${l.is_active ? 'active' : 'inactive'}"><span class="badge-dot"></span>${l.is_active ? 'active' : 'disabled'}</span>
-      </div>
-      <div class="w-row" style="margin-top:10px;">
-        <select class="w-input" onchange="moveLinkToShop('${escapeAttr(l.id)}', this.value, this)">
-          ${allShops.filter(sh => sh.is_active || sh.id === l.shop_id).map(sh =>
-            `<option value="${escapeAttr(sh.id)}" ${sh.id === l.shop_id ? 'selected' : ''}>${escapeHtml(sh.name)} — ${parseFloat(sh.surcharge_percent) === 0 ? 'no extra cost' : 'payer +' + parseFloat(sh.surcharge_percent) + '%'}</option>`
-          ).join('')}
-        </select>
       </div>
       <div class="pay-actions">
         <button class="act-btn act-reject" onclick="deleteLink('${escapeAttr(l.id)}', '${escapeAttr(l.slug)}', this)">Delete</button>
@@ -2043,50 +1966,6 @@ async function sendAdminMessage(){
 }
 
 
-/* ============ Per-creator shop lock ============ */
-let detailLock = { shop_locked: false, forced_shop_id: null };
-
-async function loadShopLock(creatorId){
-  if (!allShops.length) await loadShops();
-
-  const { data } = await window.supabaseClient
-    .rpc('admin_customer_shop_lock', { p_creator_id: creatorId });
-  const row = Array.isArray(data) ? data[0] : data;
-  detailLock = row || { shop_locked: false, forced_shop_id: null };
-
-  const sel = document.getElementById('detailShopSelect');
-  const btn = document.getElementById('detailShopLockBtn');
-  if (!sel || !btn) return;
-
-  const rate = (p) => parseFloat(p) === 0 ? 'no extra cost' : 'payer +' + parseFloat(p) + '%';
-  sel.innerHTML = allShops.filter(sh => sh.is_active)
-    .map(sh => `<option value="${escapeAttr(sh.id)}" ${sh.id === detailLock.forced_shop_id ? 'selected' : ''}>${escapeHtml(sh.name)} — ${escapeHtml(rate(sh.surcharge_percent))}</option>`)
-    .join('');
-
-  sel.disabled = detailLock.shop_locked === true;
-  btn.textContent = detailLock.shop_locked ? 'Unlock' : 'Lock';
-  document.getElementById('detailShopLockHint').textContent = detailLock.shop_locked
-    ? `Locked to ${detailLock.shop_name || 'a shop'}. This creator cannot change the cost on any of their links.`
-    : 'Locking moves every link this creator owns onto the chosen cost and stops them changing it. Unlocked, they pick per link themselves.';
-}
-
-async function saveShopLock(){
-  const locking = !detailLock.shop_locked;
-  const shopId = document.getElementById('detailShopSelect').value;
-
-  if (locking && !shopId) return showToast('Pick a shop to lock them to', 'err');
-  if (locking && !confirm('Lock this creator to that cost?\n\nEvery link they already own moves onto it, and they will not be able to change the cost themselves.')) return;
-
-  const { error } = await window.supabaseClient.rpc('admin_lock_creator_shop', {
-    p_creator_id: currentDetailCreatorId,
-    p_locked: locking,
-    p_shop_id: locking ? shopId : null,
-  });
-  if (error) return showToast('Failed: ' + error.message, 'err');
-  showToast(locking ? 'Creator locked to that cost' : 'Creator unlocked', 'ok');
-  await loadShopLock(currentDetailCreatorId);
-  loadLinks();
-}
 
 /* ============ Global switches ============ */
 async function saveGlobalToggle(key, el){
@@ -2265,162 +2144,14 @@ async function saveDetailBdtRate(){ const p = parseBdtRate('detailBdtRateInput')
 async function saveDefaultFee(){ const percent = parseFloat(document.getElementById('defaultFeeInput').value); if (isNaN(percent) || percent < 0 || percent > 100){ showToast('Enter a fee between 0-100', 'err'); return; } const { error } = await window.supabaseClient.from('app_settings').upsert({ key: 'default_withdrawal_fee_percent', value: { percent }, updated_at: new Date().toISOString() }); showToast(error ? 'Failed' : 'Default fee saved', error ? 'err' : 'ok'); }
 
 
-/* ============ BTCPay shops ============
-   One server, several stores. BTCPay applies each store's rate spread
-   itself, so Boltpay never touches the amount — it sends $100 USD to
-   the store the link belongs to and BTCPay converts at that store's
-   marked-up rate. The creator is still credited $100.
-
-   surcharge_percent here is therefore display-only. Nothing can read it
-   back off BTCPay, so if you change the spread there, change it here
-   too or the panel will quote the wrong number. */
-let allShops = [];
-let editingShopId = null;
-
-
-async function loadShops(){
-  const { data, error } = await window.supabaseClient.rpc('admin_list_shops');
-  if (error){ showToast('Failed to load shops: ' + error.message, 'err'); return; }
-  allShops = data || [];
-  renderShops();
-}
-
-function renderShops(){
-  const c = document.getElementById('shopsList');
-  if (!allShops.length){ c.innerHTML = '<div class="empty-state">No shops configured</div>'; return; }
-  c.innerHTML = allShops.map(sh => `
-    <div class="link-row">
-      <div class="link-top">
-        <div style="min-width:0;">
-          <div class="link-slug">${safeText(sh.name)}${sh.is_default ? ' &middot; default' : ''}</div>
-          <div class="link-owner">${parseFloat(sh.surcharge_percent) === 0 ? 'no extra cost' : 'payer +' + parseFloat(sh.surcharge_percent) + '%'}</div>
-          <div class="link-stats">store ${safeText(sh.store_id)} &middot; key ${safeText(sh.api_key_env)} &middot; ${sh.link_count} link${sh.link_count === 1 ? '' : 's'}</div>
-        </div>
-        <span class="badge ${sh.is_active ? 'active' : 'inactive'}"><span class="badge-dot"></span>${sh.is_active ? 'active' : 'disabled'}</span>
-      </div>
-      <div class="pay-actions">
-        <button class="act-btn act-reject" onclick="editShop('${escapeAttr(sh.id)}')">Edit</button>
-        <button class="act-btn ${sh.is_active ? 'act-reject' : 'act-approve'}" onclick="toggleShop('${escapeAttr(sh.id)}', ${!sh.is_active}, this)">
-          ${sh.is_active ? 'Disable' : 'Enable'}
-        </button>
-        <button class="act-btn act-reject" onclick="deleteShop('${escapeAttr(sh.id)}', this)">Delete</button>
-      </div>
-    </div>`).join('');
-}
-
-function resetShopForm(){
-  editingShopId = null;
-  const set = (id, v) => { const el = document.getElementById(id); if (el) el.value = v; };
-  ['shopName','shopStoreId','shopSurcharge'].forEach(id => set(id, ''));
-  set('shopApiKeyEnv', 'BTCPAY_API_KEY');
-  document.getElementById('shopFormTitle').textContent = 'Add a BTCPay shop';
-  document.getElementById('shopSaveBtn').textContent = 'Add shop';
-  document.getElementById('shopCancelBtn').style.display = 'none';
-}
-
-function editShop(id){
-  const sh = allShops.find(x => x.id === id);
-  if (!sh) return;
-  editingShopId = id;
-  const set = (id, v) => { const el = document.getElementById(id); if (el) el.value = v; };
-  set('shopName', sh.name || '');
-  set('shopStoreId', sh.store_id || '');
-  set('shopSurcharge', sh.surcharge_percent ?? 0);
-  set('shopApiKeyEnv', sh.api_key_env || 'BTCPAY_API_KEY');
-  document.getElementById('shopFormTitle').textContent = 'Edit shop';
-  document.getElementById('shopSaveBtn').textContent = 'Save changes';
-  document.getElementById('shopCancelBtn').style.display = '';
-  window.scrollTo({ top: 0, behavior: 'smooth' });
-}
-
-// getElementById returns null for an element that is not in the markup,
-// and reading .value off null throws — which aborts the click handler with
-// nothing at all shown on screen. That is exactly how "Add shop" came to
-// do nothing. Reading through this helper turns a missing field into a
-// visible message instead of silence.
-function fieldValue(id, fallback = ''){
-  const el = document.getElementById(id);
-  if (!el){
-    console.error('Missing form field:', id);
-    showToast(`This page is out of date (missing "${id}") — hard-refresh it`, 'err');
-    return null;
-  }
-  return el.value ?? fallback;
-}
-
-async function saveShop(btn){
-  const name = (fieldValue('shopName') ?? '').trim();
-  const storeId = (fieldValue('shopStoreId') ?? '').trim();
-  const surcharge = parseFloat(fieldValue('shopSurcharge'));
-  const apiKeyEnv = fieldValue('shopApiKeyEnv') || 'BTCPAY_API_KEY';
-
-  if (!name) return showToast('Shop name is required', 'err');
-  if (!storeId) return showToast('BTCPay store ID is required', 'err');
-  if (!Number.isFinite(surcharge) || surcharge < 0 || surcharge > 100)
-    return showToast('Rate must be between 0 and 100', 'err');
-
-
-  const existing = editingShopId ? allShops.find(x => x.id === editingShopId) : null;
-
-  btn.disabled = true;
-  try {
-    const { error } = await window.supabaseClient.rpc('admin_upsert_shop', {
-      p_id: editingShopId,
-      p_name: name,
-      p_store_id: storeId,
-      p_surcharge_percent: surcharge,
-      p_api_key_env: apiKeyEnv,
-      p_is_active: existing ? existing.is_active : true,
-      p_is_default: existing ? existing.is_default : allShops.length === 0,
-      p_sort_order: existing ? existing.sort_order : allShops.length,
-    });
-    if (error) return showToast('Failed: ' + error.message, 'err');
-    showToast(editingShopId ? 'Shop updated' : 'Shop added', 'ok');
-    resetShopForm();
-    loadShops();
-  } catch (e) {
-    console.error('saveShop failed:', e);
-    showToast('Could not save the shop — see the browser console', 'err');
-  } finally {
-    btn.disabled = false;
-  }
-}
-
-async function toggleShop(id, makeActive, btn){
-  const sh = allShops.find(x => x.id === id);
-  if (!sh) return;
-  btn.disabled = true;
-  const { error } = await window.supabaseClient.rpc('admin_upsert_shop', {
-    p_id: id, p_name: sh.name, p_store_id: sh.store_id,
-    p_surcharge_percent: sh.surcharge_percent,
-    p_api_key_env: sh.api_key_env || 'BTCPAY_API_KEY',
-    p_is_active: makeActive, p_is_default: sh.is_default, p_sort_order: sh.sort_order,
-  });
-  btn.disabled = false;
-  if (error) return showToast('Failed: ' + error.message, 'err');
-  loadShops();
-}
-
-async function deleteShop(id, btn){
-  if (!confirm('Delete this shop?')) return;
-  btn.disabled = true;
-  const { error } = await window.supabaseClient.rpc('admin_delete_shop', { p_id: id });
-  btn.disabled = false;
-  // The function refuses while links still point at it — deleting would
-  // leave those links with no store and every new invoice would fail.
-  if (error) return showToast(error.message, 'err');
-  showToast('Shop deleted', 'ok');
-  loadShops();
-}
 
 function switchTab(tab, btn){
   document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active')); btn.classList.add('active');
-  ['transactions','pending','customers','links','messages','earnings','shops','domains','settings','methods'].forEach(t => { document.getElementById('tab-' + t).style.display = (t === tab) ? 'block' : 'none'; });
+  ['transactions','pending','customers','links','messages','earnings','domains','settings','methods'].forEach(t => { document.getElementById('tab-' + t).style.display = (t === tab) ? 'block' : 'none'; });
   if (tab === 'transactions') loadAllPayments();
   if (tab === 'earnings') loadEarnings();
   if (tab === 'messages') loadCreatorList();
   if (tab === 'domains') loadDomains();
-  if (tab === 'shops') loadShops();
   if (tab === 'settings') loadStaff();
   if (tab === 'methods') loadWithdrawalMethods();
   if (tab === 'customers') closeCustomerDetail();

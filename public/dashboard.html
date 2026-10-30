@@ -739,10 +739,6 @@ body{
                   <div class="modal-title">Choose your link</div>
                   <div class="modal-sub" id="styleModalSub"></div>
                   <div id="styleOptions"></div>
-                  <div class="modal-field">
-                    <label class="modal-label">Cost</label>
-                    <select class="w-input" id="newShop"></select>
-                  </div>
                   <div class="hint" id="styleModalMsg" style="display:none;"></div>
                   <div class="modal-actions">
                     <button class="btn-ghost" onclick="closeStylePicker()">Cancel</button>
@@ -1100,8 +1096,6 @@ let withdrawalRealtimeChannel = null;
 let messageRealtimeChannel = null;
 let editingMessageId = null;
 let isAutoWithdrawEnabled = false;
-let activeShops = [];
-let shopLocked = false;
 let paymentMarks = {};
 let localMarks = {};       // NEW: localStorage-backed marks for instant UI feedback
 let localMarkTotals = 0;
@@ -1301,7 +1295,6 @@ async function init(){
   loadLocalMarks();
   await loadDomains();
   await fetchProfile();
-  await fetchShops();
   await Promise.allSettled([fetchLinks(), fetchPayments(), fetchWithdrawals(), refreshBalance(), fetchMarks(), loadPlatformNotice(), loadMessages()]);
   renderTiers();
   refreshMarkTotals();
@@ -1333,7 +1326,6 @@ async function loadDomains(){
 
 async function fetchProfile(){
   const { data } = await window.supabaseClient.from('profiles').select('*').eq('id', currentUser.id).single();
-  shopLocked = data?.shop_locked === true;
   const { data: appSetting } = await window.supabaseClient.from('app_settings').select('value').eq('key', 'auto_withdraw_enabled').maybeSingle();
 
   document.getElementById('statFee').textContent = (data?.withdrawal_fee_percent ?? 3) + '%';
@@ -1437,32 +1429,6 @@ async function loadPlatformNotice(){
   }
 }
 
-async function fetchShops(){
-  const { data } = await window.supabaseClient
-    .from('btcpay_shops')
-    .select('id, name, surcharge_percent, sort_order')
-    .eq('is_active', true)
-    .order('sort_order');
-  activeShops = data || [];
-  const sel = document.getElementById('newShop');
-  if (!sel) return;
-  if (shopLocked){
-    sel.innerHTML = '';
-    sel.style.display = 'none';
-    const lbl = sel.previousElementSibling;
-    if (lbl && lbl.classList.contains('modal-label')) lbl.style.display = 'none';
-    return;
-  }
-  const rate = (p) => parseFloat(p) === 0 ? 'no extra cost' : 'payer +' + parseFloat(p) + '%';
-  const options = activeShops.map(sh =>
-    `<option value="${escapeAttr(sh.id)}">${escapeHtml(sh.name)} — ${escapeHtml(rate(sh.surcharge_percent))}</option>`);
-  if (activeShops.length > 1){
-    options.unshift('<option value="">All rates — one link per rate</option>');
-  }
-  sel.innerHTML = options.join('');
-  sel.style.display = activeShops.length > 1 ? '' : 'none';
-}
-
 async function fetchLinks(){
   // A creator's link count is capped by max_payment_links, so this cannot
   // realistically reach the limit — but bounding it costs nothing and
@@ -1471,7 +1437,7 @@ async function fetchLinks(){
   // which link they came from), but it must never reappear here — that
   // would look like a link the creator never removed.
   const { data } = await window.supabaseClient.from('payment_links')
-    .select('*, btcpay_shops(name, surcharge_percent)')
+    .select('*')
     .eq('user_id', currentUser.id).is('deleted_at', null)
     .order('created_at').limit(500);
   allLinks = data || [];
@@ -1482,26 +1448,6 @@ async function fetchLinks(){
   document.getElementById('statLinkLimit').textContent = `of ${maxLinks} allowed`;
   document.getElementById('limitBar').innerHTML = `You've used <b>${activeCount}</b> of <b>${maxLinks}</b> active payment links.`;
   renderLinks();
-}
-
-function rateLabel(pct){
-  return parseFloat(pct) === 0 ? 'no extra cost' : 'payer +' + parseFloat(pct) + '%';
-}
-
-async function changeLinkShop(linkId, shopId, sel){
-  sel.disabled = true;
-  try {
-    const { error } = await window.supabaseClient
-      .rpc('set_link_shop', { p_link_id: linkId, p_shop_id: shopId });
-    if (error){ showToast('Failed: ' + error.message, 'err'); await fetchLinks(); return; }
-    showToast('Cost updated for new invoices', 'ok');
-    await fetchLinks();
-  } catch (e) {
-    console.error('changeLinkShop failed:', e);
-    showToast('Could not change the cost — see the browser console', 'err');
-  } finally {
-    sel.disabled = false;
-  }
 }
 
 function renderLinks(){
@@ -1520,24 +1466,14 @@ function renderLinks(){
   }
 
   list.innerHTML = [...groups.values()].map(variants => {
-    variants.sort((a, b) =>
-      (a.btcpay_shops?.surcharge_percent ?? 0) - (b.btcpay_shops?.surcharge_percent ?? 0));
 
     const head = variants[0];
     const anyActive = variants.some(v => v.is_active);
 
     const rows = variants.map(l => {
-      const pct = l.btcpay_shops?.surcharge_percent;
-      const rateTag = (pct != null) ? `<span class="rate-tag">${escapeHtml(rateLabel(pct))}</span>` : '';
       const url = `https://${host}/${l.slug}`;
-      const shopSelect = (shopLocked || !activeShops.length)
-        ? (rateTag || `<span class="rate-tag">${escapeHtml(rateLabel(activeShops.find(sh => sh.id === l.shop_id)?.surcharge_percent ?? 0))}</span>`)
-        : `<select class="cost-select" onchange="changeLinkShop('${escapeAttr(l.id)}', this.value, this)">
-             ${activeShops.map(sh => `<option value="${escapeAttr(sh.id)}" ${sh.id === l.shop_id ? 'selected' : ''}>${escapeHtml(rateLabel(sh.surcharge_percent))}</option>`).join('')}
-           </select>`;
       return `<div class="domain-row">
         <span class="domain-url">${escapeHtml(host)}/${escapeHtml(l.slug)}</span>
-        ${shopSelect}
         <button class="btn-copy" data-copy="${escapeAttr(url)}">⧉</button>
         <button class="btn-copy" title="Amount options" onclick="editAmountOptions('${escapeAttr(l.id)}')">$</button>
       </div>`;
@@ -1654,7 +1590,6 @@ async function createPaymentLink(){
     msgEl.style.color = 'var(--alert)'; msgEl.style.display = 'block'; return;
   }
 
-  const shopId = document.getElementById('newShop')?.value || null;
   const btn = document.getElementById('styleCreateBtn');
   btn.disabled = true;
 
@@ -1662,7 +1597,6 @@ async function createPaymentLink(){
     const { data, error } = await window.supabaseClient.rpc('create_link_variants', {
       p_display_name: name,
       p_styles: styles,
-      p_shop_id: shopId,
     });
 
     if (error){
