@@ -1,0 +1,62 @@
+/* Payment links section (sec-links). Every rule is scoped to .links-* so the
+   shared header, nav and global styles are untouched. */
+.links-root{ --links-accent:#00D632; --links-accent-ink:#00230A; --links-wash:rgba(0,214,50,.12);
+  --links-ring:rgba(0,214,50,.35); --links-card:#111312; --links-card-hi:#181B19; --links-line:#252A26;
+  --links-text:#F4F6F4; --links-dim:#A3ABA5; --links-faint:#7A837C; font-family:'Inter',system-ui,sans-serif; }
+.links-root .links-hero{ position:relative; overflow:hidden; padding:22px 18px 18px; margin:6px 0 14px; border-radius:20px;
+  background:radial-gradient(120% 90% at 100% 0%, rgba(0,214,50,.18), transparent 55%), linear-gradient(180deg,#121513,#0C0E0D);
+  border:1px solid var(--links-line); }
+.links-root .links-eyebrow{ font-size:11px; font-weight:600; letter-spacing:.12em; text-transform:uppercase; color:var(--links-accent); }
+.links-root .links-title{ font-size:24px; line-height:30px; font-weight:700; color:var(--links-text); margin-top:6px; letter-spacing:-.01em; }
+.links-root .links-sub{ font-size:13px; line-height:19px; color:var(--links-dim); margin-top:6px; }
+.links-root .links-usage{ margin:16px 0 14px; padding:0; background:none; border:none; font-size:12px; color:var(--links-dim); }
+.links-root .links-usage b{ color:var(--links-text); }
+.links-root .links-meter{ display:block; height:6px; margin-top:8px; border-radius:99px; background:#1E2420; overflow:hidden; }
+.links-root .links-meter > span{ display:block; height:100%; border-radius:99px; background:var(--links-accent); }
+.links-root .links-cta{ appearance:none; border:none; cursor:pointer; min-height:46px; padding:0 20px; border-radius:14px;
+  background:var(--links-accent); color:var(--links-accent-ink); font:700 15px/1 'Inter',system-ui,sans-serif;
+  box-shadow:0 8px 24px rgba(0,214,50,.22); transition:transform .12s ease, filter .12s ease; }
+.links-root .links-cta:active{ transform:scale(.98); }
+.links-root .links-cta:hover{ filter:brightness(1.06); }
+.links-root .links-cta:disabled{ opacity:.6; cursor:default; }
+.links-root .links-cta-block{ display:block; width:100%; margin-top:14px; }
+.links-root .links-cta-ghost{ background:var(--links-wash); color:var(--links-accent); box-shadow:none; border:1px solid var(--links-ring); }
+.links-root .links-card{ padding:18px 16px; margin-bottom:14px; border-radius:18px; background:var(--links-card); border:1px solid var(--links-line); }
+.links-root .links-card-title{ font-size:15px; font-weight:700; color:var(--links-text); }
+.links-root .links-label{ display:flex; justify-content:space-between; align-items:center; gap:8px; flex-wrap:wrap;
+  margin:14px 0 6px; font-size:12px; font-weight:600; color:var(--links-dim); }
+.links-root .links-lock{ font-size:11px; font-weight:600; color:var(--links-accent); background:var(--links-wash); padding:3px 8px; border-radius:99px; }
+.links-root .links-input{ width:100%; min-height:46px; margin:0; padding:0 14px; border-radius:12px; background:#0A0C0B;
+  border:1px solid var(--links-line); color:var(--links-text); font-size:15px; box-sizing:border-box; max-width:none; }
+.links-root .links-input:focus{ outline:none; border-color:var(--links-accent); box-shadow:0 0 0 3px var(--links-ring); }
+.links-root .links-hint{ margin:8px 0 0; font-size:12px; line-height:17px; color:var(--links-faint); }
+.links-root .links-qi-row{ display:grid; grid-template-columns:1fr 1fr; gap:10px; margin-top:12px; }
+.links-root .links-qi-out{ margin-top:10px; word-break:break-all; font-family:'Geist Mono',monospace; font-size:12px; color:var(--links-accent); }
+.links-root .links-list-head{ display:flex; justify-content:space-between; align-items:center; gap:10px; margin:22px 2px 4px; }
+.links-root .links-domain{ display:flex; align-items:center; gap:8px; }
+.links-root .links-domain label{ font-size:11px; font-weight:600; letter-spacing:.08em; text-transform:uppercase; color:var(--links-faint); }
+.links-root .links-select{ min-height:36px; padding:0 30px 0 12px; border-radius:10px; background-color:#0A0C0B;
+  border:1px solid var(--links-line); color:var(--links-text); font-size:13px; max-width:180px; }
+.links-root .links-domain-hint{ margin:0 2px 12px; font-size:12px; color:var(--links-faint); }
+.links-root .links-list{ display:flex; flex-direction:column; gap:12px; }
+.links-root .links-empty{ padding:28px 16px; text-align:center; border:1px dashed var(--links-line); border-radius:18px; color:var(--links-dim); font-size:14px; }
+.links-root .links-item{ padding:16px; border-radius:18px; background:var(--links-card); border:1px solid var(--links-line); }
+.links-root .links-item.links-off{ opacity:.62; }
+.links-root .links-item-head{ display:flex; align-items:center; gap:12px; }
+.links-root .links-avatar{ flex:0 0 40px; height:40px; border-radius:12px; display:grid; place-items:center;
+  background:var(--links-wash); color:var(--links-accent); font-weight:700; font-size:17px; }
+.links-root .links-item-meta{ flex:1; min-width:0; }
+.links-root .links-item-name{ font-size:16px; font-weight:700; color:var(--links-text); white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+.links-root .links-fee{ margin-top:2px; font-size:12px; color:var(--links-dim); }
+.links-root .links-status{ flex:none; font-size:11px; font-weight:700; padding:5px 10px; border-radius:99px; }
+.links-root .links-status.on{ background:var(--links-wash); color:var(--links-accent); }
+.links-root .links-status.off{ background:rgba(255,90,90,.12); color:#FF7A7A; }
+.links-root .links-note{ margin:10px 0 0; font-size:12px; line-height:17px; color:var(--links-faint); }
+.links-root .links-row{ display:flex; align-items:center; gap:8px; margin-top:10px; padding:6px 6px 6px 12px;
+  border-radius:12px; background:#0A0C0B; border:1px solid var(--links-line); }
+.links-root .links-url{ flex:1; min-width:0; font:500 13px/18px 'Geist Mono',monospace; color:var(--links-text);
+  white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+.links-root .links-host{ color:var(--links-faint); }
+.links-root .links-btn{ flex:none; width:auto; min-width:40px; height:36px; padding:0 12px; border-radius:10px;
+  background:var(--links-card-hi); border:1px solid var(--links-line); color:var(--links-text); font:600 13px/1 'Inter',sans-serif; cursor:pointer; }
+.links-root .links-btn-accent{ background:var(--links-accent); border-color:var(--links-accent); color:var(--links-accent-ink); }
