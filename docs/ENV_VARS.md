@@ -9,14 +9,9 @@ platform's dashboard.
 injected automatically into every function. The rest you add yourself under
 Dashboard → Edge Functions → Secrets (they are project-wide, not per-function).
 
-Used by `btcpay-webhook`, `create-invoice`, `user-withdraw`:
-
-- [ ] `BTCPAY_URL` — e.g. https://your-btcpay-server.com (no trailing slash)
-- [ ] `BTCPAY_API_KEY` — store API key with invoice + payout permissions
-- [ ] `BTCPAY_STORE_ID`
-- [ ] `BTCPAY_WEBHOOK_SECRET` — from BTCPay → Store → Webhooks.
-      **Required.** The webhook rejects every request if this is unset, rather
-      than HMAC-ing against an empty string that anyone could reproduce.
+LND connection details for `lnd-create-invoice`, `lnd-watcher` and
+`payment-status` are read from Supabase Vault (migration 0074), not from
+function secrets.
 
 Used by `daily-report` and `ledger-backup`:
 
@@ -25,14 +20,14 @@ Used by `daily-report` and `ledger-backup`:
 
 New in this update:
 
-- [ ] `ALERT_WEBHOOK_URL` — a Discord/Slack/Telegram-bot webhook URL. When a
-      BTCPay payout fails, BTCPay is unreachable, the ledger backup cannot
+- [ ] `ALERT_WEBHOOK_URL` — a Discord/Slack/Telegram-bot webhook URL. When the
+      ledger backup cannot
       commit, or the daily report skips a day, the function posts a `🚨`
       message here. Payment failures wake a human up instead of sitting in a
       log file. Unset = alerts are silently skipped.
 
 CORS origins — **no secret needed**. The allowed browser origins for
-`btcpay-webhook` (admin routes) and `user-withdraw` are read live from the
+`admin-actions` and `user-withdraw` are read live from the
 `site_domains` table — the same registry the admin panel manages. Add a
 domain in the admin panel and it is allowed within ~5 minutes (cache
 window); deactivate it and it stops working. No secret edit, no redeploy.
@@ -40,9 +35,7 @@ window); deactivate it and it stops working. No secret edit, no redeploy.
 - [ ] `ALLOWED_ORIGINS` *(optional, merged on top of site_domains)* —
       comma-separated list, e.g. `https://boltpay.example.com,https://pay.example.com`.
       Only use this for a domain you do NOT want visible in the admin
-      panel's domain registry. `create-invoice` keeps its wildcard by
-      design — payment links are embedded on creator-owned domains, and it
-      is defended by a per-link rate limit instead.
+      panel's domain registry.
 
 Used by `ledger-backup` only:
 

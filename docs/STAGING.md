@@ -53,13 +53,12 @@ but point them at test resources:
 
 | Secret | Staging value |
 |---|---|
-| `BTCPAY_URL` | A BTCPay **testnet** store, or leave unset to test the failure path |
-| `BTCPAY_API_KEY*` | Testnet keys only |
+| LND (Vault) | A **testnet** node only |
 | `GITHUB_REPO` | A throwaway repo, or unset so ledger-backup no-ops |
 | `ALERT_WEBHOOK_URL` | A separate channel, so staging noise never reaches the real one |
 | `CRON_SECRET` | Different from production |
 
-**Never point staging at the production BTCPay store.** A test payout
+**Never point staging at the production Lightning node.** A test payout
 run against a live Lightning node spends real sats.
 
 **6. A staging copy of the site.** Either a second Cloudflare Pages

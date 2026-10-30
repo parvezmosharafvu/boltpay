@@ -7,7 +7,7 @@ enough detail to reproduce (endpoint, payload, expected vs. actual). Expect an
 acknowledgement within a few days.
 
 Please do not test against the production instance with real payments. Use a
-BTCPay testnet store.
+testnet Lightning node.
 
 ## What is and is not a secret in this repo
 
@@ -22,7 +22,7 @@ Safe to commit — these are public by design:
 Never commit:
 
 - `SUPABASE_SERVICE_ROLE_KEY` — bypasses RLS completely.
-- `BTCPAY_API_KEY`, `BTCPAY_WEBHOOK_SECRET`, `BTCPAY_STORE_ID`.
+- LND macaroons and TLS material (kept in Supabase Vault).
 - `CRON_SECRET`, `GITHUB_TOKEN`.
 
 All of the above belong in Supabase Edge Function secrets. See `docs/ENV_VARS.md`.
@@ -48,19 +48,16 @@ All of the above belong in Supabase Edge Function secrets. See `docs/ENV_VARS.md
   withdrawal destinations are attacker-controlled; the admin panel escapes
   every one of them before rendering. If you add a new field to that panel,
   escape it.
-- **Webhook deliveries are idempotent.** `webhook_events.delivery_id` is
-  claimed before any payment row is touched, so BTCPay retries and
-  concurrent duplicate deliveries are acknowledged without reprocessing.
+- **Settlement is idempotent.** An LND invoice is settled by its payment
+  hash exactly once; repeated watcher or status checks are no-ops.
   Amounts additionally cannot be negative (or zero when requested) at the
   database level — CHECK constraints, not just application code.
 - **Browser origins are restricted on the money endpoints.** `user-withdraw`
-  and the admin routes on `btcpay-webhook` only emit CORS headers for
+  and `admin-actions` only emit CORS headers for
   domains registered (and active) in `site_domains` — the admin panel's own
   domain registry, cached for 5 minutes in the function. An optional
   `ALLOWED_ORIGINS` secret can add hosts that should stay out of that
-  registry. `create-invoice` keeps a wildcard on purpose (payment links
-  live on creators' own domains) and is defended by its per-link rate
-  limit instead. `public/_headers` adds CSP and `frame-ancestors 'none'`
+  registry. Payer endpoints are served same-origin through the Worker. `public/_headers` adds CSP and `frame-ancestors 'none'`
   (anti-clickjacking) to every page.
 
 ## After cloning or forking
