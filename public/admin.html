@@ -818,66 +818,99 @@ textarea.w-input{ padding:10px 12px !important; }
                                           </div>
                                         </div>
                                         <!-- SETTINGS TAB -->
-                                        <div id="tab-settings" style="display:none;">
-                                          <div class="panel" id="checkoutLimitsPanel">
+                                        <div id="tab-settings" class="settings-scope" style="display:none;">
+<style>
+/* Settings tab redesign: scoped to #tab-settings only. */
+#tab-settings.settings-scope{ --s-accent:#00D632; --s-accent-ink:#00230A; --s-card:#111311; --s-card-hi:#181B18; --s-line:rgba(255,255,255,.08); --s-dim:rgba(235,240,235,.62); padding-bottom:24px; }
+#tab-settings .settings-header{ padding:4px 2px 14px; }
+#tab-settings .settings-header h2{ font-size:22px; font-weight:700; letter-spacing:-.02em; margin:0; color:#F4F7F4; }
+#tab-settings .settings-header p{ margin:4px 0 0; font-size:12px; color:var(--s-dim); }
+#tab-settings .settings-card{ background:linear-gradient(180deg,var(--s-card-hi),var(--s-card)) !important; border:1px solid var(--s-line) !important; border-radius:20px !important; padding:18px 16px !important; margin-bottom:14px !important; box-shadow:0 1px 0 rgba(255,255,255,.04) inset, 0 10px 30px rgba(0,0,0,.35); }
+#tab-settings .settings-card .panel-head{ margin-bottom:14px !important; padding-bottom:12px; border-bottom:1px solid var(--s-line); }
+#tab-settings .settings-card .panel-title{ font-size:15px !important; font-weight:650; display:flex; align-items:center; gap:10px; }
+#tab-settings .settings-card .panel-title::before{ content:""; width:8px; height:8px; border-radius:50%; background:var(--s-accent); box-shadow:0 0 10px rgba(0,214,50,.6); flex-shrink:0; }
+#tab-settings .settings-card .w-row{ flex-direction:column; align-items:stretch !important; gap:12px !important; }
+#tab-settings .settings-card label{ color:var(--s-dim); font-size:12px !important; font-weight:500; line-height:1.5; }
+#tab-settings .settings-input, #tab-settings .settings-card .field input, #tab-settings .settings-card select{ width:100%; max-width:none !important; min-height:48px; margin-top:6px; background:#0A0C0A !important; border:1px solid rgba(255,255,255,.10) !important; border-radius:12px !important; color:#F4F7F4 !important; font-size:16px !important; padding:0 14px !important; box-sizing:border-box; }
+#tab-settings .settings-input:focus, #tab-settings .settings-card .field input:focus, #tab-settings .settings-card select:focus{ outline:none; border-color:var(--s-accent) !important; box-shadow:0 0 0 3px rgba(0,214,50,.22) !important; }
+#tab-settings .settings-btn{ width:100%; max-width:none !important; min-height:50px; border:none !important; border-radius:14px !important; background:var(--s-accent) !important; color:var(--s-accent-ink) !important; font-size:15px !important; font-weight:700 !important; box-shadow:0 8px 22px rgba(0,214,50,.22) !important; cursor:pointer; transition:transform .12s ease, filter .12s ease; }
+#tab-settings .settings-btn:active{ transform:scale(.98); }
+#tab-settings .settings-btn:disabled{ filter:saturate(.3) brightness(.7); }
+#tab-settings .settings-btn-group{ display:grid !important; grid-template-columns:1fr; }
+#tab-settings .settings-btn-ghost{ width:100%; min-height:48px; border-radius:14px !important; background:transparent !important; border:1px solid rgba(0,214,50,.45) !important; color:var(--s-accent) !important; font-weight:600; font-size:14px; opacity:1 !important; }
+#tab-settings .settings-status{ display:inline-flex; align-items:center; gap:8px; padding:8px 12px; border-radius:999px; background:rgba(0,214,50,.10); border:1px solid rgba(0,214,50,.25); color:#CFF7D8; font-size:12px !important; opacity:1 !important; }
+#tab-settings .settings-radio{ display:block; position:relative; padding:14px 14px 14px 46px; border-radius:14px; border:1px solid var(--s-line); background:#0C0E0C; color:#E6EBE6 !important; cursor:pointer; }
+#tab-settings .settings-radio:has(input:checked){ border-color:var(--s-accent); background:rgba(0,214,50,.07); }
+#tab-settings .settings-radio input{ position:absolute; left:14px; top:15px; }
+#tab-settings .settings-radio input, #tab-settings .settings-check input{ accent-color:var(--s-accent); width:20px; height:20px; margin:0; flex-shrink:0; }
+#tab-settings .settings-check{ padding:14px; border-radius:14px; background:#0C0E0C; border:1px solid var(--s-line); color:#E6EBE6 !important; margin-top:14px !important; }
+#tab-settings .settings-hint{ font-size:12px !important; line-height:1.55; color:var(--s-dim) !important; margin-top:12px !important; }
+#tab-settings .switch input:checked + .slider{ background:rgba(0,214,50,.22) !important; border-color:var(--s-accent) !important; }
+#tab-settings .switch input:checked + .slider:before{ background:var(--s-accent) !important; }
+#tab-settings .toggle-row{ padding:12px 0; }
+@media (min-width:760px){ #tab-settings .settings-card .w-row{ flex-direction:row; align-items:flex-end !important; } #tab-settings .settings-btn{ width:auto; padding:0 22px !important; } #tab-settings .settings-btn-group{ grid-template-columns:repeat(3,1fr); } }
+</style>
+<div class="settings-header"><h2 data-en="Settings" data-bn="সেটিংস">Settings</h2><p data-en="Checkout, fees, integrations and platform controls." data-bn="চেকআউট, ফি, ইন্টিগ্রেশন ও প্ল্যাটফর্ম নিয়ন্ত্রণ।">Checkout, fees, integrations and platform controls.</p></div>
+
+                                          <div class="panel settings-card" id="checkoutLimitsPanel">
                                             <div class="panel-head"><div class="panel-title">Checkout limits · চেকআউট সীমা</div></div>
                                             <div class="w-row" style="gap:10px;flex-wrap:wrap;align-items:flex-end">
-                                              <label style="font-size:12px">Invoice expiry (minutes) · ইনভয়েসের মেয়াদ (মিনিট)<br><input id="ckExpiry" class="w-input" type="number" min="5" max="1440" step="1"></label>
-                                              <label style="font-size:12px">Minimum (USD) · সর্বনিম্ন (USD)<br><input id="ckMin" class="w-input" type="number" min="10" step="0.01"></label>
-                                              <label style="font-size:12px">Maximum (USD) · সর্বোচ্চ (USD)<br><input id="ckMax" class="w-input" type="number" min="1" step="0.01"></label>
-                                              <button class="btn-sm" onclick="saveCheckoutLimits(this)">Save · সংরক্ষণ</button>
+                                              <label style="font-size:12px">Invoice expiry (minutes) · ইনভয়েসের মেয়াদ (মিনিট)<br><input id="ckExpiry" class="w-input settings-input" type="number" min="5" max="1440" step="1"></label>
+                                              <label style="font-size:12px">Minimum (USD) · সর্বনিম্ন (USD)<br><input id="ckMin" class="w-input settings-input" type="number" min="10" step="0.01"></label>
+                                              <label style="font-size:12px">Maximum (USD) · সর্বোচ্চ (USD)<br><input id="ckMax" class="w-input settings-input" type="number" min="1" step="0.01"></label>
+                                              <button class="btn-sm settings-btn" onclick="saveCheckoutLimits(this)">Save · সংরক্ষণ</button>
                                             </div>
                                           </div>
-                                          <div class="panel" id="markupPanel">
+                                          <div class="panel settings-card" id="markupPanel">
                                             <div class="panel-head"><div class="panel-title">Conversion fee · কনভার্সন ফি</div></div>
                                             <div class="w-row" style="gap:10px;flex-wrap:wrap;align-items:flex-end">
-                                              <label style="font-size:12px">Conversion fee (%) · কনভার্সন ফি (%)<br><input id="markupPct" class="w-input" type="number" min="0" max="50" step="0.01"></label>
-                                              <button class="btn-sm" onclick="saveMarkup(this)">Save · সংরক্ষণ</button>
+                                              <label style="font-size:12px">Conversion fee (%) · কনভার্সন ফি (%)<br><input id="markupPct" class="w-input settings-input" type="number" min="0" max="50" step="0.01"></label>
+                                              <button class="btn-sm settings-btn" onclick="saveMarkup(this)">Save · সংরক্ষণ</button>
                                             </div>
-                                            <div class="hint" style="font-size:11px; color:var(--text-faint); margin-top:8px;" id="markupHint">Total fee on new payments; who pays depends on the fee mode below. · নতুন পেমেন্টে মোট ফি; কে দেবেন তা নিচের ফি মোডে নির্ধারিত।</div>
+                                            <div class="hint settings-hint" style="font-size:11px; color:var(--text-faint); margin-top:8px;" id="markupHint">Total fee on new payments; who pays depends on the fee mode below. · নতুন পেমেন্টে মোট ফি; কে দেবেন তা নিচের ফি মোডে নির্ধারিত।</div>
                                           </div>
-                                          <div class="panel" id="feeModePanel">
+                                          <div class="panel settings-card" id="feeModePanel">
                                             <div class="panel-head"><div class="panel-title">Fee mode · ফি মোড</div></div>
                                             <div style="display:flex;flex-direction:column;gap:8px;font-size:12px">
-                                              <label><input type="radio" name="feeMode" value="creator"> <b>Creator pays</b> — fee deducted from the creator (default) · <b>ক্রিয়েটর দেন</b> — ক্রিয়েটরের পরিমাণ থেকে কাটা (ডিফল্ট)</label>
-                                              <label><input type="radio" name="feeMode" value="buyer"> <b>Buyer pays</b> — added to the buyer total; creator gets the full amount · <b>ক্রেতা দেন</b> — ক্রেতার মোটে যোগ; ক্রিয়েটর পুরো পরিমাণ পান</label>
-                                              <label><input type="radio" name="feeMode" value="split"> <b>Split 50/50</b> (suggested) — half on the buyer, half from the creator · <b>৫০/৫০ ভাগ</b> (প্রস্তাবিত) — অর্ধেক ক্রেতা, অর্ধেক ক্রিয়েটর</label>
+                                              <label class="settings-radio"><input type="radio" name="feeMode" value="creator"> <b>Creator pays</b> — fee deducted from the creator (default) · <b>ক্রিয়েটর দেন</b> — ক্রিয়েটরের পরিমাণ থেকে কাটা (ডিফল্ট)</label>
+                                              <label class="settings-radio"><input type="radio" name="feeMode" value="buyer"> <b>Buyer pays</b> — added to the buyer total; creator gets the full amount · <b>ক্রেতা দেন</b> — ক্রেতার মোটে যোগ; ক্রিয়েটর পুরো পরিমাণ পান</label>
+                                              <label class="settings-radio"><input type="radio" name="feeMode" value="split"> <b>Split 50/50</b> (suggested) — half on the buyer, half from the creator · <b>৫০/৫০ ভাগ</b> (প্রস্তাবিত) — অর্ধেক ক্রেতা, অর্ধেক ক্রিয়েটর</label>
                                             </div>
-                                            <div class="w-row" style="margin-top:10px"><button class="btn-sm" onclick="saveFeeMode(this)">Save mode · মোড সংরক্ষণ</button></div>
-                                            <div class="hint" style="font-size:11px; color:var(--text-faint); margin-top:8px;">Applies to new invoices only; existing payments keep their mode. · শুধু নতুন ইনভয়েসে প্রযোজ্য; আগের পেমেন্ট আগের মোডেই থাকে।</div>
+                                            <div class="w-row" style="margin-top:10px"><button class="btn-sm settings-btn" onclick="saveFeeMode(this)">Save mode · মোড সংরক্ষণ</button></div>
+                                            <div class="hint settings-hint" style="font-size:11px; color:var(--text-faint); margin-top:8px;">Applies to new invoices only; existing payments keep their mode. · শুধু নতুন ইনভয়েসে প্রযোজ্য; আগের পেমেন্ট আগের মোডেই থাকে।</div>
                                           </div>
-                                          <div class="panel" id="linkMarkupPanel">
+                                          <div class="panel settings-card" id="linkMarkupPanel">
                                             <div class="panel-head"><div class="panel-title">Per-link extra fee · লিংক অনুযায়ী অতিরিক্ত ফি</div></div>
                                             <div class="w-row" style="gap:10px;flex-wrap:wrap;align-items:flex-end">
-                                              <label style="font-size:12px">Creator min (%) · সর্বনিম্ন (%)<br><input id="lmMin" class="w-input" type="number" min="0" max="100" step="0.01"></label>
-                                              <label style="font-size:12px">Creator max (%) · সর্বোচ্চ (%)<br><input id="lmMax" class="w-input" type="number" min="0" max="100" step="0.01"></label>
-                                              <button class="btn-sm" onclick="saveLinkMarkupRange(this)">Save range · রেঞ্জ সংরক্ষণ</button>
+                                              <label style="font-size:12px">Creator min (%) · সর্বনিম্ন (%)<br><input id="lmMin" class="w-input settings-input" type="number" min="0" max="100" step="0.01"></label>
+                                              <label style="font-size:12px">Creator max (%) · সর্বোচ্চ (%)<br><input id="lmMax" class="w-input settings-input" type="number" min="0" max="100" step="0.01"></label>
+                                              <button class="btn-sm settings-btn" onclick="saveLinkMarkupRange(this)">Save range · রেঞ্জ সংরক্ষণ</button>
                                             </div>
-                                            <label style="font-size:12px;display:flex;gap:8px;align-items:center;margin-top:10px"><input type="checkbox" id="lmEnabled" onchange="toggleLinkMarkup(this)"> Use per-link markup at checkout · চেকআউটে লিংক অনুযায়ী মার্কআপ ব্যবহার</label>
-                                            <div class="hint" style="font-size:11px; color:var(--text-faint); margin-top:8px;">Buyer pays the link's extra fee (set at creation, locked for creators), else 0%. Range limits new links. The conversion fee is separate and deducted from the creator. · ক্রেতা লিংকের অতিরিক্ত ফি দেন (তৈরির সময় নির্ধারিত, ক্রিয়েটরের জন্য লক), নইলে 0%। কনভার্সন ফি আলাদা, ক্রিয়েটর থেকে কাটা হয়।</div>
+                                            <label class="settings-check" style="font-size:12px;display:flex;gap:8px;align-items:center;margin-top:10px"><input type="checkbox" id="lmEnabled" onchange="toggleLinkMarkup(this)"> Use per-link markup at checkout · চেকআউটে লিংক অনুযায়ী মার্কআপ ব্যবহার</label>
+                                            <div class="hint settings-hint" style="font-size:11px; color:var(--text-faint); margin-top:8px;">Buyer pays the link's extra fee (set at creation, locked for creators), else 0%. Range limits new links. The conversion fee is separate and deducted from the creator. · ক্রেতা লিংকের অতিরিক্ত ফি দেন (তৈরির সময় নির্ধারিত, ক্রিয়েটরের জন্য লক), নইলে 0%। কনভার্সন ফি আলাদা, ক্রিয়েটর থেকে কাটা হয়।</div>
                                           </div>
-                                          <div class="panel" id="paymentsCsvPanel">
+                                          <div class="panel settings-card" id="paymentsCsvPanel">
                                             <div class="panel-head"><div class="panel-title">Export payments (CSV) · পেমেন্ট এক্সপোর্ট (CSV)</div></div>
                                             <div class="w-row" style="gap:10px;align-items:center">
-                                              <select id="csvDays" class="w-input" style="max-width:160px"><option value="7">7 days · ৭ দিন</option><option value="30" selected>30 days · ৩০ দিন</option><option value="90">90 days · ৯০ দিন</option><option value="366">1 year · ১ বছর</option></select>
-                                              <button class="btn-sm" onclick="exportPaymentsCsv(this)">Download CSV · CSV ডাউনলোড</button>
+                                              <select id="csvDays" class="w-input settings-input" style="max-width:160px"><option value="7">7 days · ৭ দিন</option><option value="30" selected>30 days · ৩০ দিন</option><option value="90">90 days · ৯০ দিন</option><option value="366">1 year · ১ বছর</option></select>
+                                              <button class="btn-sm settings-btn" onclick="exportPaymentsCsv(this)">Download CSV · CSV ডাউনলোড</button>
                                             </div>
                                           </div>
-                                          <div class="panel" id="tgAdminPanel">
+                                          <div class="panel settings-card" id="tgAdminPanel">
                                             <div class="panel-head"><div class="panel-title">Telegram bot · টেলিগ্রাম বট</div></div>
-                                            <div id="tgAdminStatus" style="font-size:13px;opacity:.85;margin-bottom:12px">—</div>
-                                            <div class="w-row" style="gap:8px;flex-wrap:wrap">
-                                              <button class="btn-ghost" onclick="tgAdmin('status', this)">Check status · অবস্থা দেখুন</button>
-                                              <button class="btn-ghost" onclick="tgAdmin('resync', this)">Re-register webhook · ওয়েবহুক আবার নিবন্ধন</button>
-                                              <button class="btn-ghost" onclick="tgAdmin('test', this)">Send test message · পরীক্ষামূলক বার্তা পাঠান</button>
+                                            <div class="settings-status" id="tgAdminStatus" style="font-size:13px;opacity:.85;margin-bottom:12px">—</div>
+                                            <div class="w-row settings-btn-group" style="gap:8px;flex-wrap:wrap">
+                                              <button class="btn-ghost settings-btn-ghost" onclick="tgAdmin('status', this)">Check status · অবস্থা দেখুন</button>
+                                              <button class="btn-ghost settings-btn-ghost" onclick="tgAdmin('resync', this)">Re-register webhook · ওয়েবহুক আবার নিবন্ধন</button>
+                                              <button class="btn-ghost settings-btn-ghost" onclick="tgAdmin('test', this)">Send test message · পরীক্ষামূলক বার্তা পাঠান</button>
                                             </div>
                                           </div>
-                                          <div class="panel">
+                                          <div class="panel settings-card">
                                             <div class="panel-head">
                                               <div class="panel-title" data-en="Platform notice" data-bn="প্ল্যাটফর্ম নোটিশ">Platform notice</div>
                                             </div>
                                             <div class="w-row" style="margin-bottom:12px;">
-                                              <input type="text" class="w-input" id="noticeInput" placeholder="Message shown on every creator&#39;s dashboard…" data-ph-en="Message shown on every creator&#39;s dashboard…" data-ph-bn="প্রত্যেক ক্রিয়েটরের ড্যাশবোর্ডে যে বার্তা দেখাবে…">
+                                              <input type="text" class="w-input settings-input" id="noticeInput" placeholder="Message shown on every creator&#39;s dashboard…" data-ph-en="Message shown on every creator&#39;s dashboard…" data-ph-bn="প্রত্যেক ক্রিয়েটরের ড্যাশবোর্ডে যে বার্তা দেখাবে…">
                                               </div>
                                               <div class="toggle-row">
                                                 <div>
@@ -890,43 +923,43 @@ textarea.w-input{ padding:10px 12px !important; }
                                                     </span>
                                                   </label>
                                                 </div>
-                                                <button class="btn-primary" style="max-width:200px;" onclick="saveNotice()" data-en="Save notice" data-bn="নোটিশ সেভ করুন">Save notice</button>
+                                                <button class="btn-primary settings-btn" style="max-width:200px;" onclick="saveNotice()" data-en="Save notice" data-bn="নোটিশ সেভ করুন">Save notice</button>
                                               </div>
-                                                <div class="panel">
+                                                <div class="panel settings-card">
                                                   <div class="panel-head">
                                                     <div class="panel-title" data-en="Default link limit for new creators" data-bn="নতুন ক্রিয়েটরের ডিফল্ট লিংক সীমা">Default link limit for new creators</div>
                                                   </div>
                                                   <div class="w-row" style="margin-bottom:12px;">
-                                                    <input type="number" step="1" min="1" max="500" class="w-input" id="defaultLinkLimitInput" placeholder="5">
+                                                    <input type="number" step="1" min="1" max="500" class="w-input settings-input" id="defaultLinkLimitInput" placeholder="5">
                                                   </div>
-                                                  <button class="btn-primary" style="max-width:200px;" onclick="saveDefaultLinkLimit()" data-en="Save link limit" data-bn="লিংক সীমা সেভ করুন">Save link limit</button>
-                                                  <div class="hint" style="font-size:11px; color:var(--text-faint); margin-top:8px;" data-en="One name counts as one link even when it produces several rate variants. Applies to accounts created from now on — edit existing creators from Customers." data-bn="একটি নাম একটি লিংক হিসেবে গণ্য হয়, যদিও তা থেকে কয়েকটি রেট ভ্যারিয়েন্ট তৈরি হয়। এখন থেকে তৈরি হওয়া অ্যাকাউন্টে প্রযোজ্য; পুরোনো ক্রিয়েটরদের Customers থেকে বদলান।">One name counts as one link even when it produces several rate variants. Applies to accounts created from now on — edit existing creators from Customers.</div>
+                                                  <button class="btn-primary settings-btn" style="max-width:200px;" onclick="saveDefaultLinkLimit()" data-en="Save link limit" data-bn="লিংক সীমা সেভ করুন">Save link limit</button>
+                                                  <div class="hint settings-hint" style="font-size:11px; color:var(--text-faint); margin-top:8px;" data-en="One name counts as one link even when it produces several rate variants. Applies to accounts created from now on — edit existing creators from Customers." data-bn="একটি নাম একটি লিংক হিসেবে গণ্য হয়, যদিও তা থেকে কয়েকটি রেট ভ্যারিয়েন্ট তৈরি হয়। এখন থেকে তৈরি হওয়া অ্যাকাউন্টে প্রযোজ্য; পুরোনো ক্রিয়েটরদের Customers থেকে বদলান।">One name counts as one link even when it produces several rate variants. Applies to accounts created from now on — edit existing creators from Customers.</div>
                                                 </div>
                                                   </div>
 
 
-                                                  <div class="panel">
+                                                  <div class="panel settings-card">
                                                     <div class="panel-head">
                                                       <div class="panel-title" data-en="Support links on the home page" data-bn="হোম পেজের সাপোর্ট লিংক">Support links on the home page</div>
                                                     </div>
                                                     <div class="w-row" style="margin-bottom:10px;">
-                                                      <input type="email" class="w-input" id="supportEmailInput" placeholder="support@example.com">
+                                                      <input type="email" class="w-input settings-input" id="supportEmailInput" placeholder="support@example.com">
                                                     </div>
                                                     <div class="w-row" style="margin-bottom:12px;">
-                                                      <input type="url" class="w-input" id="supportGroupInput" placeholder="https://m.me/j/... (group invite, optional)">
+                                                      <input type="url" class="w-input settings-input" id="supportGroupInput" placeholder="https://m.me/j/... (group invite, optional)">
                                                     </div>
-                                                    <button class="btn-primary" style="max-width:220px;" onclick="saveSupportLinks()" data-en="Save support links" data-bn="সাপোর্ট লিংক সেভ করুন">Save support links</button>
-                                                    <div class="hint" style="font-size:11px; color:var(--text-faint); margin-top:8px;" data-en="The email is always shown on the home page. The group link only appears when you fill it in &mdash; clear the field to hide it." data-bn="ইমেইল সবসময় হোম পেজে দেখায়। গ্রুপ লিংক শুধু দিলে দেখাবে; লুকাতে ঘরটি খালি করুন।">The email is always shown on the home page. The group link only appears when you fill it in &mdash; clear the field to hide it.</div>
+                                                    <button class="btn-primary settings-btn" style="max-width:220px;" onclick="saveSupportLinks()" data-en="Save support links" data-bn="সাপোর্ট লিংক সেভ করুন">Save support links</button>
+                                                    <div class="hint settings-hint" style="font-size:11px; color:var(--text-faint); margin-top:8px;" data-en="The email is always shown on the home page. The group link only appears when you fill it in &mdash; clear the field to hide it." data-bn="ইমেইল সবসময় হোম পেজে দেখায়। গ্রুপ লিংক শুধু দিলে দেখাবে; লুকাতে ঘরটি খালি করুন।">The email is always shown on the home page. The group link only appears when you fill it in &mdash; clear the field to hide it.</div>
                                                   </div>
 
-                                                  <div class="panel">
+                                                  <div class="panel settings-card">
   <div class="panel-head"><div class="panel-title">BDT rate · BDT রেট</div></div>
   <div class="field">
     <label>Global fallback (৳ per USD) · ডিফল্ট রেট (প্রতি USD-তে ৳)</label>
     <input type="number" step="0.01" min="50" max="1000" id="globalBdtRate" placeholder="BDT rate not set · BDT রেট সেট করা নেই">
   </div>
-  <button class="btn-primary" style="max-width:220px;" onclick="saveGlobalBdtRate()">Save BDT rate · সেভ করুন</button>
-  <div class="hint" style="font-size:11px; color:var(--text-faint); margin-top:8px;">Used for users without their own BDT rate. Empty means not set, and BDT withdrawals are refused. · নিজস্ব রেট না থাকলে এটি ব্যবহার হবে। খালি থাকলে BDT উত্তোলন বন্ধ।</div>
+  <button class="btn-primary settings-btn" style="max-width:220px;" onclick="saveGlobalBdtRate()">Save BDT rate · সেভ করুন</button>
+  <div class="hint settings-hint" style="font-size:11px; color:var(--text-faint); margin-top:8px;">Used for users without their own BDT rate. Empty means not set, and BDT withdrawals are refused. · নিজস্ব রেট না থাকলে এটি ব্যবহার হবে। খালি থাকলে BDT উত্তোলন বন্ধ।</div>
 </div>
 
                                                     </div>
