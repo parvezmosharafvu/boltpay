@@ -2000,7 +2000,7 @@ async function renderCustomDomains(rows){
         ${d.status === 'disabled'
           ? `<button class="act-btn act-approve" onclick="cdAction('set_status','${d.id}',this,{status:'active'})">Enable · চালু</button>`
           : `<button class="act-btn act-reject" onclick="cdAction('set_status','${d.id}',this,{status:'disabled'})">Disable · বন্ধ</button>`}
-        <button class="act-btn act-reject" onclick="if(confirm('Remove this domain? / ডোমেইনটি সরাবেন?')) cdAction('remove','${d.id}',this)">Remove · সরান</button>
+        <button class="act-btn act-reject" onclick="cdRemove('${d.id}',this)">Remove · সরান</button>
       </div></div>`;
   }).join('') : '<div class="empty-state">No custom domains · কোনো কাস্টম ডোমেইন নেই</div>';
   // Poll every 4 s while anything is still provisioning (like paycashapp.site).
@@ -2030,6 +2030,7 @@ async function cdAction(action, id, btn, extra){
   catch (e){ showToast(e.message, 'err'); }
   await loadDomains();
 }
+function cdRemove(id, btn){ if (confirm('Remove this domain? / ডোমেইনটি সরাবেন?')) cdAction('remove', id, btn); }
 async function addCustomDomain(btn){
   const hostname = document.getElementById('cdHost').value.trim().toLowerCase().replace(/^https?:\/\//, '').replace(/\/.*$/, '');
   const owner_email = document.getElementById('cdOwner').value.trim();
