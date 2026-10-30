@@ -233,9 +233,9 @@ body{
   position:relative; transition:all .2s;
 }
 .tier-card.current{
-  background:linear-gradient(135deg,rgba(0,166,42,0.07),rgba(0,166,42,0.02));
+  background:linear-gradient(135deg,rgba(255,184,0,0.07),rgba(255,184,0,0.02));
   border-color:var(--amber);
-  box-shadow:0 0 0 3px rgba(0,166,42,0.10);
+  box-shadow:0 0 0 3px rgba(255,184,0,0.10);
 }
 .tier-card.current::after{
   content:'CURRENT'; position:absolute; top:-7px; right:10px;
@@ -243,7 +243,7 @@ body{
   font-size:9px; font-weight:800; padding:2px 8px;
   border-radius:999px; letter-spacing:0.6px;
 }
-.tier-card.unlocked{ border-color:rgba(0,166,42,0.30); }
+.tier-card.unlocked{ border-color:rgba(255,184,0,0.30); }
 .tier-icon{ font-size:18px; margin-bottom:6px; }
 .tier-name{ font-size:12px; font-weight:700; color:var(--text); }
 .tier-range{ font-size:10px; color:var(--text-faint); margin-top:2px; font-family:'Geist Mono'; }
@@ -278,7 +278,7 @@ body{
 .chip b{ color:var(--text); font-family:'Geist Mono'; font-weight:700; }
 .meter-notice{ margin-top:16px; padding-top:14px; border-top:1px solid var(--line); display:none; }
 .meter-notice.show{ display:flex; justify-content:flex-end; }
-.meter-notice-box{ max-width:280px; text-align:right; background:var(--panel-hi); border:1px solid rgba(0,166,42,0.25); border-radius:10px; padding:10px 13px; font-size:11px; color:var(--text-dim); line-height:1.5; }
+.meter-notice-box{ max-width:280px; text-align:right; background:var(--panel-hi); border:1px solid rgba(255,184,0,0.25); border-radius:10px; padding:10px 13px; font-size:11px; color:var(--text-dim); line-height:1.5; }
 .meter-notice-box b{ color:var(--amber); display:block; margin-bottom:3px; font-size:10px; text-transform:uppercase; letter-spacing:0.5px; }
 
 /* ===== PAYMENT LINKS ===== */
@@ -320,9 +320,9 @@ body{
 .w-row{ display:flex; gap:10px; margin-bottom:10px; flex-wrap:wrap; }
 .w-input, .w-select{ background:var(--surface); border:1px solid var(--line-strong); color:var(--text);
   padding:11px 13px; border-radius:9px; font-family:inherit; font-size:13px; outline:none; flex:1; min-width:140px; transition:border-color .15s; }
-.w-input:focus, .w-select:focus{ border-color:var(--amber); box-shadow:0 0 0 3px rgba(0,166,42,0.10); }
-.btn-primary{ background:var(--amber); color:#fff; border:none; padding:11px 18px; border-radius:9px; font-weight:700; font-size:13px; cursor:pointer; font-family:inherit; white-space:nowrap; transition:all .15s; }
-.btn-primary:hover{ background:#009524; transform:translateY(-1px); box-shadow:0 6px 14px rgba(0,166,42,0.25); }
+.w-input:focus, .w-select:focus{ border-color:var(--amber); box-shadow:0 0 0 3px rgba(255,184,0,0.10); }
+.btn-primary{ background:var(--amber); color:var(--on-accent); border:none; padding:11px 18px; border-radius:9px; font-weight:700; font-size:13px; cursor:pointer; font-family:inherit; white-space:nowrap; transition:all .15s; }
+.btn-primary:hover{ background:var(--amber-600); transform:translateY(-1px); box-shadow:0 6px 14px rgba(255,184,0,0.25); }
 .btn-primary:active{ transform:scale(.97); }
 .btn-primary:disabled{ opacity:0.5; cursor:not-allowed; }
 .btn-secondary{ background:var(--panel-hi); color:var(--text-dim); border:1px solid var(--line); padding:11px 18px;
@@ -365,7 +365,7 @@ body{
 .daily-bar{ height:100%; background:linear-gradient(90deg,var(--violet),var(--amber)); border-radius:6px; }
 .daily-total{ font-size:13px; font-weight:700; color:var(--ok); font-family:'Geist Mono'; flex-shrink:0; width:76px; text-align:right; }
 .pay-row:hover{ border-color:var(--line-strong); box-shadow:0 4px 12px rgba(15,23,32,0.06); }
-.pay-row.is-marked{ border-color:rgba(0,166,42,0.45); background:linear-gradient(135deg,rgba(0,166,42,0.06),rgba(0,166,42,0.01)); }
+.pay-row.is-marked{ border-color:rgba(255,184,0,0.45); background:linear-gradient(135deg,rgba(255,184,0,0.06),rgba(255,184,0,0.01)); }
 .pay-top{ display:flex; justify-content:space-between; align-items:flex-start; gap:12px; }
 .pay-amt{ font-size:17px; font-weight:800; font-family:'Geist Mono'; line-height:1.1; color:var(--text); }
 .pay-meta{ font-size:10px; color:var(--text-faint); margin-top:4px; font-family:'Geist Mono'; }
@@ -388,11 +388,11 @@ body{
 .tx-id{ font-family:'Geist Mono'; font-size:12px; color:var(--violet); font-weight:600; }
 .tx-meta-row{ font-size:10px; color:var(--text-faint); margin-bottom:6px; font-family:'Geist Mono'; }
 .tx-mark{ font-size:10.5px; color:var(--ok); margin:-2px 0 6px; font-weight:700; }
-.tx-row.is-marked{ border-color:rgba(0,166,42,0.45) !important; }
+.tx-row.is-marked{ border-color:rgba(255,184,0,0.45) !important; }
 .tx-actions{ display:flex; gap:6px; margin-top:8px; flex-wrap:wrap; }
 .tx-btn{ border:none; border-radius:8px; padding:6px 12px; font-size:11px; font-weight:700; cursor:pointer; font-family:inherit; transition:all .15s; }
 .tx-btn.mark{ background:var(--amber); color:#fff; }
-.tx-btn.mark:hover{ background:#009524; }
+.tx-btn.mark:hover{ background:var(--amber-600); }
 .tx-btn.unmark{ background:var(--alert-soft); color:var(--alert); border:1px solid rgba(225,29,72,0.30); }
 .tx-amt{ font-size:18px; font-weight:800; font-family:'Geist Mono'; }
 .tx-details{ display:flex; align-items:center; flex-wrap:wrap; font-size:12px; color:var(--text-dim); }
@@ -454,7 +454,7 @@ body{
 /* ===== MESSAGES ===== */
 .msg-bubble{ padding:11px 14px; border-radius:12px; margin-bottom:9px; font-size:13px; line-height:1.5; max-width:88%; position:relative; }
 .msg-bubble.admin{ background:var(--panel-hi); border:1px solid var(--line); }
-.msg-bubble.creator{ background:var(--green-soft); border:1px solid rgba(0,166,42,0.30); margin-left:auto; }
+.msg-bubble.creator{ background:var(--green-soft); border:1px solid rgba(255,184,0,0.30); margin-left:auto; }
 .msg-from{ font-size:10px; font-weight:700; color:var(--violet); text-transform:uppercase; letter-spacing:0.4px; margin-bottom:4px; }
 .msg-time{ font-size:10px; color:var(--text-faint); margin-top:5px; }
 .msg-actions{ display:flex; gap:8px; margin-top:7px; }
@@ -556,6 +556,21 @@ body{
   .content > .tabs{ grid-column:1; grid-row:1 / span 50; position:sticky; top:16px; flex-direction:column; align-items:stretch; overflow:visible; margin:0 !important; padding:10px; background:var(--panel); border:1px solid var(--line); border-radius:16px; }
   .content > .tabs .tab-btn{ justify-content:flex-start; text-align:left; width:100%; }
 }
+
+/* Design spec §1 primitives (amber tokens §0). Loaded last so it wins over the compact overrides above. */
+body{ font-size:16px; line-height:24px; }
+h1,h2,h3,.page-title,.panel-title{ font-weight:600 !important; letter-spacing:-0.02em; }
+.panel{ background:var(--panel); border:1px solid var(--line); border-radius:16px !important; padding:24px !important; margin-bottom:16px !important; box-shadow:none; }
+.stat-card{ background:var(--panel); border:1px solid var(--line); border-radius:16px; box-shadow:none; }
+.w-input, .w-select, .filter-select{ min-height:44px; padding:0 12px !important; border-radius:10px !important; background:var(--bg) !important; border:1px solid var(--line-strong) !important; font-size:14px !important; line-height:20px; }
+textarea.w-input{ padding:10px 12px !important; }
+.w-input:focus, .w-select:focus, .filter-select:focus{ border-color:var(--amber) !important; box-shadow:0 0 0 3px var(--accent-ring) !important; }
+.btn-primary{ min-height:48px; padding:12px 20px !important; border-radius:14px !important; font-size:14px !important; font-weight:600 !important; background:var(--amber); color:var(--on-accent); box-shadow:none; }
+.btn-primary:hover{ background:var(--amber-600); filter:none; box-shadow:none; }
+.btn-ghost{ min-height:40px; border-radius:10px; background:var(--panel); border:1px solid var(--line); font-weight:500; }
+.detail-section-title, .w-label{ font-size:14px !important; font-weight:500 !important; text-transform:none !important; letter-spacing:0 !important; color:var(--text) !important; margin:20px 0 8px !important; }
+.page-sub, .stat-sub, .hint{ color:var(--text-dim); }
+@media (min-width:1024px){ .content{ max-width:1280px !important; padding-left:32px !important; padding-right:32px !important; } }
 </style>
   </head>
   <body>
