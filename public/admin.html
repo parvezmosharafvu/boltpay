@@ -388,6 +388,27 @@ textarea.w-input{ padding:10px 12px !important; }
 .dev-chip{font-size:11px;padding:2px 8px;border-radius:999px;background:rgba(0,0,0,.06);margin:0 6px}
 .dev-chip.dev-multi{background:rgba(245,158,11,.18);color:#b45309;font-weight:600}
 .device-list{font-size:12px;margin-top:6px}
+/* Compact open row (owner pt304u): the expanded payment filled a whole
+   phone screen. Two dense columns on phones, auto-fit on desktop, smaller
+   controls; every field is still shown. Scoped to the list so the rest of
+   the admin keeps its sizes. */
+#allPaymentsList .pay-row.open .pay-details{ margin-top:0; }
+#allPaymentsList .pay-grid{ gap:5px 10px; margin-top:6px; padding-top:6px; grid-template-columns:repeat(auto-fit,minmax(150px,1fr)); }
+#allPaymentsList .pay-field-label{ font-size:8.5px; margin-bottom:0; }
+#allPaymentsList .pay-field-value{ font-size:11px; line-height:16px; }
+#allPaymentsList .pay-field-value.with-copy{ gap:4px; }
+#allPaymentsList .copy-mini{ margin-left:2px; padding:1px 5px; font-size:9.5px; line-height:13px; }
+#allPaymentsList select.conf-select{ font-size:11px; padding:1px 4px; height:20px; border-radius:6px; max-width:100%; }
+#allPaymentsList .conf-hint{ font-size:10px; margin-top:1px; }
+#allPaymentsList .dev-chip{ font-size:9.5px; padding:0 5px; margin:0; background:rgba(255,255,255,.06); }
+#allPaymentsList .dev-chip.dev-multi{ background:rgba(245,158,11,.18); color:#f59e0b; }
+#allPaymentsList .device-list{ font-size:10.5px; margin-top:2px; }
+#allPaymentsList .device-list:empty{ display:none; }
+#allPaymentsList .pay-actions{ margin-top:6px; gap:5px; }
+#allPaymentsList .pay-actions .act-btn{ padding:4px 10px !important; font-size:10.5px !important; }
+#allPaymentsList .mark-line{ margin-top:4px; font-size:10px; }
+#allPaymentsList .pay-field:not(.wide) .pay-field-value.with-copy{ flex-wrap:wrap; white-space:normal; row-gap:2px; }
+@media (max-width:680px){ #allPaymentsList .pay-grid{ grid-template-columns:repeat(2,minmax(0,1fr)); } }
 .device-item{padding:4px 0;border-top:1px dashed rgba(0,0,0,.08)}
 </style>
     <link rel="stylesheet" href="dash.css">
@@ -457,6 +478,11 @@ textarea.w-input{ padding:10px 12px !important; }
                         <div class="stat-label">Pending payouts</div>
                         <div class="stat-val alert" id="statPendingAmt">$0.00</div>
                         <div class="stat-sub" id="statPendingCount">0 requests</div>
+                      </div>
+                      <div class="stat-card">
+                        <div class="stat-label">Average payment · গড় পেমেন্ট</div>
+                        <div class="stat-val ok" id="statAvgPayment">$0.00</div>
+                        <div class="stat-sub">Per settled payment · প্রতি পেমেন্টে</div>
                       </div>
                     </div>
                     <div class="tabs">
@@ -1085,6 +1111,9 @@ async function loadStats(){
   document.getElementById('statActiveCreators').textContent = row.active_creators + ' active creators';
   document.getElementById('statPendingAmt').textContent = '$' + parseFloat(row.pending_withdrawals_amount).toFixed(2);
   document.getElementById('statPendingCount').textContent = row.pending_withdrawals_count + ' requests';
+  // Average settled payment for the selected range (same rows as Total settled).
+  const cnt = Number(row.payment_count) || 0;
+  document.getElementById('statAvgPayment').textContent = '$' + (cnt ? parseFloat(row.total_settled) / cnt : 0).toFixed(2);
   
   // Show profit
   // Show calculated node balance
@@ -1638,7 +1667,7 @@ function renderAllPayments(){
           </div>
         </div>`;
     const dev = p.device_id || '';
-    const devField = `<div class="pay-field wide">
+    const devField = `<div class="pay-field">
           <div class="pay-field-label">Device / ডিভাইস</div>
           <div class="pay-field-value with-copy">
             ${dev ? `<span class="mono">${escapeHtml(dev.slice(0, 8))}…</span>
@@ -1683,7 +1712,7 @@ function renderAllPayments(){
         ${settledAtField}
         ${confField}
         ${devField}
-        <div class="pay-field wide">
+        <div class="pay-field">
           <div class="pay-field-label">Invoice ID</div>
           <div class="pay-field-value with-copy">
             <span>${escapeHtml(shortInv)}</span>
@@ -1707,7 +1736,7 @@ function renderAllPayments(){
     // togglePayRow() so those still work without collapsing the row
     // they live in.
     return `
-      <div class="pay-row${marked ? ' is-marked' : ''}" ${(p.status === 'new' || p.status === 'pending') && p.expires_at ? `data-expires="${escapeAttr(p.expires_at)}"` : ''} onclick="togglePayRow(this, event)">
+      <div class="pay-row${openPayRows.has(p.id) ? ' open' : ''}${marked ? ' is-marked' : ''}" ${(p.status === 'new' || p.status === 'pending') && p.expires_at ? `data-expires="${escapeAttr(p.expires_at)}"` : ''} data-pid="${escapeAttr(p.id)}" onclick="togglePayRow(this, event)">
         <div class="pay-summary">
           <div style="min-width:0;">
             <div class="pay-amt">$${parseFloat(p.amount_requested).toFixed(2)}</div>
@@ -1730,9 +1759,14 @@ function renderAllPayments(){
 // Tap the summary to expand/collapse. Ignores taps that started inside a
 // button or the copy-mini chip, so Approve / Mark checked / copy still
 // work without also collapsing the row they live in.
+// Remember which rows are open (by payment id) so the live refresh,
+// which re-renders the list, does not snap them shut (owner pt304u).
+const openPayRows = new Set();
 function togglePayRow(row, ev){
   if (ev.target.closest('button, select, .device-list')) return;
-  row.classList.toggle('open');
+  const open = row.classList.toggle('open');
+  const id = row.dataset.pid;
+  if (id) { if (open) openPayRows.add(id); else openPayRows.delete(id); }
 }
 
 // Confirmation hold + device lookup (0087).

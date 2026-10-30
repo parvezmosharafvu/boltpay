@@ -707,7 +707,7 @@ function render(){
     // Mark button inside details can still be clicked without collapsing
     // it (event.stopPropagation on the actions area).
     return `
-      <div class="pay-row ${marked ? 'marked' : ''}" onclick="togglePayRow(this, event)">
+      <div class="pay-row${openPayRows.has(p.id) ? ' open' : ''} ${marked ? 'marked' : ''}" data-pid="${escapeAttr(p.id)}" onclick="togglePayRow(this, event)">
         <div class="pay-summary">
           <div style="min-width:0;">
             <div class="pay-amt">$${amt}</div>
@@ -735,9 +735,14 @@ function showModTab(which){
 // Tap the summary to expand/collapse. Ignores taps that started inside
 // a button or the copy-mini chip — otherwise the Mark button would also
 // collapse the details it lives in.
+// Remember which rows are open (by payment id) so the live refresh,
+// which re-renders the list, does not snap them shut (owner pt304u).
+const openPayRows = new Set();
 function togglePayRow(row, ev){
   if (ev.target.closest('button')) return;
-  row.classList.toggle('open');
+  const open = row.classList.toggle('open');
+  const id = row.dataset.pid;
+  if (id) { if (open) openPayRows.add(id); else openPayRows.delete(id); }
 }
 
 async function markPayment(id, btn){
