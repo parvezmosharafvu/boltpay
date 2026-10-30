@@ -756,6 +756,22 @@ textarea.w-input{ padding:10px 12px !important; }
                                         </div>
                                         <!-- SETTINGS TAB -->
                                         <div id="tab-settings" style="display:none;">
+                                          <div class="panel" id="checkoutLimitsPanel">
+                                            <div class="panel-head"><div class="panel-title">Checkout limits · চেকআউট সীমা</div></div>
+                                            <div class="w-row" style="gap:10px;flex-wrap:wrap;align-items:flex-end">
+                                              <label style="font-size:12px">Invoice expiry (minutes) · ইনভয়েসের মেয়াদ (মিনিট)<br><input id="ckExpiry" class="w-input" type="number" min="5" max="1440" step="1"></label>
+                                              <label style="font-size:12px">Minimum (USD) · সর্বনিম্ন (USD)<br><input id="ckMin" class="w-input" type="number" min="1" step="0.01"></label>
+                                              <label style="font-size:12px">Maximum (USD) · সর্বোচ্চ (USD)<br><input id="ckMax" class="w-input" type="number" min="1" step="0.01"></label>
+                                              <button class="btn-sm" onclick="saveCheckoutLimits(this)">Save · সংরক্ষণ</button>
+                                            </div>
+                                          </div>
+                                          <div class="panel" id="paymentsCsvPanel">
+                                            <div class="panel-head"><div class="panel-title">Export payments (CSV) · পেমেন্ট এক্সপোর্ট (CSV)</div></div>
+                                            <div class="w-row" style="gap:10px;align-items:center">
+                                              <select id="csvDays" class="w-input" style="max-width:160px"><option value="7">7 days · ৭ দিন</option><option value="30" selected>30 days · ৩০ দিন</option><option value="90">90 days · ৯০ দিন</option><option value="366">1 year · ১ বছর</option></select>
+                                              <button class="btn-sm" onclick="exportPaymentsCsv(this)">Download CSV · CSV ডাউনলোড</button>
+                                            </div>
+                                          </div>
                                           <div class="panel" id="tgAdminPanel">
                                             <div class="panel-head"><div class="panel-title">Telegram bot · টেলিগ্রাম বট</div></div>
                                             <div id="tgAdminStatus" style="font-size:13px;opacity:.85;margin-bottom:12px">—</div>
@@ -2154,7 +2170,51 @@ async function revokeModerator(id, btn){
   } finally { btn.disabled = false; }
 }
 
+
+// Item 12: checkout expiry and min/max, read by lnd-create-invoice via _shared/settings.ts.
+async function loadCheckoutLimits(){
+  const { data } = await window.supabaseClient.from('app_settings').select('key, value')
+    .in('key', ['lnd_invoice_expiry_sec', 'lnd_pay_min_usd', 'lnd_pay_max_usd']);
+  const m = Object.fromEntries((data || []).map(r => [r.key, r.value]));
+  document.getElementById('ckExpiry').value = Math.round(Number(m.lnd_invoice_expiry_sec || 3600) / 60);
+  document.getElementById('ckMin').value = m.lnd_pay_min_usd ?? 10;
+  document.getElementById('ckMax').value = m.lnd_pay_max_usd ?? 1000;
+}
+async function saveCheckoutLimits(btn){
+  const ex = Math.round(Number(document.getElementById('ckExpiry').value));
+  const mn = Number(document.getElementById('ckMin').value), mx = Number(document.getElementById('ckMax').value);
+  if (!(ex >= 5 && ex <= 1440)) { showToast('Expiry must be 5–1440 minutes · মেয়াদ ৫–১৪৪০ মিনিট হতে হবে', 'err'); return; }
+  if (!(mn > 0 && mx > 0 && mn <= mx)) { showToast('Minimum must be above 0 and not above maximum · সর্বনিম্ন ০-এর বেশি ও সর্বোচ্চের বেশি নয়', 'err'); return; }
+  btn.disabled = true;
+  const now = new Date().toISOString();
+  const { error } = await window.supabaseClient.from('app_settings').upsert([
+    { key: 'lnd_invoice_expiry_sec', value: ex * 60, updated_at: now },
+    { key: 'lnd_pay_min_usd', value: mn, updated_at: now },
+    { key: 'lnd_pay_max_usd', value: mx, updated_at: now },
+  ]);
+  btn.disabled = false;
+  showToast(error ? 'Failed · ব্যর্থ' : 'Checkout limits saved · চেকআউট সীমা সংরক্ষিত', error ? 'err' : 'ok');
+}
+function csvCell(v){ if (v == null) return ''; const t = String(v); return /[",\n\r]/.test(t) || /^[=+\-@]/.test(t) ? '"' + (/^[=+\-@]/.test(t) ? "'" : '') + t.replace(/"/g, '""') + '"' : t; }
+async function exportPaymentsCsv(btn){
+  btn.disabled = true;
+  const days = Number(document.getElementById('csvDays').value) || 30;
+  const { data, error } = await window.supabaseClient.rpc('admin_payments_export', { p_days: days });
+  btn.disabled = false;
+  if (error) { showToast('Export failed · এক্সপোর্ট ব্যর্থ', 'err'); return; }
+  const host = window.location.host;
+  const head = ['Invoice ID','BTCPay Invoice','Lightning Address','Customer','Email','Link','Status','Confirmation','Amount USD','Created At','Paid At'];
+  const rows = (data || []).map(r => [r.invoice_id, r.btcpay_invoice, r.bolt11, r.customer, r.email,
+    r.link ? 'https://' + host + '/' + r.link : '', r.status, r.confirmation, r.amount_usd, r.created_at, r.paid_at].map(csvCell).join(','));
+  const blob = new Blob([[head.join(',')].concat(rows).join('\r\n')], { type: 'text/csv' });
+  const a = document.createElement('a'); a.href = URL.createObjectURL(blob);
+  a.download = 'payments-' + new Date().toISOString().slice(0, 10) + '.csv'; a.click();
+  setTimeout(() => URL.revokeObjectURL(a.href), 2000);
+  showToast((data || []).length + ' rows exported · সারি এক্সপোর্ট হয়েছে', 'ok');
+}
+
 async function loadSettings(){
+  loadCheckoutLimits();
   const { data } = await window.supabaseClient.from('app_settings').select('key, value');
   const notice = data?.find(s => s.key === 'platform_notice')?.value;
 
