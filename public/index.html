@@ -100,17 +100,28 @@ footer nav{ display:flex; gap:20px; } footer nav a{ text-decoration:none; min-he
   .grid3,.steps{ grid-template-columns:1fr; } .strip .wrap{ grid-template-columns:1fr 1fr; padding-top:14px; padding-bottom:14px; }
   .panel,.cta{ padding:28px; } .cta{ flex-direction:column; align-items:flex-start; } footer{ margin-top:80px; }
 }
+.skip{ position:absolute; left:16px; top:-60px; z-index:100; background:var(--amber,#FFB800); color:#2A1F00; padding:10px 16px; border-radius:10px; font-weight:600; text-decoration:none; transition:top .15s; }
+.skip:focus{ top:12px; }
+main:focus{ outline:none; }
+section[id]{ scroll-margin-top:84px; }
+.nav-links a:focus-visible,.subnav a:focus-visible{ outline:2px solid #FFB800; outline-offset:3px; border-radius:6px; }
+.subnav{ display:none; border-bottom:1px solid var(--line); }
+.subnav .wrap{ display:flex; gap:8px; overflow-x:auto; padding-top:10px; padding-bottom:10px; scrollbar-width:none; }
+.subnav a{ flex:none; min-height:36px; display:inline-flex; align-items:center; padding:0 14px; border-radius:999px; border:1px solid var(--line); color:var(--text-dim); font-size:13px; font-weight:500; text-decoration:none; }
+@media (max-width:1023px){ .subnav{ display:block; } }
 </style>
 <script src="auth.js"></script>
 </head>
 <body>
 <div id="redirectNotice"><div class="spinner"></div><div style="font-size:13px;color:var(--text-dim);">Taking you to Boltpay… · Boltpay-এ নিয়ে যাওয়া হচ্ছে…</div></div>
+<a class="skip" href="#main" data-en="Skip to content" data-bn="মূল অংশে যান">Skip to content</a>
 <header class="nav"><div class="wrap">
   <a class="logo" href="/"><span class="mark"><svg viewBox="0 0 24 24" width="16" height="16" fill="none"><path d="M13 2L4 14h6l-1 8 9-12h-6l1-8z" fill="currentColor"/></svg></span>Boltpay</a>
   <nav class="nav-links"><a href="#features" data-en="Features" data-bn="ফিচার">Features</a><a href="#how" data-en="How it works" data-bn="কীভাবে কাজ করে">How it works</a><a href="#access" data-en="Account access" data-bn="অ্যাকাউন্ট">Account access</a><a href="#faq" data-en="FAQ" data-bn="প্রশ্নোত্তর">FAQ</a></nav>
   <div class="nav-right"><button type="button" class="lang" id="langBtn" onclick="toggleLang()">বাংলা</button><a class="lnk" href="login.html" data-en="Log in" data-bn="লগইন">Log in</a><a class="btn btn-p btn-sm" href="register.html" data-en="Get started" data-bn="শুরু করুন">Get started</a></div>
 </div></header>
-<main>
+<main id="main" tabindex="-1">
+<nav class="subnav" aria-label="Sections"><div class="wrap"><a href="#features" data-en="Features" data-bn="ফিচার">Features</a><a href="#how" data-en="How it works" data-bn="কীভাবে কাজ করে">How it works</a><a href="#access" data-en="Account access" data-bn="অ্যাকাউন্ট">Account access</a><a href="#faq" data-en="FAQ" data-bn="প্রশ্নোত্তর">FAQ</a></div></nav>
 <section class="hero"><div class="wrap">
   <div>
     <span class="pill"><svg viewBox="0 0 24 24" width="16" height="16" fill="none"><path d="M13 2L4 14h6l-1 8 9-12h-6l1-8z" fill="currentColor"/></svg><span data-en="Lightning Network payments" data-bn="লাইটনিং নেটওয়ার্ক পেমেন্ট">Lightning Network payments</span></span>
