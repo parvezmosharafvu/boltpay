@@ -1231,6 +1231,7 @@ textarea.w-input{ padding:10px 12px !important; }
                 <label class="cashout-label" for="wdAmount" data-en="Amount (USD)" data-bn="পরিমাণ (USD)">Amount (USD)</label>
                 <input type="number" inputmode="decimal" class="w-input mono" id="wdAmount" placeholder="$0.00">
               </div>
+              <div class="cashout-preview wd-fee-preview" id="wdFeePreview" style="display:none;" aria-live="polite"></div>
               <div class="cashout-preview" id="wdBdtPreview" style="display:none;" aria-live="polite"></div>
               <div class="cashout-field" id="invoiceRow" style="display:none;">
                 <label class="cashout-label" for="wdInvoice" data-en="Lightning invoice or address" data-bn="লাইটনিং ইনভয়েস বা অ্যাড্রেস">Lightning invoice or address</label>
@@ -2141,7 +2142,7 @@ function updateBdtPreview(){
   const amt = parseFloat(document.getElementById('wdAmount').value);
   if (METHOD_CURRENCY[m] !== 'BDT'){ box.style.display = 'none'; return; }
   if (!MY_BDT_RATE){ box.textContent = 'BDT rate not set. Contact support to withdraw in BDT. (BDT রেট সেট করা নেই। BDT-তে উত্তোলনের জন্য সাপোর্টে যোগাযোগ করুন।)'; box.style.display = 'block'; return; }
-  const usd = amt > 0 ? amt : 0;
+  const usd = amt > 0 ? wdFeeQuote(amt).receive : 0;
   const bdt = (usd * MY_BDT_RATE).toFixed(2);
   box.textContent = `Your rate ৳${MY_BDT_RATE} / USD · You receive ≈ ৳${bdt} (আপনার রেট ৳${MY_BDT_RATE} / USD · আপনি পাবেন ≈ ৳${bdt})`;
   box.style.display = 'block';
@@ -2378,7 +2379,7 @@ function renderWithdrawals(){
   const c = document.getElementById('withdrawalsList');
   if (!allWithdrawals.length){ c.innerHTML = '<div class="empty-state">' + t('No withdrawal history', 'কোনো উত্তোলনের ইতিহাস নেই') + '</div>'; return; }
   c.innerHTML = allWithdrawals.map(w => `<div class="tx-row"><div class="tx-top"><div>
-    <div class="tx-amt" style="color:var(--alert);">-$${parseFloat(w.amount_after_fee||0).toFixed(2)}${w.payout_currency === 'BDT' && w.payout_amount != null ? ' · ৳' + parseFloat(w.payout_amount).toFixed(2) : ''}</div>
+    <div class="tx-amt" style="color:var(--alert);">-$${parseFloat((Number(w.fee_usd) > 0 ? w.amount_requested : w.amount_after_fee)||0).toFixed(2)}${Number(w.fee_usd) > 0 ? ' · ' + qiT('fee', 'ফি') + ' $' + Number(w.fee_usd).toFixed(2) + ' · ' + qiT('receive', 'পাবেন') + ' $' + parseFloat(w.amount_after_fee).toFixed(2) : ''}${w.payout_currency === 'BDT' && w.payout_amount != null ? ' · ৳' + parseFloat(w.payout_amount).toFixed(2) : ''}</div>
     <div class="tx-meta-row">${safeMethod(w.method)} · ${fmtDate(w.requested_at)}</div></div>
     <span class="badge ${escapeHtml(w.status)}"><span class="badge-dot"></span>${escapeHtml(statusText(w.status))}</span></div></div>`).join('');
 }
@@ -2408,6 +2409,45 @@ function toggleInvoiceInput() {
   }
 }
 
+// Withdraw fee (0115): admin-set % plus fixed $, taken from the amount.
+// The server snapshots the same numbers; this is only the preview.
+let WD_FEE = { percent: 0, fixed: 0 };
+async function loadWithdrawFee(){
+  try {
+    const { data, error } = await window.supabaseClient.rpc('get_withdraw_fee');
+    const r = Array.isArray(data) ? data[0] : data;
+    if (!error && r) WD_FEE = { percent: Number(r.percent) || 0, fixed: Number(r.fixed_usd) || 0 };
+  } catch(_) {}
+  updateFeePreview(); updateBdtPreview();
+}
+function wdFeeQuote(amt){
+  const a = Math.round(amt * 100) / 100;
+  const fee = Math.round((a * WD_FEE.percent / 100 + WD_FEE.fixed) * 100) / 100;
+  return { fee, receive: Math.round((a - fee) * 100) / 100 };
+}
+function wdFeeLabel(){
+  const parts = [];
+  if (WD_FEE.percent > 0) parts.push(WD_FEE.percent + '%');
+  if (WD_FEE.fixed > 0) parts.push('$' + WD_FEE.fixed.toFixed(2));
+  return parts.join(' + ');
+}
+function updateFeePreview(){
+  const box = document.getElementById('wdFeePreview'); if (!box) return;
+  const amt = parseFloat(document.getElementById('wdAmount').value);
+  if (!(WD_FEE.percent > 0 || WD_FEE.fixed > 0) || !(amt > 0)) { box.style.display = 'none'; return; }
+  const q = wdFeeQuote(amt);
+  if (q.fee >= amt) {
+    box.textContent = qiT(`Withdraw fee ${wdFeeLabel()}: $${q.fee.toFixed(2)} — enter a larger amount.`,
+                          `উইথড্র ফি ${wdFeeLabel()}: $${q.fee.toFixed(2)} — আরও বেশি পরিমাণ দিন।`);
+  } else {
+    box.textContent = qiT(`Withdraw fee ${wdFeeLabel()}: $${q.fee.toFixed(2)}, you receive $${q.receive.toFixed(2)}`,
+                          `উইথড্র ফি ${wdFeeLabel()}: $${q.fee.toFixed(2)}, আপনি পাবেন $${q.receive.toFixed(2)}`);
+  }
+  box.style.display = 'block';
+}
+document.getElementById('wdAmount').addEventListener('input', updateFeePreview);
+window.addEventListener('uilangchange', updateFeePreview);
+loadWithdrawFee();
 document.getElementById('wdAmount').addEventListener('input', updateBdtPreview);
 document.getElementById('wdMethod').addEventListener('change', updateBdtPreview);
 document.getElementById('wdAmount').addEventListener('input', function(e) {
@@ -2416,7 +2456,7 @@ document.getElementById('wdAmount').addEventListener('input', function(e) {
   const methodDropdown = document.getElementById('wdMethod');
 
   if (amt >= 5 && methodDropdown && methodDropdown.value === 'lightning') {
-    const afterFee = amt.toFixed(2);
+    const afterFee = wdFeeQuote(amt).receive.toFixed(2);
     help.textContent = `Please create a Lightning Invoice for exactly $${afterFee} USD. (ঠিক $${afterFee} USD-এর একটি Lightning ইনভয়েস তৈরি করুন।)`;
     help.style.display = 'block';
   } else if (help) {
@@ -2444,6 +2484,10 @@ async function submitWithdrawal(){
 
   if (!amt || amt < 5) return showToast('Minimum withdrawal is $5', 'err');
   if (amt > available) return showToast('Insufficient balance', 'err');
+  const wq = wdFeeQuote(amt);
+  if (wq.fee >= amt) return showToast(qiT('Withdraw fee is not less than the amount', 'উইথড্র ফি পরিমাণের চেয়ে কম নয়'), 'err');
+  if (wq.fee > 0 && !confirm(qiT(`Withdraw $${amt.toFixed(2)}? Withdraw fee ${wdFeeLabel()}: $${wq.fee.toFixed(2)}, you receive $${wq.receive.toFixed(2)}.`,
+                                 `$${amt.toFixed(2)} উইথড্র করবেন? উইথড্র ফি ${wdFeeLabel()}: $${wq.fee.toFixed(2)}, আপনি পাবেন $${wq.receive.toFixed(2)}।`))) return;
 
   let destination = "";
   if (method === 'lightning') {
