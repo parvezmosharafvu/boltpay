@@ -23,6 +23,8 @@ export const WITHDRAW_MACAROON_URIS = [
   "uri:/lnrpc.Lightning/SendCoins",
   "uri:/lnrpc.Lightning/DecodePayReq",
   "uri:/lnrpc.Lightning/SendPaymentSync",
+  // Required only for read-only reconciliation, not for sending funds.
+  "uri:/routerrpc.Router/TrackPaymentV2",
 ] as const;
 
 // REST paths for the URIs above, and nothing else.
@@ -34,6 +36,7 @@ const ALLOWED_PATHS: ReadonlyArray<[string, RegExp]> = [
   ["POST", /^\/v1\/transactions$/],
   ["GET", /^\/v1\/payreq\/[0-9a-z]+$/],
   ["POST", /^\/v1\/channels\/transactions$/],
+  ["GET", /^\/v2\/router\/track\/[A-Za-z0-9_%+-]+$/],
 ];
 
 export interface WithdrawConfig {
@@ -220,6 +223,59 @@ export class LndWithdrawClient {
     const r = await this.call("POST", "/v1/transactions", body);
     if (!/^[0-9a-f]{64}$/.test(String(r.txid ?? ""))) throw new WithdrawError("LND returned no txid");
     return { txid: r.txid };
+  }
+
+  /**
+   * Read-only reconciliation. Router TrackPaymentV2 is a streaming REST API.
+   * Read one current update, close the stream, never infer FAILED from a
+   * timeout, 404, permission error or malformed response.
+   */
+  async trackPayment(paymentHash: string): Promise<{ status: "SUCCEEDED" | "FAILED" | "IN_FLIGHT" | "UNKNOWN"; feeSat: number }> {
+    if (!/^[0-9a-f]{64}$/.test(paymentHash)) throw new WithdrawError("bad payment hash");
+    const hexPairs = paymentHash.match(/../g)!;
+    const bytes = String.fromCharCode(...hexPairs.map((h) => parseInt(h, 16)));
+    const path = "/v2/router/track/" + encodeURIComponent(btoa(bytes)) + "?no_inflight_updates=false";
+    // This path has strictly generated base64, not arbitrary caller input.
+    // Expose no other Router methods through the withdrawal macaroon.
+    const headers: Record<string, string> = { "Grpc-Metadata-macaroon": this.cfg.macaroonHex };
+    if (this.cfg.cfAccessId && this.cfg.cfAccessSecret) {
+      headers["CF-Access-Client-Id"] = this.cfg.cfAccessId;
+      headers["CF-Access-Client-Secret"] = this.cfg.cfAccessSecret;
+    }
+    let res: Response;
+    try {
+      res = await this.fetchFn(this.cfg.baseUrl + path, {
+        method: "GET", headers, signal: AbortSignal.timeout(Math.min(this.cfg.timeoutMs ?? 15000, 15000)),
+      });
+    } catch { throw new WithdrawError("LND payment tracking unavailable"); }
+    if (!res.ok) {
+      await res.body?.cancel().catch(() => {});
+      throw new WithdrawError(`LND payment tracking returned ${res.status}`, res.status);
+    }
+    const reader = res.body?.getReader();
+    if (!reader) throw new WithdrawError("LND tracking response empty");
+    let line = "";
+    try {
+      while (line.length < 65536) {
+        const { value, done } = await reader.read();
+        if (done) break;
+        line += new TextDecoder().decode(value, { stream: true });
+        if (line.includes("\n")) break;
+      }
+    } finally { await reader.cancel().catch(() => {}); }
+    if (!line.trim() || line.length >= 65536) throw new WithdrawError("LND tracking response incomplete");
+    let update: any;
+    try {
+      const json = JSON.parse(line.split("\n")[0].trim());
+      update = json.result ?? json;
+    } catch { throw new WithdrawError("LND tracking response malformed"); }
+    const raw = String(update.status ?? "").toUpperCase();
+    const status = raw === "SUCCEEDED" || raw === "2" ? "SUCCEEDED"
+      : raw === "FAILED" || raw === "3" ? "FAILED"
+      : raw === "IN_FLIGHT" || raw === "1" ? "IN_FLIGHT" : "UNKNOWN";
+    // No status error can be interpreted as a safe retry.
+    const fee = Number(update.fee_sat ?? update.fee ?? 0);
+    return { status, feeSat: Number.isSafeInteger(fee) && fee >= 0 ? fee : 0 };
   }
 
   async decodeInvoice(invoice: string): Promise<DecodedInvoice> {
