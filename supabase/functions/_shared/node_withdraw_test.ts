@@ -92,6 +92,51 @@ Deno.test("read actions", async () => {
   assertEquals((await handle(OWNER, "admin", { action: "balances" }, deps({ lnd: null }).d)).status, 503);
 });
 
+Deno.test("readiness is owner-only and read-only with transfers OFF", async () => {
+  const l = fakeLnd();
+  const { d, rpcs, alerts, stepRpcs } = deps({ enabled: false, lnd: l.lnd });
+  const result = await handle(OWNER, "admin", { action: "readiness" }, d);
+  assertEquals(result.status, 200);
+  assertEquals(result.body.nodeConnectedAndSynced, true);
+  assertEquals(result.body.sendPaymentPermission, "not_verified");
+  assertEquals(result.body.withdrawalsEnabled, false);
+  assertEquals((result.body.tracking as any).result, "not_tested");
+  assertEquals(l.calls, ["ready", "balances"]);
+  assertEquals(rpcs, []);
+  assertEquals(stepRpcs, []);
+  assertEquals(alerts, []);
+  assertEquals((await handle("someone_else", "admin", { action: "readiness" }, d)).status, 403);
+});
+
+Deno.test("readiness with old payment hash verifies tracking but never sends", async () => {
+  const hash = "ab".repeat(32);
+  const l = fakeLnd({ trackPayment: async (h) => {
+    assertEquals(h, hash);
+    return { status: "SUCCEEDED", feeSat: 19 };
+  } });
+  const { d, rpcs, stepRpcs } = deps({ enabled: false, lnd: l.lnd });
+  const r = await handle(OWNER, "admin", { action: "readiness", paymentHash: hash }, d);
+  assertEquals(r.status, 200);
+  assertEquals(r.body.tracking, { result: "confirmed", paymentStatus: "SUCCEEDED" });
+  assertEquals(r.body.sendPaymentPermission, "not_verified");
+  assertEquals(l.calls, ["ready", "balances"]);
+  assertEquals(rpcs, []);
+  assertEquals(stepRpcs, []);
+});
+
+Deno.test("readiness refuses bad hash and handles tracking permission denial without exposing credentials", async () => {
+  const l = fakeLnd({ trackPayment: async () => { throw new WithdrawError("internal macaroon hidden", 403); } });
+  const { d, rpcs } = deps({ enabled: false, lnd: l.lnd });
+  const bad = await handle(OWNER, "admin", { action: "readiness", paymentHash: "invalid" }, d);
+  assertEquals(bad.status, 400);
+  assertEquals(l.calls, []);
+  const r = await handle(OWNER, "admin", { action: "readiness", paymentHash: "cd".repeat(32) }, d);
+  assertEquals(r.status, 200);
+  assertEquals(r.body.tracking, { result: "unverified", errorClass: "authentication_or_permission_denied" });
+  assert(!JSON.stringify(r.body).includes("internal macaroon hidden"));
+  assertEquals(rpcs, []);
+});
+
 Deno.test("refused step-up stops every spend before reserve or LND", async () => {
   for (const body of [
     { action: "pay_invoice", invoice: INV, feeLimitSat: 10, stepUpCode: "123456", requestKey: "key-000002" },
