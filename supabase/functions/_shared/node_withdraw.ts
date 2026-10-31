@@ -107,6 +107,16 @@ export async function handle(userId: string, role: string | null, body: Record<s
     return err(403, "node withdraw is disabled");
   }
 
+  // LND SendCoins cannot enforce an absolute on-chain fee cap; estimates
+  // are not a guarantee. Fail closed for on-chain sends and step-up codes
+  // until a capped, pre-signed transaction flow is implemented and audited.
+  const requested = body.request;
+  const requestedAction = requested && typeof requested === "object" && !Array.isArray(requested)
+    ? (requested as Record<string, unknown>).action : null;
+  if (action === "send_onchain" || (action === "stepup_request" && requestedAction === "send_onchain")) {
+    return err(503, "On-chain withdrawals paused until hard fee-cap enforcement is available");
+  }
+
   if (action === "stepup_request") {
     const req = (body.request ?? {}) as Record<string, unknown>;
     const c = canonicalSpend(req);
@@ -203,30 +213,41 @@ export async function handle(userId: string, role: string | null, body: Record<s
     });
     if (rErr || id == null) return err(409, rErr?.message ?? "reserve failed");
 
+    let reference: string, feeSat: number | null;
     try {
-      let reference: string, feeSat: number | null;
       if (kind === "onchain") {
-        const r = await lnd.sendCoins(sendAll
-          ? { address: destination, satPerVbyte, sendAll: true }
-          : { address: destination, satPerVbyte, amountSat });
-        reference = r.txid; feeSat = null;
-      } else {
-        const r = await lnd.payInvoice(destination, feeLimitSat, invoiceAmt);
-        reference = r.paymentHashHex; feeSat = r.feeSat;
+        // Kept unreachable until the wallet supports an enforceable on-chain
+        // total fee cap, not merely an estimated fee.
+        throw new WithdrawError("On-chain withdrawals paused");
       }
-      await d.rpc("system_node_withdraw_finish", { p_id: id, p_status: "sent", p_reference: reference, p_fee_sat: feeSat, p_error: null });
-      await d.alert(`💸 Node withdraw sent: ${amountSat} sat ${kind} to ${shortDest(destination)} (ref ${reference.slice(0, 12)})`);
-      return ok({ status: "sent", id, reference, feeSat });
-    } catch (e) {
-      // Ambiguous for on-chain: LND may have broadcast. Leave the row
-      // 'reserved' (so the same requestKey can't send twice) unless LND said no.
-      const definite = e instanceof WithdrawError && (e.status ?? 0) >= 400 || String((e as Error).message).startsWith("payment failed");
-      if (definite) {
-        await d.rpc("system_node_withdraw_finish", { p_id: id, p_status: "failed", p_reference: null, p_fee_sat: null, p_error: (e as Error).message });
-      }
-      await d.alert(`❌ Node withdraw ${definite ? "failed" : "outcome unknown"}: ${amountSat} sat ${kind} to ${shortDest(destination)}`);
-      return err(502, definite ? "send failed" : "send outcome unknown; check the node before retrying");
+      const r = await lnd.payInvoice(destination, feeLimitSat, invoiceAmt);
+      reference = r.paymentHashHex; feeSat = r.feeSat;
+    } catch {
+      // Even an HTTP error can arrive after LND accepted the payment.
+      // Never guess that money has not moved or release this reservation.
+      try {
+        await d.alert(`⚠️ Node withdraw outcome unknown: ${amountSat} sat ${kind} to ${shortDest(destination)}`);
+      } catch { /* notifications must not change financial outcome */ }
+      return err(502, "send outcome unknown; do NOT retry; reconcile with LND payment records");
     }
+
+    // LND returned success. A failed DB finalize must never look like a
+    // normal success and must never cause an automatic second send.
+    let finished = false;
+    try {
+      const { data, error } = await d.rpc("system_node_withdraw_finish", {
+        p_id: id, p_status: "sent", p_reference: reference, p_fee_sat: feeSat, p_error: null,
+      });
+      finished = !error && data === true;
+    } catch { /* remain reserved; requires reconciliation */ }
+    if (!finished) {
+      try { await d.alert(`🚨 Node payment sent but ledger finalize failed: ref ${reference.slice(0, 12)}; reconcile immediately; DO NOT RETRY`); }
+      catch { /* best effort */ }
+      return err(502, `LND reported payment sent, but the database did not confirm recording it. DO NOT RETRY. Reference: ${reference}`);
+    }
+    try { await d.alert(`💸 Node withdraw sent: ${amountSat} sat ${kind} to ${shortDest(destination)} (ref ${reference.slice(0, 12)})`); }
+    catch { /* the successful payment is not rolled back by alert delivery */ }
+    return ok({ status: "sent", id, reference, feeSat });
   } catch (e) {
     const msg = e instanceof WithdrawError ? e.message : "LND error";
     return err(502, msg);
