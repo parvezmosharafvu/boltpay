@@ -1,4 +1,4 @@
--- Runtime checks for 0111 (owner-only node withdraw). Runs inside BEGIN/ROLLBACK.
+-- Runtime checks for 0112 (owner-only node withdraw). Runs inside BEGIN/ROLLBACK.
 \set ON_ERROR_STOP on
 begin;
 insert into auth.users(id, email) values
@@ -85,4 +85,4 @@ begin
   if not has_function_privilege('service_role', 'system_node_withdraw_reserve(uuid,text,text,bigint,bigint,text)', 'execute') then raise exception 'service cannot reserve'; end if;
 end $$;
 rollback;
-select 'Node withdraw 0111 runtime checks passed' as result;
+select 'Node withdraw 0112 runtime checks passed' as result;
