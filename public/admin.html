@@ -2260,6 +2260,7 @@ async function loadLinkMarkup(){
 async function saveLinkMarkupRange(btn){
   const mn = Number(document.getElementById('lmMin').value), mx = Number(document.getElementById('lmMax').value);
   if (!(mn >= 0 && mx <= 100 && mn <= mx)) { showToast('Range must be 0–100, min ≤ max · রেঞ্জ ০–১০০, সর্বনিম্ন ≤ সর্বোচ্চ', 'err'); return; }
+  if (!confirm('Save extra-fee range ' + mn + '%–' + mx + '% for new links? · নতুন লিংকের জন্য অতিরিক্ত ফি রেঞ্জ ' + mn + '%–' + mx + '% সেভ করবেন?')) { loadLinkMarkup(); return; }
   btn.disabled = true;
   const { error } = await window.supabaseClient.rpc('admin_set_link_markup_range', { p_min: mn, p_max: mx });
   btn.disabled = false;
@@ -2278,6 +2279,7 @@ async function toggleLinkMarkup(el){
 async function saveMarkup(btn){
   const v = Number(document.getElementById('markupPct').value);
   if (!(v >= 0 && v <= 50) || document.getElementById('markupPct').value.trim() === '') { showToast('Fee must be 0–50% · ফি ০–৫০% হতে হবে', 'err'); return; }
+  if (!confirm('Set the conversion fee to ' + v + '% for new payments? · নতুন পেমেন্টের জন্য কনভার্সন ফি ' + v + '% করবেন?')) { loadMarkup(); return; }
   btn.disabled = true;
   const { data, error } = await window.supabaseClient.rpc('admin_set_customer_markup', { p_percent: v });
   btn.disabled = false;
@@ -2290,6 +2292,7 @@ async function saveCheckoutLimits(btn){
   const mn = Number(document.getElementById('ckMin').value), mx = Number(document.getElementById('ckMax').value);
   if (!(ex >= 5 && ex <= 1440)) { showToast('Expiry must be 5–1440 minutes · মেয়াদ ৫–১৪৪০ মিনিট হতে হবে', 'err'); return; }
   if (!(mn >= 10 && mx > 0 && mn <= mx)) { showToast('Minimum must be at least $10 and not above maximum · সর্বনিম্ন অন্তত $10 ও সর্বোচ্চের বেশি নয়', 'err'); return; }
+  if (!confirm('Save checkout limits: expiry ' + ex + ' min, $' + mn + '–$' + mx + '? · চেকআউট সীমা সেভ করবেন: মেয়াদ ' + ex + ' মিনিট, $' + mn + '–$' + mx + '?')) return;
   btn.disabled = true;
   const now = new Date().toISOString();
   const { error } = await window.supabaseClient.from('app_settings').upsert([
