@@ -193,6 +193,18 @@ Deno.test("owner reconciliation with transfers OFF never sends Lightning funds",
   assertEquals((await handle("other", "admin", { action: "reconcile" }, d)).status, 403);
 });
 
+Deno.test("LND unexpected payment hash cannot finalize a different invoice", async () => {
+  const f = fakeLnd({ payInvoice: async () => ({ paymentHashHex: "ef".repeat(32), feeSat: 3 }) });
+  const { d, rpcs } = deps({ stepUp: true, lnd: f.lnd });
+  const res = await handle(OWNER, "admin", {
+    action: "pay_invoice", invoice: INV, feeLimitSat: 25,
+    stepUpCode: "123456", requestKey: "hash-mismatch-001",
+  }, d);
+  assertEquals(res.status, 502);
+  assertEquals(rpcs.map(x => x.fn), ["system_node_withdraw_reserve_payment"]);
+  assert(String(res.body.error).includes("do NOT retry"));
+});
+
 Deno.test("reconciliation never treats an in-flight or unknown payment as failed", async () => {
   for (const mode of ["IN_FLIGHT", "FAILED", "UNKNOWN", "throw"] as const) {
     const f = fakeLnd({ trackPayment: async () => {
