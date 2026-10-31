@@ -96,13 +96,16 @@ global: { headers: { Authorization: authHeader } },
 });
 const { data: { user }, error: userErr } = await callerClient.auth.getUser(authHeader.replace(/^Bearer\s+/i, ""));
 if (userErr || !user) return json({ error: "Invalid session" }, 401, cors);
-let body: { amount?: unknown; method?: unknown; destination?: unknown; request_key?: unknown };
+let body: { amount?: unknown; display_amount?: unknown; withdraw_all?: unknown; method?: unknown; destination?: unknown; request_key?: unknown };
 try {
 body = await req.json();
 } catch {
 return json({ error: "Invalid JSON body" }, 400, cors);
 }
-const amount = Number(body.amount);
+// 0117: the creator enters a display (base-only) amount or withdraw-all;
+// request_withdrawal_display() converts it to the real ledger amount.
+const withdrawAll = body.withdraw_all === true;
+const amount = Number(body.display_amount ?? body.amount);
 const method = String(body.method ?? "").trim();
 const destination = String(body.destination ?? "").trim();
 // Optional idempotency key (0088). Anything that isn't a UUID is ignored.
@@ -112,7 +115,7 @@ const requestKey = typeof body.request_key === "string" && UUID_RE.test(body.req
 : null;
 // Cheap client-side-mirroring checks. The authoritative versions all live
 // in request_withdrawal(); these only exist to return a nicer error faster.
-if (!Number.isFinite(amount) || amount < 5) {
+if (!withdrawAll && (!Number.isFinite(amount) || amount < 5)) {
 return json({ error: "Minimum withdrawal is $5" }, 400, cors);
 }
 if (!VALID_METHODS.includes(method)) {
@@ -134,9 +137,10 @@ error: "That does not look like a Lightning invoice or a Lightning Address (you@
 // definition than request_withdrawal(), which let the same money be
 // withdrawn twice. Now there is one code path.
 const { data: withdrawal, error: rpcErr } = await callerClient
-.rpc("request_withdrawal", requestKey
-? { p_amount: amount, p_method: method, p_destination: destination, p_request_key: requestKey }
-: { p_amount: amount, p_method: method, p_destination: destination });
+.rpc("request_withdrawal_display", {
+p_display: withdrawAll ? null : amount, p_all: withdrawAll,
+p_method: method, p_destination: destination, p_request_key: requestKey,
+});
 // Same key seen before: the first request already created the withdrawal
 // Answer success without doing anything again.
 if (rpcErr?.message === "DUPLICATE_REQUEST") {
@@ -147,18 +151,14 @@ if (rpcErr || !withdrawal) {
 // ("Insufficient balance. Available: $12.40").
 return json({ error: rpcErr?.message ?? "Could not create withdrawal request" }, 400, cors);
 }
-const row = Array.isArray(withdrawal) ? withdrawal[0] : withdrawal;
-const withdrawalId = row.id as string;
-// Every withdrawal goes to the admin queue; nothing is paid out automatically.
-// Withdraw fee (0115) is snapshotted on the row by request_withdrawal().
+const row = (Array.isArray(withdrawal) ? withdrawal[0] : withdrawal) as Record<string, unknown>;
+// Only display (base-only) figures go back to the creator.
 return json({
 status: "pending",
-withdrawalId,
-amount: Number(row.amount_requested),
-feePercent: Number(row.fee_percent ?? 0),
-feeFixedUsd: Number(row.fee_fixed_usd ?? 0),
-feeUsd: Number(row.fee_usd ?? 0),
-receiveUsd: Number(row.amount_after_fee ?? row.amount_requested),
+withdrawalId: row.id as string,
+amount: Number(row.display_amount),
+feeUsd: Number(row.display_fee ?? 0),
+receiveUsd: Number(row.display_receive ?? row.display_amount),
 msg: "Request queued for admin approval.",
 }, 200, cors);
 });

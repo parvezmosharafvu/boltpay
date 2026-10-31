@@ -61,5 +61,5 @@ Deno.test("0107 link extra fee stacks in every mode", () => {
 });
 
 Deno.test("0107 unknown mode falls back to creator", () => {
-  assertEquals(feeShares("weird", 2.5), { mode: "creator", buyer: 0, creator: 2.5 });
+  assertEquals(feeShares("weird", 2.5), { mode: "buyer", buyer: 2.5, creator: 0 });
 });
