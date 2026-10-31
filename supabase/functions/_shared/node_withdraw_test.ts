@@ -22,7 +22,7 @@ function fakeLnd(over: Partial<WithdrawLnd> = {}) {
   return { lnd, calls };
 }
 
-function deps(o: { enabled?: unknown; owner?: unknown; stepUp?: boolean; lnd?: WithdrawLnd | null; reserveErr?: string } = {}) {
+function deps(o: { enabled?: unknown; owner?: unknown; stepUp?: boolean; lnd?: WithdrawLnd | null; reserveErr?: string; finishErr?: string; finishReturn?: boolean } = {}) {
   const rpcs: { fn: string; args: any }[] = [];
   const stepRpcs: { fn: string; args: any }[] = [];
   const alerts: string[] = [];
@@ -34,7 +34,8 @@ function deps(o: { enabled?: unknown; owner?: unknown; stepUp?: boolean; lnd?: W
       }
       rpcs.push({ fn, args });
       if (fn === "system_node_withdraw_reserve" && o.reserveErr) return Promise.resolve({ data: null, error: { message: o.reserveErr } });
-      return Promise.resolve({ data: fn === "system_node_withdraw_reserve" ? 7 : true, error: null });
+      if (fn === "system_node_withdraw_finish" && o.finishErr) return Promise.resolve({ data: null, error: { message: o.finishErr } });
+      return Promise.resolve({ data: fn === "system_node_withdraw_reserve" ? 7 : fn === "system_node_withdraw_finish" ? (o.finishReturn ?? true) : true, error: null });
     },
     setting: async (k) => k === "node_withdraw_enabled" ? (o.enabled ?? true) : k === "node_withdraw_owner_id" ? ("owner" in o ? o.owner : OWNER) : null,
     lnd: async () => (o.lnd === undefined ? fakeLnd().lnd : o.lnd),
@@ -89,7 +90,6 @@ Deno.test("read actions", async () => {
 
 Deno.test("refused step-up stops every spend before reserve or LND", async () => {
   for (const body of [
-    { action: "send_onchain", address: ADDR, amountSat: 1000, satPerVbyte: 2, feeLimitSat: 500, stepUpCode: "123456", requestKey: "key-000001" },
     { action: "pay_invoice", invoice: INV, feeLimitSat: 10, stepUpCode: "123456", requestKey: "key-000002" },
   ]) {
     const f = fakeLnd();
@@ -103,22 +103,16 @@ Deno.test("refused step-up stops every spend before reserve or LND", async () =>
   }
 });
 
-Deno.test("on-chain spend: reserve -> sendCoins -> finish -> alert", async () => {
+Deno.test("on-chain spends and on-chain Telegram codes fail closed even if feature switch is ON", async () => {
   const f = fakeLnd();
-  const { d, rpcs, alerts } = deps({ stepUp: true, lnd: f.lnd });
-  const r = await handle(OWNER, "admin", { action: "send_onchain", address: ADDR, amountSat: 1000, satPerVbyte: 2, feeLimitSat: 500, stepUpCode: "123456", requestKey: "key-000003" }, d);
-  assertEquals(r.status, 200);
-  assertEquals(rpcs.map((x) => x.fn), ["system_node_withdraw_reserve", "system_node_withdraw_finish"]);
-  assertEquals(rpcs[0].args.p_amount_sat, 1000);
-  assertEquals(rpcs[1].args.p_status, "sent");
-  assertEquals(f.calls, ["ready", "sendCoins"]);
-  assert(alerts[0].includes(shortDest(ADDR)) && !alerts[0].includes(ADDR));
-});
-
-Deno.test("send-all reserves the confirmed balance", async () => {
-  const { d, rpcs } = deps({ stepUp: true });
-  await handle(OWNER, "admin", { action: "send_onchain", address: ADDR, sendAll: true, satPerVbyte: 2, feeLimitSat: 500, stepUpCode: "123456", requestKey: "key-000004" }, d);
-  assertEquals(rpcs[0].args.p_amount_sat, 40000);
+  const { d, rpcs, stepRpcs, alerts } = deps({ enabled: true, lnd: f.lnd, stepUp: true });
+  const spend = { action: "send_onchain", address: ADDR, amountSat: 1000, satPerVbyte: 2, feeLimitSat: 500, stepUpCode: "123456", requestKey: "onchain-no" };
+  assertEquals((await handle(OWNER, "admin", { action: "stepup_request", request: spend }, d)).status, 503);
+  assertEquals((await handle(OWNER, "admin", spend, d)).status, 503);
+  assertEquals(f.calls, []);
+  assertEquals(rpcs, []);
+  assertEquals(stepRpcs, []);
+  assertEquals(alerts, []);
 });
 
 Deno.test("reserve refusal stops before LND spend", async () => {
@@ -130,22 +124,45 @@ Deno.test("reserve refusal stops before LND spend", async () => {
   assert(!f.calls.includes("pay"));
 });
 
-Deno.test("lightning: amount must match invoice; failure marks failed", async () => {
+Deno.test("lightning: amount must match invoice; LND failure retains reservation for reconciliation", async () => {
   assertEquals((await handle(OWNER, "admin", { action: "pay_invoice", invoice: INV, amountSat: 999, feeLimitSat: 10, stepUpCode: "123456", requestKey: "key-000006" }, deps({ stepUp: true }).d)).status, 400);
   const f = fakeLnd({ payInvoice: async () => { throw new WithdrawError("payment failed: no_route"); } });
   const { d, rpcs, alerts } = deps({ stepUp: true, lnd: f.lnd });
   const r = await handle(OWNER, "admin", { action: "pay_invoice", invoice: INV, feeLimitSat: 10, stepUpCode: "123456", requestKey: "key-000007" }, d);
   assertEquals(r.status, 502);
-  assertEquals(rpcs[1].args.p_status, "failed");
-  assert(alerts[0].startsWith("❌ Node withdraw failed"));
+  assertEquals(rpcs.map((x) => x.fn), ["system_node_withdraw_reserve"]);
+  assert(alerts[0].includes("outcome unknown"));
+  assert(String(r.body.error).includes("DO NOT retry") || String(r.body.error).includes("do NOT retry"));
 });
 
-Deno.test("unknown on-chain outcome leaves the reservation in place", async () => {
-  const f = fakeLnd({ sendCoins: async () => { throw new WithdrawError("LND unreachable: TimeoutError"); } });
+Deno.test("Lightning timeout leaves the prior reservation in place", async () => {
+  const f = fakeLnd({ payInvoice: async () => { throw new WithdrawError("LND unreachable: TimeoutError"); } });
   const { d, rpcs } = deps({ stepUp: true, lnd: f.lnd });
-  const r = await handle(OWNER, "admin", { action: "send_onchain", address: ADDR, amountSat: 1000, satPerVbyte: 2, feeLimitSat: 500, stepUpCode: "123456", requestKey: "key-000008" }, d);
+  const r = await handle(OWNER, "admin", { action: "pay_invoice", invoice: INV, feeLimitSat: 500, stepUpCode: "123456", requestKey: "key-000008" }, d);
   assertEquals(r.status, 502);
   assertEquals(rpcs.map((x) => x.fn), ["system_node_withdraw_reserve"]);
+});
+
+Deno.test("successful LND transfer with failed or rejected database finish never reports success", async () => {
+  for (const opts of [{ finishErr: "db unavailable" }, { finishReturn: false }]) {
+    const f = fakeLnd();
+    const { d, rpcs, alerts } = deps({ ...opts, stepUp: true, lnd: f.lnd });
+    const r = await handle(OWNER, "admin", { action: "pay_invoice", invoice: INV, feeLimitSat: 30, stepUpCode: "123456", requestKey: "finish-err-01" }, d);
+    assertEquals(r.status, 502);
+    assert(String(r.body.error).includes("DO NOT RETRY"));
+    assert(String(r.body.error).includes("cd".repeat(32)));
+    assertEquals(f.calls.filter((x) => x === "pay").length, 1);
+    assertEquals(rpcs.map((x) => x.fn), ["system_node_withdraw_reserve", "system_node_withdraw_finish"]);
+    assert(alerts.some((x) => x.includes("ledger finalize failed")));
+  }
+});
+
+Deno.test("a failed Telegram notification cannot turn an already-recorded send into an error", async () => {
+  const { d, rpcs } = deps({ stepUp: true });
+  d.alert = async () => { throw new Error("Telegram offline"); };
+  const r = await handle(OWNER, "admin", { action: "pay_invoice", invoice: INV, feeLimitSat: 10, stepUpCode: "123456", requestKey: "telegram-off-01" }, d);
+  assertEquals(r.status, 200);
+  assertEquals(rpcs.map(x => x.fn), ["system_node_withdraw_reserve", "system_node_withdraw_finish"]);
 });
 
 Deno.test("end to end with mocked fetch: macaroon never in response or alert", async () => {
@@ -191,7 +208,7 @@ Deno.test("step-up: code goes to Telegram alert, is bound to the exact spend, wo
   const db = stepUpDb();
   d.rpc = (fn, args) => { calls.push({ fn, args }); return db(fn, args); };
   d.newCode = () => "424242";
-  const spend = { action: "send_onchain", address: ADDR, amountSat: 1000, satPerVbyte: 2, feeLimitSat: 500 };
+  const spend = { action: "pay_invoice", invoice: INV, amountSat: 1000, feeLimitSat: 500 };
   const r = await handle(OWNER, "admin", { action: "stepup_request", request: spend }, d);
   assertEquals(r.status, 200);
   assertEquals(r.body.status, "code_sent");
@@ -203,7 +220,7 @@ Deno.test("step-up: code goes to Telegram alert, is bound to the exact spend, wo
   assertEquals(issued.p_code_hash, await codeHash("424242", issued.p_request_hash, "test-secret"));
 
   // different amount, address, fee rate or wrong code -> refused
-  for (const bad of [{ amountSat: 1001 }, { satPerVbyte: 3 }, { feeLimitSat: 501 }, { stepUpCode: "000000" }, { stepUpCode: undefined }]) {
+  for (const bad of [{ amountSat: 1001 }, { invoice: INV + "x" }, { feeLimitSat: 501 }, { stepUpCode: "000000" }, { stepUpCode: undefined }]) {
     const x = await handle(OWNER, "admin", { ...spend, stepUpCode: "424242", requestKey: "key-bad-01", ...bad }, d);
     assertEquals(x.status, 401);
   }
