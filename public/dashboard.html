@@ -1492,7 +1492,6 @@ async function init(){
   await applyDomainTheme();
   const { data: { user } } = await window.supabaseClient.auth.getUser();
   if (!user){ window.location.href = 'login.html'; return; }
-  loadConvFee();
 
   const { data: profile } = await window.supabaseClient
     .from('profiles').select('role, account_status').eq('id', user.id).single();
@@ -1640,29 +1639,6 @@ function payLinkLabel(p){
 function payNet(p){
   if (p.net_amount != null) return Number(p.net_amount);
   return parseFloat(p.amount_settled || p.amount_requested || 0);
-}
-async function loadConvFee(){
-  const el = document.getElementById('convFeeNote');
-  if (!el) return;
-  const { data, error } = await window.supabaseClient.rpc('conversion_fee_config');
-  const c = Array.isArray(data) ? data[0] : data;
-  const pct = Number(c && c.fee_percent);
-  if (error || !(pct > 0)) { el.style.display = 'none'; return; }
-  const mode = c.mode, b = Number(c.buyer_percent), k = Number(c.creator_percent);
-  const why = ' It covers BTC\u2192USDT conversion and BTC price movement.';
-  const whyBn = ' এটি BTC\u2192USDT কনভার্সন ও BTC দামের ওঠানামা কভার করে।';
-  if (mode === 'buyer') {
-    el.dataset.en = 'Conversion fee ' + pct + '% \u2014 paid by the buyer on top of the price. You receive the full amount.' + why;
-    el.dataset.bn = 'কনভার্সন ফি ' + pct + '% \u2014 ক্রেতা দামের উপর পরিশোধ করেন। আপনি পুরো পরিমাণ পান।' + whyBn;
-  } else if (mode === 'split') {
-    el.dataset.en = 'Conversion fee ' + pct + '% \u2014 shared: buyer pays ' + b + '% on top, ' + k + '% is deducted from what you receive.' + why;
-    el.dataset.bn = 'কনভার্সন ফি ' + pct + '% \u2014 ভাগাভাগি: ক্রেতা ' + b + '% বেশি দেন, আপনার প্রাপ্ত পরিমাণ থেকে ' + k + '% কাটা হয়।' + whyBn;
-  } else {
-    el.dataset.en = 'Conversion fee ' + pct + '% \u2014 deducted from each payment you receive.' + why + ' Your balance and invoices show the amount after this fee.';
-    el.dataset.bn = 'কনভার্সন ফি ' + pct + '% \u2014 প্রতিটি প্রাপ্ত পেমেন্ট থেকে কাটা হয়।' + whyBn + ' আপনার ব্যালেন্স ও ইনভয়েসে ফি বাদে পরিমাণ দেখানো হয়।';
-  }
-  el.style.display = '';
-  if (window.applyUiLang) window.applyUiLang();
 }
 function qiT(en, bn){ return (localStorage.getItem('boltpay_lang') === 'bn') ? bn : en; }
 function fillQuickInvoiceLinks(){
@@ -2209,21 +2185,6 @@ function withinTimeFilter(createdAt, filter){
 * filters. Tapping a row just opens Transactions properly rather than
 * growing this into a second, smaller version of it.
 */
-function renderRecentActivity(){
-  const el = document.getElementById('recentActivityList');
-  if (!el) return;
-  const recent = allPayments.slice(0, 6);
-  if (!recent.length){ el.innerHTML = '<div class="empty-state">' + t('No payments yet', 'এখনো কোনো পেমেন্ট নেই') + '</div>'; return; }
-  el.innerHTML = recent.map(p => `
-    <div class="mini-pay-row" onclick="showSection('income', document.querySelector('.tab-btn[data-sec=income]'))">
-      <div style="min-width:0;">
-        <div class="mini-pay-amt">$${payNet(p).toFixed(2)}</div>
-        <div class="mini-pay-meta">${escapeHtml((p.method || 'lightning').toUpperCase())} \u00b7 ${fmtDate(p.created_at)}</div>
-      </div>
-      <span class="mini-pay-badge ${escapeAttr(p.status)}">${escapeHtml(statusText(p.status))}</span>
-    </div>`).join('');
-}
-
 function renderPayments(){
   const container = document.getElementById('paymentsList');
   const search = (document.getElementById('txSearch')?.value || '').trim().toLowerCase();
@@ -2332,7 +2293,6 @@ function renderPayments(){
   tickPaymentTimers();
   // Every call site that refreshes the full list (initial load, a mark
   // toggle, realtime updates) keeps Overview's preview in sync for free.
-  renderRecentActivity();
 }
 
 // Tap the summary to expand/collapse. Ignores taps that started inside a
