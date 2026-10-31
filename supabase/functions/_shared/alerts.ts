@@ -56,7 +56,7 @@ export async function sendOpsAlert(
 export async function notifyLndSettled(db: SupabaseClient, paymentId: string): Promise<void> {
   try {
     const { data: p } = await db.from("payments")
-      .select("amount_settled, net_usd, payment_link_id, user_id").eq("id", paymentId).maybeSingle();
+      .select("amount_settled, net_usd, buyer_amount, payment_link_id, user_id").eq("id", paymentId).maybeSingle();
     if (!p) return;
     const amount = Number(p.amount_settled ?? 0);
     const { data: suppress, error } = await db.rpc("should_suppress_payment_alert", { p_amount: amount });
@@ -71,7 +71,7 @@ export async function notifyLndSettled(db: SupabaseClient, paymentId: string): P
       pct = Number(l?.cost_percent ?? 0);
     }
     await sendSettledAlert(settledAlertText(amount, slug, paymentId));
-    await notifyCreatorTelegram(db, p.user_id, creatorPaidText(Number(p.net_usd ?? amount), label, pct));
+    await notifyCreatorTelegram(db, p.user_id, creatorPaidText(creatorShownAmount(p.buyer_amount, p.net_usd, amount), label, pct));
   } catch (e) {
     console.error("notifyLndSettled:", (e as Error).message);
   }
@@ -102,6 +102,14 @@ export async function notifyCreatorTelegram(
     console.error("creator telegram delivery failed");
     return false;
   }
+}
+
+/** Base link amount (no extra fee, no conversion fee); net/settled only as fallback. Display only. */
+export function creatorShownAmount(base: unknown, net: unknown, settled: number): number {
+  const b = Number(base ?? 0);
+  if (b > 0) return b;
+  const n = Number(net ?? NaN);
+  return Number.isFinite(n) ? n : settled;
 }
 
 /** Creator Telegram text: net amount and "Name 27%" only, no fee breakdown. */
