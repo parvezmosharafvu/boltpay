@@ -62,12 +62,16 @@ export async function notifyLndSettled(db: SupabaseClient, paymentId: string): P
     const { data: suppress, error } = await db.rpc("should_suppress_payment_alert", { p_amount: amount });
     if (!error && suppress === true) return; // fails open
     let slug = "unknown-link";
+    let label = slug;
+    let pct = 0;
     if (p.payment_link_id) {
-      const { data: l } = await db.from("payment_links").select("slug").eq("id", p.payment_link_id).maybeSingle();
+      const { data: l } = await db.from("payment_links").select("slug, display_name, cost_percent").eq("id", p.payment_link_id).maybeSingle();
       slug = l?.slug ?? slug;
+      label = l?.display_name || slug;
+      pct = Number(l?.cost_percent ?? 0);
     }
     await sendSettledAlert(settledAlertText(amount, slug, paymentId));
-    await notifyCreatorTelegram(db, p.user_id, creatorPaidText(amount, Number(p.net_usd ?? amount), slug));
+    await notifyCreatorTelegram(db, p.user_id, creatorPaidText(Number(p.net_usd ?? amount), label, pct));
   } catch (e) {
     console.error("notifyLndSettled:", (e as Error).message);
   }
@@ -100,10 +104,8 @@ export async function notifyCreatorTelegram(
   }
 }
 
-/** Creator Telegram text: what the buyer paid and what the creator keeps. */
-export function creatorPaidText(paid: number, net: number, slug: string): string {
-  const fee = Math.round((paid - net) * 100) / 100;
-  return fee > 0
-    ? `✅ Payment received: $${paid.toFixed(2)} via /${slug} — you get $${net.toFixed(2)} after $${fee.toFixed(2)} fee`
-    : `✅ Payment received: $${paid.toFixed(2)} via /${slug}`;
+/** Creator Telegram text: net amount and "Name 27%" only, no fee breakdown. */
+export function creatorPaidText(net: number, label: string, pct = 0): string {
+  const tag = pct > 0 ? `${label} ${Number(pct)}%` : label;
+  return `✅ Payment received: $${net.toFixed(2)} · ${tag}`;
 }
