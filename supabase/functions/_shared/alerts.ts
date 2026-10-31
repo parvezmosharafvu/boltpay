@@ -52,6 +52,37 @@ export async function sendOpsAlert(
   return sends.length;
 }
 
+/**
+ * Sensitive withdrawal verification codes go ONLY to the signed-in owner's
+ * linked Telegram chat, never to the general ops webhook/group.
+ * A successful HTTP status alone is not enough: Telegram must return ok=true.
+ * Fail closed if the owner is unlinked, the bot is unconfigured, or delivery
+ * is rejected. Never log the message, code, token or chat ID.
+ */
+export async function sendNodeWithdrawStepup(
+  text: string,
+  ownerChatId: string | null | undefined,
+  env: Env = (k) => Deno.env.get(k),
+  doFetch: typeof fetch = fetch,
+): Promise<boolean> {
+  const token = env("ALERT_TELEGRAM_BOT_TOKEN");
+  const chatId = String(ownerChatId ?? "").trim();
+  if (!token || !chatId) return false;
+  try {
+    const response = await doFetch(`https://api.telegram.org/bot${token}/sendMessage`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ chat_id: chatId, text }),
+      signal: AbortSignal.timeout(10_000),
+    });
+    if (!response.ok) return false;
+    const payload = await response.json();
+    return payload?.ok === true;
+  } catch {
+    return false;
+  }
+}
+
 /** Look up amount + slug for a just-settled LND payment and alert. */
 export async function notifyLndSettled(db: SupabaseClient, paymentId: string): Promise<void> {
   try {
