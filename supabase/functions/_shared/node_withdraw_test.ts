@@ -101,12 +101,12 @@ Deno.test("send-all reserves the confirmed balance", async () => {
   assertEquals(rpcs[0].args.p_amount_sat, 40000);
 });
 
-Deno.test("cap / reserve refusal stops before LND spend", async () => {
+Deno.test("reserve refusal stops before LND spend", async () => {
   const f = fakeLnd();
-  const { d } = deps({ stepUp: true, lnd: f.lnd, reserveErr: "daily cap exceeded" });
+  const { d } = deps({ stepUp: true, lnd: f.lnd, reserveErr: "fee limit above node_withdraw_max_fee_sat" });
   const r = await handle(OWNER, "admin", { action: "pay_invoice", invoice: INV, feeLimitSat: 10, stepUpCode: "123456", requestKey: "key-000005" }, d);
   assertEquals(r.status, 409);
-  assertEquals(r.body.error, "daily cap exceeded");
+  assertEquals(r.body.error, "fee limit above node_withdraw_max_fee_sat");
   assert(!f.calls.includes("pay"));
 });
 

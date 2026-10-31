@@ -1,4 +1,4 @@
--- Runtime checks for 0112 (owner-only node withdraw). Runs inside BEGIN/ROLLBACK.
+-- Runtime checks for 0112 + 0118 (owner-only node withdraw, no daily cap). Runs inside BEGIN/ROLLBACK.
 \set ON_ERROR_STOP on
 begin;
 insert into auth.users(id, email) values
@@ -14,9 +14,10 @@ declare
   addr text := 'bc1qar0srrr7xfkvy5l643lydnw9re59gtzzwf5mdq';
   v_id bigint; v_id2 bigint; n int;
 begin
-  -- Defaults: OFF, low cap, no owner
+  -- Defaults: OFF, no owner; daily cap setting removed by 0118
   if (select value from app_settings where key = 'node_withdraw_enabled') <> 'false'::jsonb then raise exception 'flag not off'; end if;
-  if (select value from app_settings where key = 'node_withdraw_daily_cap_sat') <> '50000'::jsonb then raise exception 'cap'; end if;
+  if exists (select 1 from app_settings where key = 'node_withdraw_daily_cap_sat') then raise exception 'daily cap setting still present'; end if;
+  if pg_get_functiondef('system_node_withdraw_reserve(uuid,text,text,bigint,bigint,text)'::regprocedure) ilike '%cap%' then raise exception 'reserve still checks a cap'; end if;
   if (select value from app_settings where key = 'node_withdraw_max_fee_sat') <> '2000'::jsonb then raise exception 'max fee'; end if;
   if (select value from app_settings where key = 'node_withdraw_owner_id') <> 'null'::jsonb then raise exception 'owner set'; end if;
 
@@ -59,17 +60,18 @@ begin
   exception when others then if sqlerrm not like 'request_key reused%' then raise; end if;
   end;
 
-  -- Daily cap: 31000 used, 20000 + 1000 more would make 52000 > 50000
+  -- No daily cap: well past the old 50000 limit still reserves (then roll it back)
   begin
-    perform system_node_withdraw_reserve(o, 'lightning', 'lnbc200u1pexampleinvoice', 20000, 1000, 'key-cap-00001');
-    raise exception 'cap not enforced';
-  exception when others then if sqlerrm <> 'daily cap exceeded' then raise; end if;
+    perform system_node_withdraw_reserve(o, 'onchain', addr, 5000000, 2000, 'key-big-00001');
+    perform system_node_withdraw_reserve(o, 'onchain', addr, 7000000, 2000, 'key-big-00002');
+    raise exception 'ok-no-cap';
+  exception when others then if sqlerrm <> 'ok-no-cap' then raise; end if;
   end;
 
-  -- A failed send frees its room under the cap
+  -- finish moves a reserved row once
   if not system_node_withdraw_finish(v_id, 'failed', null, null, 'test') then raise exception 'finish failed'; end if;
   if system_node_withdraw_finish(v_id, 'sent', 'x', 1, null) then raise exception 'finished twice'; end if;
-  v_id2 := system_node_withdraw_reserve(o, 'lightning', 'lnbc200u1pexampleinvoice', 20000, 1000, 'key-cap-00001');
+  v_id2 := system_node_withdraw_reserve(o, 'lightning', 'lnbc200u1pexampleinvoice', 20000, 1000, 'key-ln-000001');
   if not system_node_withdraw_finish(v_id2, 'sent', repeat('ab', 32), 3, null) then raise exception 'sent'; end if;
   select count(*) into n from audit_log where subject_type = 'node_withdrawal';
   if n <> 4 then raise exception 'audit total %', n; end if;
