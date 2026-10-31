@@ -12,7 +12,8 @@ begin
   update profiles set role = 'admin' where id = a;
   perform set_config('test.uid', a::text, true);
   perform admin_set_customer_markup(2.5);
-  assert conversion_fee_mode() = 'creator', 'default creator';
+  assert conversion_fee_mode() = 'buyer', 'default buyer (0117)';
+  perform admin_set_conversion_fee_mode('creator');
   select * into c from conversion_fee_config();
   assert c.buyer_percent = 0 and c.creator_percent = 2.5, 'creator split';
 

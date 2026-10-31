@@ -85,6 +85,10 @@ jobs:
         env:
           PGPASSWORD: postgres
         run: psql -h localhost -U postgres -v ON_ERROR_STOP=1 -f ci/conversion_fee_regression.sql
+      - name: Runtime regression — cashout display + global fees (0117)
+        env:
+          PGPASSWORD: postgres
+        run: psql -h localhost -U postgres -v ON_ERROR_STOP=1 -f ci/cashout_display_regression.sql
       - name: Runtime regression — conversion fee modes (0107)
         env:
           PGPASSWORD: postgres

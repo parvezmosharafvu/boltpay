@@ -1,4 +1,4 @@
--- Platform commission regression (0082). Runs inside BEGIN/ROLLBACK.
+-- Platform commission regression (0082; removed in 0117). Runs inside BEGIN/ROLLBACK.
 \set ON_ERROR_STOP on
 begin;
 -- 0104: isolate from the conversion fee (own test: conversion_fee_regression.sql)
@@ -15,21 +15,21 @@ begin
   select * into r from payments where id=pid;
   assert r.commission_active = false and r.commission_usd = 0 and r.net_usd = 110, 'flag off must not change earnings';
   assert r.commission_percent = 10, 'snapshot pct';
-  -- per-profile ON: platform keeps the markup, creator nets base
+  -- 0117: the per-profile flag is gone; setting the old column changes nothing
   update profiles set commission_enabled = true where id = u;
   insert into payments(id, user_id, backend, lnd_r_hash, amount_sats, expires_at, buyer_amount, amount_requested, status)
     values (gen_random_uuid(), u, 'lnd', md5(random()::text)||md5(random()::text), 1000, now()+interval '1 hour', 100, 110, 'new') returning id into pid;
   update payments set status='settled', amount_settled=110, settled_at=now() where id=pid;
   select * into r from payments where id=pid;
   assert r.amount_requested = 110, 'customer price unchanged';
-  assert r.commission_usd = 10 and r.net_usd = 100, format('pct commission wrong: %s', r.commission_usd);
+  assert r.commission_active = false and r.commission_usd = 0 and r.net_usd = 110, format('commission must be off: %s', r.commission_usd);
   -- flat
   update profiles set commission_type='flat', commission_flat_usd=1.5 where id = u;
   insert into payments(id, user_id, backend, lnd_r_hash, amount_sats, expires_at, buyer_amount, amount_requested, status)
     values (gen_random_uuid(), u, 'lnd', md5(random()::text)||md5(random()::text), 1000, now()+interval '1 hour', 20, 22, 'new') returning id into pid;
   update payments set status='settled', amount_settled=22, settled_at=now() where id=pid;
   select * into r from payments where id=pid;
-  assert r.commission_usd = 1.5 and r.net_usd = 20.5, 'flat commission';
+  assert r.commission_usd = 0 and r.net_usd = 22, 'flat commission removed';
   -- daily invoice now carries commission
   perform generate_daily_invoices((now() at time zone 'Asia/Dhaka')::date);
 end $$;

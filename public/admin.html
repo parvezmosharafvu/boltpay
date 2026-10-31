@@ -661,14 +661,7 @@ textarea.w-input{ padding:10px 12px !important; }
                                   <b>USDT (BEP20):</b> <span id="wUsdt">—</span>
                                 </div>
                               </div>
-                              <div style="display:none" data-note="0105: per-user markup no longer used at checkout">
-                              <div class="detail-section-title">Pricing markup for this user</div>
-                                <div class="w-row">
-                                  <input type="number" step="0.001" class="w-input" id="detailCostInput" placeholder="0">
-                                  <button class="btn-primary" style="flex:0 0 auto;" onclick="saveDetailCost()">Save cost %</button>
-                                </div>
-                                <div class="hint" style="font-size:11px; color:var(--text-faint); margin-top:6px;">Added on top of every payment link this user owns. At 3%, a $100 link invoices the payer $103.00 and credits them $103.00. They can change this themselves up to the platform ceiling; setting it here overrides whatever they chose.</div>
-                              </div>
+                              <div class="hint" style="font-size:11px; color:var(--text-faint); margin:0 0 14px;">Fees are global for every creator (0117): conversion fee, fee mode and withdraw fee are set in Settings. Creators keep their link extra fee. · সব ক্রিয়েটরের জন্য ফি একই — সেটিংসে নির্ধারিত।</div>
 
                                 <div class="detail-section-title">BDT rate · BDT রেট <span id="detailBdtRateLabel" style="font-weight:500;color:var(--text-dim);margin-left:6px;"></span></div>
                                 <div class="w-row">
@@ -965,8 +958,8 @@ textarea.w-input{ padding:10px 12px !important; }
                                           <div class="panel settings-card" id="feeModePanel">
                                             <div class="panel-head"><div class="panel-title">Fee mode · ফি মোড</div></div>
                                             <div style="display:flex;flex-direction:column;gap:8px;font-size:12px">
-                                              <label class="settings-radio"><input type="radio" name="feeMode" value="creator"> <b>Creator pays</b> — fee deducted from the creator (default) · <b>ক্রিয়েটর দেন</b> — ক্রিয়েটরের পরিমাণ থেকে কাটা (ডিফল্ট)</label>
-                                              <label class="settings-radio"><input type="radio" name="feeMode" value="buyer"> <b>Buyer pays</b> — added to the buyer total; creator gets the full amount · <b>ক্রেতা দেন</b> — ক্রেতার মোটে যোগ; ক্রিয়েটর পুরো পরিমাণ পান</label>
+                                              <label class="settings-radio"><input type="radio" name="feeMode" value="creator"> <b>Creator pays</b> — fee deducted from the creator · <b>ক্রিয়েটর দেন</b> — ক্রিয়েটরের পরিমাণ থেকে কাটা</label>
+                                              <label class="settings-radio"><input type="radio" name="feeMode" value="buyer"> <b>Buyer pays</b> — added to the buyer total; creator gets the full amount (default) · <b>ক্রেতা দেন</b> — ক্রেতার মোটে যোগ; ক্রিয়েটর পুরো পরিমাণ পান (ডিফল্ট)</label>
                                               <label class="settings-radio"><input type="radio" name="feeMode" value="split"> <b>Split 50/50</b> (suggested) — half on the buyer, half from the creator · <b>৫০/৫০ ভাগ</b> (প্রস্তাবিত) — অর্ধেক ক্রেতা, অর্ধেক ক্রিয়েটর</label>
                                             </div>
                                             <div class="w-row" style="margin-top:10px"><button class="btn-sm settings-btn" onclick="saveFeeMode(this)">Save mode · মোড সংরক্ষণ</button></div>
@@ -1625,8 +1618,7 @@ async function openCustomerDetail(creatorId){
   
   document.getElementById('wUsdt').textContent = cu.w_usdt || '—';
 
-  const { data: profileRow } = await window.supabaseClient.from('profiles').select('withdrawal_fee_percent, cost_percent, bdt_rate').eq('id', creatorId).single();
-  document.getElementById('detailCostInput').value = profileRow?.cost_percent ?? 0;
+  const { data: profileRow } = await window.supabaseClient.from('profiles').select('bdt_rate').eq('id', creatorId).single();
   document.getElementById('detailBdtRateInput').value = profileRow?.bdt_rate ?? '';
   document.getElementById('detailBdtRateLabel').textContent = fmtBdtRate(profileRow?.bdt_rate ?? null);
   document.getElementById('detailLimitInput').value = cu.max_links ?? 5;
@@ -1649,16 +1641,6 @@ async function openCustomerDetail(creatorId){
   wdEl.innerHTML = (wds && wds.length)
     ? wds.map(w => `<div class="wd-row"><div class="wd-top"><div><div class="wd-amt">$${parseFloat(w.amount_after_fee || 0).toFixed(2)}</div><div class="wd-meta">${safeMethod(w.method)} · ${fmtDate(w.requested_at)}</div></div><span class="badge ${w.status}"><span class="badge-dot"></span>${w.status}</span></div></div>`).join('')
     : '<div class="empty-state">No withdrawals</div>';
-}
-
-
-async function saveDetailCost(){
-  const pct = parseFloat(document.getElementById('detailCostInput').value);
-  // A typo guard, not a policy ceiling — see migration 0060.
-  if (isNaN(pct) || pct < 0 || pct > 1000){ showToast('Enter a cost between 0-1000', 'err'); return; }
-  const { error } = await window.supabaseClient.rpc('admin_set_cost_percent', { p_user_id: currentDetailCreatorId, p_percent: pct });
-  showToast(error ? 'Failed: ' + error.message : 'Cost updated', error ? 'err' : 'ok');
-  if (!error) await loadCustomers();
 }
 
 
@@ -2332,7 +2314,7 @@ async function loadMarkup(){
 async function loadFeeMode(){
   const { data } = await window.supabaseClient.rpc('conversion_fee_config');
   const c = Array.isArray(data) ? data[0] : data;
-  const m = (c && c.mode) || 'creator';
+  const m = (c && c.mode) || 'buyer';
   document.querySelectorAll('input[name=feeMode]').forEach(r => { r.checked = r.value === m; });
 }
 async function saveFeeMode(btn){

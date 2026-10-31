@@ -1229,13 +1229,15 @@ textarea.w-input{ padding:10px 12px !important; }
               </div>
               <div class="cashout-field cashout-amount">
                 <label class="cashout-label" for="wdAmount" data-en="Amount (USD)" data-bn="পরিমাণ (USD)">Amount (USD)</label>
-                <input type="number" inputmode="decimal" class="w-input mono" id="wdAmount" placeholder="$0.00">
+                <div class="w-row" style="gap:8px;"><input type="number" inputmode="decimal" class="w-input mono" id="wdAmount" placeholder="$0.00" style="flex:1;">
+                <button type="button" class="btn-secondary" id="wdAllBtn" onclick="withdrawAll()" style="flex:0 0 auto;" data-en="Withdraw all" data-bn="সব তুলুন">Withdraw all</button></div>
+                <div class="hint" id="wdAvailHint" style="font-size:12px;margin-top:4px;"></div>
               </div>
               <div class="cashout-preview wd-fee-preview" id="wdFeePreview" style="display:none;" aria-live="polite"></div>
               <div class="cashout-preview" id="wdBdtPreview" style="display:none;" aria-live="polite"></div>
               <div class="cashout-field" id="invoiceRow" style="display:none;">
                 <label class="cashout-label" for="wdInvoice" data-en="Lightning invoice or address" data-bn="লাইটনিং ইনভয়েস বা অ্যাড্রেস">Lightning invoice or address</label>
-                <input type="text" class="w-input mono" id="wdInvoice" data-ph-en="Paste Lightning Invoice here (Matches USD amount)" data-ph-bn="এখানে লাইটনিং ইনভয়েস পেস্ট করুন (USD পরিমাণের সাথে মিলবে)" placeholder="Paste Lightning Invoice here (Matches USD amount)">
+                <input type="text" class="w-input mono" id="wdInvoice" data-ph-en="Your Lightning Address (you@wallet.com)" data-ph-bn="আপনার লাইটনিং অ্যাড্রেস (you@wallet.com)" placeholder="Your Lightning Address (you@wallet.com)">
               </div>
               <div id="invoiceHelpText" class="hint cashout-help" style="display:none;"></div>
               <button class="btn-primary cashout-btn cashout-btn-primary" id="withdrawBtn" onclick="submitWithdrawal()" data-en="Submit request" data-bn="অনুরোধ জমা দিন">Submit request</button>
@@ -2384,11 +2386,18 @@ function tickPaymentTimers(){
   });
 }
 
+// 0117: history in display (base-only) dollars. Rows from 0117 on carry
+// display_amount; older rows are scaled by the current display ratio.
+function wdScale(w){
+  const req = Number(w.amount_requested) || 0;
+  if (w.display_amount != null && req > 0) return Number(w.display_amount) / req;
+  return DISPLAY_RATIO;
+}
 function renderWithdrawals(){
   const c = document.getElementById('withdrawalsList');
   if (!allWithdrawals.length){ c.innerHTML = '<div class="empty-state">' + t('No withdrawal history', 'কোনো উত্তোলনের ইতিহাস নেই') + '</div>'; return; }
   c.innerHTML = allWithdrawals.map(w => `<div class="tx-row"><div class="tx-top"><div>
-    <div class="tx-amt" style="color:var(--alert);">-$${parseFloat((Number(w.fee_usd) > 0 ? w.amount_requested : w.amount_after_fee)||0).toFixed(2)}${Number(w.fee_usd) > 0 ? ' · ' + qiT('fee', 'ফি') + ' $' + Number(w.fee_usd).toFixed(2) + ' · ' + qiT('receive', 'পাবেন') + ' $' + parseFloat(w.amount_after_fee).toFixed(2) : ''}${w.payout_currency === 'BDT' && w.payout_amount != null ? ' · ৳' + parseFloat(w.payout_amount).toFixed(2) : ''}</div>
+    <div class="tx-amt" style="color:var(--alert);">-$${((parseFloat((Number(w.fee_usd) > 0 ? w.amount_requested : w.amount_after_fee)||0)) * wdScale(w)).toFixed(2)}${Number(w.fee_usd) > 0 ? ' · ' + qiT('fee', 'ফি') + ' $' + (Number(w.fee_usd) * wdScale(w)).toFixed(2) + ' · ' + qiT('receive', 'পাবেন') + ' $' + ((parseFloat(w.amount_after_fee)||0) * wdScale(w)).toFixed(2) : ''}${w.payout_currency === 'BDT' && w.payout_amount != null ? ' · ৳' + parseFloat(w.payout_amount).toFixed(2) : ''}</div>
     <div class="tx-meta-row">${safeMethod(w.method)} · ${fmtDate(w.requested_at)}</div></div>
     <span class="badge ${escapeHtml(w.status)}"><span class="badge-dot"></span>${escapeHtml(statusText(w.status))}</span></div></div>`).join('');
 }
@@ -2408,8 +2417,8 @@ function toggleInvoiceInput() {
     if (help) {
       help.style.display = 'block';
       help.textContent = saved
-        ? 'Using your saved Lightning Address. Paste a bolt11 invoice instead if you prefer.'
-        : 'Paste a bolt11 invoice, or save a Lightning Address above to have this filled in automatically.';
+        ? 'Using your saved Lightning Address. The payout is sent there automatically.'
+        : 'Enter your Lightning Address (you@wallet.com), or save one above to have this filled in automatically.';
     }
   } else {
     invoiceRow.style.display = 'none';
@@ -2420,14 +2429,31 @@ function toggleInvoiceInput() {
 
 // Withdraw fee (0115): admin-set % plus fixed $, taken from the amount.
 // The server snapshots the same numbers; this is only the preview.
+// 0117: everything on Cashout is in display (base-only) dollars; the
+// server converts to the ledger amount in request_withdrawal_display().
 let WD_FEE = { percent: 0, fixed: 0 };
+let DISPLAY_RATIO = 1, cashoutAvailable = null, wdAll = false;
 async function loadWithdrawFee(){
   try {
-    const { data, error } = await window.supabaseClient.rpc('get_withdraw_fee');
+    const { data, error } = await window.supabaseClient.rpc('get_my_cashout');
     const r = Array.isArray(data) ? data[0] : data;
-    if (!error && r) WD_FEE = { percent: Number(r.percent) || 0, fixed: Number(r.fixed_usd) || 0 };
+    if (!error && r) {
+      WD_FEE = { percent: Number(r.fee_percent) || 0, fixed: Number(r.fee_fixed_display) || 0 };
+      DISPLAY_RATIO = Number(r.ratio) || 1;
+      cashoutAvailable = Number(r.available) || 0;
+    }
   } catch(_) {}
+  const hint = document.getElementById('wdAvailHint');
+  if (hint && cashoutAvailable != null) hint.textContent = qiT(`Available: $${cashoutAvailable.toFixed(2)}`, `উত্তোলনযোগ্য: $${cashoutAvailable.toFixed(2)}`);
+  if (typeof allWithdrawals !== 'undefined' && allWithdrawals.length) renderWithdrawals();
   updateFeePreview(); updateBdtPreview();
+}
+function withdrawAll(){
+  const av = cashoutAvailable ?? shownAvailable ?? 0;
+  const el = document.getElementById('wdAmount');
+  el.value = (Math.floor(av * 100) / 100).toFixed(2);
+  el.dispatchEvent(new Event('input'));
+  wdAll = true;
 }
 function wdFeeQuote(amt){
   const a = Math.round(amt * 100) / 100;
@@ -2459,19 +2485,7 @@ window.addEventListener('uilangchange', updateFeePreview);
 loadWithdrawFee();
 document.getElementById('wdAmount').addEventListener('input', updateBdtPreview);
 document.getElementById('wdMethod').addEventListener('change', updateBdtPreview);
-document.getElementById('wdAmount').addEventListener('input', function(e) {
-  const amt = parseFloat(e.target.value);
-  const help = document.getElementById('invoiceHelpText');
-  const methodDropdown = document.getElementById('wdMethod');
-
-  if (amt >= 5 && methodDropdown && methodDropdown.value === 'lightning') {
-    const afterFee = wdFeeQuote(amt).receive.toFixed(2);
-    help.textContent = `Please create a Lightning Invoice for exactly $${afterFee} USD. (ঠিক $${afterFee} USD-এর একটি Lightning ইনভয়েস তৈরি করুন।)`;
-    help.style.display = 'block';
-  } else if (help) {
-    help.style.display = 'none';
-  }
-});
+document.getElementById('wdAmount').addEventListener('input', function(){ wdAll = false; });
 
 // One key per filled-in form: a double tap or a retried request reuses it,
 // so the server can refuse a second withdrawal. Cleared after a real result.
@@ -2488,7 +2502,7 @@ async function submitWithdrawal(){
   const amt = parseFloat(document.getElementById('wdAmount').value);
   const method = document.getElementById('wdMethod')?.value;
   const invoice = document.getElementById('wdInvoice')?.value.trim();
-  const available = serverAvailable;
+  const available = cashoutAvailable ?? shownAvailable;
   const btn = document.getElementById('withdrawBtn');
 
   if (!amt || amt < 5) return showToast('Minimum withdrawal is $5', 'err');
@@ -2516,7 +2530,7 @@ async function submitWithdrawal(){
     const res = await fetch(`${window.SUPABASE_URL}/functions/v1/user-withdraw`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${session.access_token}` },
-      body: JSON.stringify({ amount: amt, method: method, destination: destination, request_key: requestKey })
+      body: JSON.stringify({ display_amount: amt, withdraw_all: wdAll, method: method, destination: destination, request_key: requestKey })
     });
     const result = await res.json();
     if (!res.ok) { showToast(result.error || 'Failed', 'err'); wdRequestKey = null; }
@@ -2526,7 +2540,9 @@ async function submitWithdrawal(){
       document.getElementById('wdAmount').value = '';
       if(document.getElementById('wdInvoice')) document.getElementById('wdInvoice').value = '';
       await fetchWithdrawals();
+      wdAll = false;
       await refreshBalance();
+      await loadWithdrawFee();
     }
   } catch(e) { showToast('Network error', 'err'); }
   btn.disabled = false; btn.textContent = t('Submit request', 'রিকোয়েস্ট জমা দিন');

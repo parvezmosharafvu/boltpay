@@ -56,7 +56,7 @@ export type FeeMode = "creator" | "buyer" | "split";
 /** Buyer/creator share of the conversion fee % for a mode (0107). */
 export function feeShares(mode: unknown, feePercent: unknown): { mode: FeeMode; buyer: number; creator: number } {
   const f = clampCostPercent(feePercent);
-  const m: FeeMode = mode === "buyer" || mode === "split" ? mode : "creator";
+  const m: FeeMode = mode === "creator" || mode === "split" ? mode : "buyer"; // 0117: default buyer
   if (m === "buyer") return { mode: m, buyer: f, creator: 0 };
   if (m === "split") {
     // Integer thousandths so it matches SQL round(f / 2, 3) (half up).
