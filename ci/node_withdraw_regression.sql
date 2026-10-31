@@ -1,4 +1,4 @@
--- Runtime checks for 0112 + 0118 (owner-only node withdraw, no daily cap). Runs inside BEGIN/ROLLBACK.
+-- Runtime checks for 0112 + 0118 + 0119 (owner-only node withdraw, no daily cap). Runs inside BEGIN/ROLLBACK.
 \set ON_ERROR_STOP on
 begin;
 insert into auth.users(id, email) values
@@ -45,10 +45,14 @@ begin
   exception when others then if sqlerrm not like 'fee limit%' then raise; end if;
   end;
 
-  -- Owner reserve works, writes audit, and is idempotent
+  -- Owner reserve works, writes audit, and a replay is refused before sending
   v_id := system_node_withdraw_reserve(o, 'onchain', addr, 30000, 1000, 'key-ok-000001');
-  v_id2 := system_node_withdraw_reserve(o, 'onchain', addr, 30000, 1000, 'key-ok-000001');
-  if v_id <> v_id2 then raise exception 'not idempotent'; end if;
+  begin
+    perform system_node_withdraw_reserve(o, 'onchain', addr, 30000, 1000, 'key-ok-000001');
+    raise exception 'duplicate reservation was reused';
+  exception when others then
+    if sqlerrm not like 'duplicate request_key:%' then raise; end if;
+  end;
   select count(*) into n from node_withdrawals; if n <> 1 then raise exception 'rows %', n; end if;
   select count(*) into n from audit_log where action = 'node_withdraw.reserve' and subject_id = v_id::text;
   if n <> 1 then raise exception 'audit rows %', n; end if;
@@ -57,7 +61,7 @@ begin
   begin
     perform system_node_withdraw_reserve(o, 'onchain', addr, 30001, 1000, 'key-ok-000001');
     raise exception 'key reuse accepted';
-  exception when others then if sqlerrm not like 'request_key reused%' then raise; end if;
+  exception when others then if sqlerrm not like 'duplicate request_key:%' then raise; end if;
   end;
 
   -- No daily cap: well past the old 50000 limit still reserves (then roll it back)
@@ -87,4 +91,4 @@ begin
   if not has_function_privilege('service_role', 'system_node_withdraw_reserve(uuid,text,text,bigint,bigint,text)', 'execute') then raise exception 'service cannot reserve'; end if;
 end $$;
 rollback;
-select 'Node withdraw 0112 runtime checks passed' as result;
+select 'Node withdraw 0112/0118/0119 runtime checks passed' as result;
