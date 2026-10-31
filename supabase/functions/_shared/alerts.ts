@@ -16,6 +16,19 @@ export async function sendSettledAlert(
   doFetch: typeof fetch = fetch,
 ): Promise<number> {
   if ((env("ALERT_ON_SETTLED") ?? "true").toLowerCase() === "false") return 0;
+  return await sendOpsAlert(text, env, doFetch);
+}
+
+/**
+ * Owner/ops alert to the webhook and admin Telegram chat, with no
+ * ALERT_ON_SETTLED switch. Best-effort, never throws, never logs the
+ * token, chat id or message.
+ */
+export async function sendOpsAlert(
+  text: string,
+  env: Env = (k) => Deno.env.get(k),
+  doFetch: typeof fetch = fetch,
+): Promise<number> {
   const sends: Promise<unknown>[] = [];
   const webhook = env("ALERT_WEBHOOK_URL");
   if (webhook) {
@@ -35,7 +48,7 @@ export async function sendSettledAlert(
     }));
   }
   const res = await Promise.allSettled(sends);
-  for (const r of res) if (r.status === "rejected") console.error("settled-alert delivery failed");
+  for (const r of res) if (r.status === "rejected") console.error("alert delivery failed");
   return sends.length;
 }
 
