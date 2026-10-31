@@ -945,6 +945,15 @@ textarea.w-input{ padding:10px 12px !important; }
                                               <button class="btn-sm settings-btn" onclick="saveCheckoutLimits(this)">Save · সংরক্ষণ</button>
                                             </div>
                                           </div>
+                                          <div class="panel settings-card" id="withdrawFeePanel">
+                                            <div class="panel-head"><div class="panel-title">Withdraw fee · উইথড্র ফি</div></div>
+                                            <div class="w-row" style="gap:10px;flex-wrap:wrap;align-items:flex-end">
+                                              <label style="font-size:12px">Fee (%) · ফি (%)<br><input id="wfPct" class="w-input settings-input" type="number" min="0" max="50" step="0.01" oninput="withdrawFeeHint()"></label>
+                                              <label style="font-size:12px">Fixed fee (USD) · নির্দিষ্ট ফি (USD)<br><input id="wfFixed" class="w-input settings-input" type="number" min="0" step="0.01" oninput="withdrawFeeHint()"></label>
+                                              <button class="btn-sm settings-btn" onclick="saveWithdrawFee(this)">Save · সংরক্ষণ</button>
+                                            </div>
+                                            <div class="hint" id="wfHint" style="font-size:12px;margin-top:8px"></div>
+                                          </div>
                                           <div class="panel settings-card" id="markupPanel">
                                             <div class="panel-head"><div class="panel-title">Conversion fee · কনভার্সন ফি</div></div>
                                             <div class="w-row" style="gap:10px;flex-wrap:wrap;align-items:flex-end">
@@ -1279,10 +1288,16 @@ async function loadStats(){
   const cnt = Number(row.payment_count) || 0;
   document.getElementById('statAvgPayment').textContent = '$' + (cnt ? parseFloat(row.total_settled) / cnt : 0).toFixed(2);
   
-  const fs = await window.supabaseClient.rpc('admin_fee_stats', { p_start: start, p_end: end });
+  const [fs, wfs] = await Promise.all([
+    window.supabaseClient.rpc('admin_fee_stats', { p_start: start, p_end: end }),
+    window.supabaseClient.rpc('admin_withdraw_fee_stats', { p_start: start, p_end: end }),
+  ]);
   const f = Array.isArray(fs.data) ? fs.data[0] : fs.data;
+  // Withdraw fees (0115) on paid withdrawals are platform revenue too.
+  const wFee = !wfs.error && wfs.data != null ? parseFloat(wfs.data) || 0 : 0;
   if (!fs.error && f){
-    document.getElementById('statFeeEarned').textContent = '$' + parseFloat(f.fee_earned).toFixed(2);
+    document.getElementById('statFeeEarned').textContent = '$' + (parseFloat(f.fee_earned) + wFee).toFixed(2);
+    document.getElementById('statFeeEarned').title = 'Includes withdraw fees · উইথড্র ফি সহ: $' + wFee.toFixed(2);
     document.getElementById('statCreatorNet').textContent = 'Creators net $' + parseFloat(f.creator_net).toFixed(2) + ' · buyer-paid fees $' + parseFloat(f.buyer_fees).toFixed(2);
   }
   // Show profit
@@ -1673,7 +1688,8 @@ function renderPending(){
       <div class="wd-row">
         <div class="wd-top">
           <div>
-            <div class="wd-amt">$${parseFloat(w.amount_requested).toFixed(2)} ${parseFloat(w.amount_after_fee) !== parseFloat(w.amount_requested) ? `<span style="font-size:12px;color:var(--text-faint);">→ $${parseFloat(w.amount_after_fee).toFixed(2)} payout (পেআউট)</span>` : ""}</div>
+            <div class="wd-amt">${Number(w.fee_usd) > 0 ? `<span style="font-size:12px;color:var(--text-faint);">${wfT('Send', 'পাঠান')}</span> ` : ''}$${parseFloat(w.amount_after_fee ?? w.amount_requested).toFixed(2)}</div>
+            ${Number(w.fee_usd) > 0 ? `<div class="wd-meta wd-fee-line">${wfT('Requested', 'অনুরোধ')} $${parseFloat(w.amount_requested).toFixed(2)} − ${wfT('withdraw fee', 'উইথড্র ফি')} $${Number(w.fee_usd).toFixed(2)} (${Number(w.fee_percent)}% + $${Number(w.fee_fixed_usd || 0).toFixed(2)})</div>` : (parseFloat(w.amount_after_fee) !== parseFloat(w.amount_requested) ? `<div class="wd-meta">${wfT('Requested', 'অনুরোধ')} $${parseFloat(w.amount_requested).toFixed(2)}</div>` : '')}
             <div class="wd-meta">${safeText(who)} · ${safeMethod(w.method)} · ${fmtDate(w.requested_at)}</div>
             <div class="wd-dest" style="font-family:'Geist Mono'; color:var(--amber); font-weight:700;">${escapeHtml(w.destination)}</div>
           </div>
@@ -2372,6 +2388,34 @@ async function saveMarkup(btn){
   markupHint(Number(data));
   showToast('Conversion fee saved · কনভার্সন ফি সংরক্ষিত: ' + Number(data) + '%', 'ok');
 }
+function wfT(en, bn){ return (localStorage.getItem('boltpay_lang') === 'bn') ? bn : en; }
+// 0115: withdraw fee = amount x % + fixed $, charged when a creator withdraws.
+async function loadWithdrawFee(){
+  const { data } = await window.supabaseClient.rpc('get_withdraw_fee');
+  const r = Array.isArray(data) ? data[0] : data;
+  document.getElementById('wfPct').value = r ? Number(r.percent) : 0;
+  document.getElementById('wfFixed').value = r ? Number(r.fixed_usd) : 0;
+  withdrawFeeHint();
+}
+function withdrawFeeHint(){
+  const p = Number(document.getElementById('wfPct').value) || 0, f = Number(document.getElementById('wfFixed').value) || 0;
+  const fee = Math.round((100 * p / 100 + f) * 100) / 100;
+  document.getElementById('wfHint').textContent = 'On a $100 withdrawal: fee $' + fee.toFixed(2) + ', creator receives $' + (100 - fee).toFixed(2) + '. Charged on top of any link extra fee; requests where the fee is not less than the amount are refused. · $100 উইথড্রতে: ফি $' + fee.toFixed(2) + ', ক্রিয়েটর পাবেন $' + (100 - fee).toFixed(2) + '। লিংকের অতিরিক্ত ফি ছাড়াও প্রযোজ্য; ফি পরিমাণের সমান বা বেশি হলে অনুরোধ বাতিল।';
+}
+async function saveWithdrawFee(btn){
+  const pr = document.getElementById('wfPct').value.trim(), fr = document.getElementById('wfFixed').value.trim();
+  const p = Number(pr), f = Number(fr);
+  if (pr === '' || !(p >= 0 && p <= 50)) { showToast('Fee must be 0–50% · ফি ০–৫০% হতে হবে', 'err'); return; }
+  if (fr === '' || !(f >= 0 && f <= 1000)) { showToast('Fixed fee must be $0–$1000 · নির্দিষ্ট ফি $0–$1000 হতে হবে', 'err'); return; }
+  if (!confirm('Set the withdraw fee to ' + p + '% + $' + f.toFixed(2) + ' for new withdrawals? · নতুন উইথড্রর জন্য উইথড্র ফি ' + p + '% + $' + f.toFixed(2) + ' করবেন?')) { loadWithdrawFee(); return; }
+  btn.disabled = true;
+  const { data, error } = await window.supabaseClient.rpc('admin_set_withdraw_fee', { p_percent: p, p_fixed_usd: f });
+  btn.disabled = false;
+  if (error) { showToast('Failed · ব্যর্থ: ' + error.message, 'err'); return; }
+  const r = Array.isArray(data) ? data[0] : data;
+  showToast('Withdraw fee saved · উইথড্র ফি সংরক্ষিত: ' + Number(r.percent) + '% + $' + Number(r.fixed_usd).toFixed(2), 'ok');
+  loadWithdrawFee();
+}
 async function saveCheckoutLimits(btn){
   const ex = Math.round(Number(document.getElementById('ckExpiry').value));
   const mn = Number(document.getElementById('ckMin').value), mx = Number(document.getElementById('ckMax').value);
@@ -2408,6 +2452,7 @@ async function exportPaymentsCsv(btn){
 
 async function loadSettings(){
   loadCheckoutLimits();
+  loadWithdrawFee();
   loadMarkup();
   loadLinkMarkup();
   const { data } = await window.supabaseClient.from('app_settings').select('key, value');

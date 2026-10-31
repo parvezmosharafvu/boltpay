@@ -150,9 +150,15 @@ return json({ error: rpcErr?.message ?? "Could not create withdrawal request" },
 const row = Array.isArray(withdrawal) ? withdrawal[0] : withdrawal;
 const withdrawalId = row.id as string;
 // Every withdrawal goes to the admin queue; nothing is paid out automatically.
+// Withdraw fee (0115) is snapshotted on the row by request_withdrawal().
 return json({
 status: "pending",
 withdrawalId,
+amount: Number(row.amount_requested),
+feePercent: Number(row.fee_percent ?? 0),
+feeFixedUsd: Number(row.fee_fixed_usd ?? 0),
+feeUsd: Number(row.fee_usd ?? 0),
+receiveUsd: Number(row.amount_after_fee ?? row.amount_requested),
 msg: "Request queued for admin approval.",
 }, 200, cors);
 });

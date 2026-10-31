@@ -127,6 +127,11 @@ jobs:
           PGPASSWORD: postgres
         run: psql -h localhost -U postgres -v ON_ERROR_STOP=1 -f ci/withdrawal_fee_zero_regression.sql
 
+      - name: Runtime regression — withdraw fee (0115)
+        env:
+          PGPASSWORD: postgres
+        run: psql -h localhost -U postgres -v ON_ERROR_STOP=1 -f ci/withdraw_fee_regression.sql
+
       - name: Runtime regression — confirmation hold (0087)
         env:
           PGPASSWORD: postgres
