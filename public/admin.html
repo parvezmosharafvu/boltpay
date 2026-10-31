@@ -531,6 +531,7 @@ textarea.w-input{ padding:10px 12px !important; }
                       <button class="tab-btn" data-tab="domains" onclick="switchTab('domains', this)">Domains</button>
                       <button class="tab-btn" data-tab="methods" onclick="switchTab('methods', this)">Payment methods</button>
                       <button class="tab-btn" data-tab="settings" onclick="switchTab('settings', this)">Settings</button>
+                      <button class="tab-btn" id="nwTabBtn" data-tab="nodewithdraw" style="display:none;" onclick="switchTab('nodewithdraw', this)" data-en="Node Withdraw" data-bn="নোড উইথড্র">Node Withdraw</button>
                     </div>
                     <!-- MERGED TRANSACTIONS TAB -->
                     <div id="tab-transactions">
@@ -817,6 +818,89 @@ textarea.w-input{ padding:10px 12px !important; }
                                             </div>
                                           </div>
                                         </div>
+                                        <!-- NODE WITHDRAW TAB (owner only; server enforces flag + owner + step-up) -->
+                                        <div id="tab-nodewithdraw" style="display:none;">
+<style>
+.nw-grid{ display:grid; grid-template-columns:repeat(auto-fit,minmax(110px,1fr)); gap:10px; }
+.nw-stat{ background:var(--panel-hi); border:1px solid var(--line); border-radius:12px; padding:12px; }
+.nw-stat .k{ font-size:11px; color:var(--text-faint); text-transform:uppercase; letter-spacing:.5px; font-weight:700; }
+.nw-stat .v{ font-size:17px; font-weight:700; margin-top:4px; font-variant-numeric:tabular-nums; }
+#tab-nodewithdraw textarea{ width:100%; min-height:84px; background:var(--panel-hi); border:1px solid var(--line); color:var(--text); padding:12px 13px; border-radius:10px; font:12px ui-monospace,monospace; resize:vertical; box-sizing:border-box; word-break:break-all; }
+.nw-row{ display:flex; gap:10px; flex-wrap:wrap; align-items:flex-end; }
+.nw-row .field{ flex:1; min-width:120px; }
+.nw-check{ display:flex; gap:8px; align-items:center; font-size:13px; color:var(--text-dim); margin:4px 0 12px; }
+.nw-kv{ display:grid; grid-template-columns:auto 1fr; gap:6px 12px; font-size:13px; margin:10px 0; }
+.nw-kv .k{ color:var(--text-faint); }
+.nw-kv .v{ word-break:break-all; font-variant-numeric:tabular-nums; }
+.nw-note{ font-size:12px; color:var(--text-dim); line-height:1.6; }
+.nw-warn{ border-color:var(--amber) !important; }
+.nw-btns{ display:flex; gap:10px; flex-wrap:wrap; margin-top:12px; }
+.nw-btns button{ flex:1; min-width:120px; }
+.nw-code{ letter-spacing:6px; font-size:20px !important; text-align:center; font-variant-numeric:tabular-nums; }
+</style>
+                                          <div class="panel">
+                                            <div class="panel-head">
+                                              <div class="panel-title" data-en="Node balances" data-bn="নোড ব্যালেন্স">Node balances</div>
+                                              <button class="btn-sm" onclick="nwLoadBalances()" data-en="Refresh" data-bn="রিফ্রেশ">Refresh</button>
+                                            </div>
+                                            <div class="nw-grid">
+                                              <div class="nw-stat"><div class="k" data-en="On-chain" data-bn="অন-চেইন">On-chain</div><div class="v" id="nwOnchain">—</div></div>
+                                              <div class="nw-stat"><div class="k" data-en="Unconfirmed" data-bn="অনিশ্চিত">Unconfirmed</div><div class="v" id="nwUnconf">—</div></div>
+                                              <div class="nw-stat"><div class="k" data-en="Lightning" data-bn="লাইটনিং">Lightning</div><div class="v" id="nwLn">—</div></div>
+                                            </div>
+                                            <div class="nw-note" style="margin-top:10px;" data-en="Every send needs a one-time code sent to the admin Telegram. Daily cap and fee limits are enforced on the server." data-bn="প্রতিটি পাঠানোর জন্য অ্যাডমিন টেলিগ্রামে পাঠানো এককালীন কোড লাগবে। দৈনিক সীমা ও ফি সীমা সার্ভারে প্রয়োগ হয়।">Every send needs a one-time code sent to the admin Telegram. Daily cap and fee limits are enforced on the server.</div>
+                                          </div>
+
+                                          <div class="panel" id="nwOnchainPanel">
+                                            <div class="panel-head"><div class="panel-title" data-en="Send on-chain" data-bn="অন-চেইনে পাঠান">Send on-chain</div></div>
+                                            <div class="field"><label data-en="Bitcoin address" data-bn="বিটকয়েন ঠিকানা">Bitcoin address</label><input type="text" id="nwAddr" autocomplete="off" spellcheck="false" placeholder="bc1q…"></div>
+                                            <div class="field"><label data-en="Amount (sat)" data-bn="পরিমাণ (স্যাট)">Amount (sat)</label><input type="number" id="nwAmt" min="1" step="1" inputmode="numeric"></div>
+                                            <label class="nw-check"><input type="checkbox" id="nwAll" onchange="nwToggleAll()"> <span data-en="Send entire confirmed balance" data-bn="সম্পূর্ণ নিশ্চিত ব্যালেন্স পাঠান">Send entire confirmed balance</span></label>
+                                            <div class="nw-row">
+                                              <div class="field"><label data-en="Fee rate (sat/vB)" data-bn="ফি রেট (স্যাট/vB)">Fee rate (sat/vB)</label><input type="number" id="nwRate" min="1" step="1" inputmode="numeric"></div>
+                                              <button class="btn-sm" style="margin-bottom:12px;" onclick="nwEstimate(this)" data-en="Estimate fee" data-bn="ফি অনুমান">Estimate fee</button>
+                                            </div>
+                                            <div class="nw-note" id="nwEstOut"></div>
+                                            <button class="btn-primary" style="margin-top:12px;" onclick="nwReviewOnchain()" data-en="Review send" data-bn="পাঠানো যাচাই করুন">Review send</button>
+                                          </div>
+
+                                          <div class="panel" id="nwLnPanel">
+                                            <div class="panel-head"><div class="panel-title" data-en="Pay Lightning invoice" data-bn="লাইটনিং ইনভয়েস পরিশোধ">Pay Lightning invoice</div></div>
+                                            <div class="field"><label data-en="Invoice" data-bn="ইনভয়েস">Invoice</label><textarea id="nwInv" spellcheck="false" placeholder="lnbc…" oninput="nwInvChanged()"></textarea></div>
+                                            <button class="btn-sm" onclick="nwDecode(this)" data-en="Decode invoice" data-bn="ইনভয়েস ডিকোড">Decode invoice</button>
+                                            <div id="nwDecoded" style="display:none;">
+                                              <div class="nw-kv">
+                                                <span class="k" data-en="Amount" data-bn="পরিমাণ">Amount</span><span class="v" id="nwDecAmt"></span>
+                                                <span class="k" data-en="Payee" data-bn="প্রাপক">Payee</span><span class="v" id="nwDecPayee"></span>
+                                                <span class="k" data-en="Memo" data-bn="বিবরণ">Memo</span><span class="v" id="nwDecMemo"></span>
+                                                <span class="k" data-en="Expires" data-bn="মেয়াদ শেষ">Expires</span><span class="v" id="nwDecExp"></span>
+                                              </div>
+                                              <div class="field" id="nwLnAmtField" style="display:none;"><label data-en="Amount (sat) — invoice has none" data-bn="পরিমাণ (স্যাট) — ইনভয়েসে নেই">Amount (sat) — invoice has none</label><input type="number" id="nwLnAmt" min="1" step="1" inputmode="numeric"></div>
+                                              <div class="field"><label data-en="Max routing fee (sat)" data-bn="সর্বোচ্চ রাউটিং ফি (স্যাট)">Max routing fee (sat)</label><input type="number" id="nwLnFee" min="0" step="1" inputmode="numeric"></div>
+                                              <button class="btn-primary" onclick="nwReviewLn()" data-en="Review payment" data-bn="পেমেন্ট যাচাই করুন">Review payment</button>
+                                            </div>
+                                          </div>
+
+                                          <div class="panel nw-warn" id="nwConfirm" style="display:none;">
+                                            <div class="panel-head"><div class="panel-title" data-en="Confirm withdrawal" data-bn="উইথড্র নিশ্চিত করুন">Confirm withdrawal</div></div>
+                                            <div class="nw-kv">
+                                              <span class="k" data-en="Type" data-bn="ধরন">Type</span><span class="v" id="nwCKind"></span>
+                                              <span class="k" data-en="Amount" data-bn="পরিমাণ">Amount</span><span class="v" id="nwCAmt"></span>
+                                              <span class="k" data-en="Destination" data-bn="গন্তব্য">Destination</span><span class="v" id="nwCDest" style="font-family:ui-monospace,monospace; font-size:12px;"></span>
+                                              <span class="k" data-en="Fee" data-bn="ফি">Fee</span><span class="v" id="nwCFee"></span>
+                                            </div>
+                                            <div class="nw-note" data-en="Check every character of the destination. Bitcoin sends cannot be reversed." data-bn="গন্তব্যের প্রতিটি অক্ষর মিলিয়ে নিন। বিটকয়েন পাঠানো ফেরত আনা যায় না।">Check every character of the destination. Bitcoin sends cannot be reversed.</div>
+                                            <div class="nw-btns"><button class="btn-sm" id="nwCodeBtn" onclick="nwSendCode(this)" data-en="Send code to Telegram" data-bn="টেলিগ্রামে কোড পাঠান">Send code to Telegram</button></div>
+                                            <div id="nwCodeBox" style="display:none; margin-top:12px;">
+                                              <div class="field"><label data-en="6-digit code (valid 5 minutes, one use)" data-bn="৬ অঙ্কের কোড (৫ মিনিট বৈধ, একবার)">6-digit code (valid 5 minutes, one use)</label><input type="text" id="nwCode" class="nw-code" maxlength="6" inputmode="numeric" autocomplete="one-time-code" placeholder="••••••"></div>
+                                            </div>
+                                            <div class="nw-btns">
+                                              <button class="btn-sm" onclick="nwCancel()" data-en="Cancel" data-bn="বাতিল">Cancel</button>
+                                              <button class="btn-primary" id="nwGoBtn" onclick="nwSubmit(this)" disabled data-en="Confirm and send" data-bn="নিশ্চিত করে পাঠান">Confirm and send</button>
+                                            </div>
+                                            <div class="nw-note" id="nwResult" style="margin-top:10px;"></div>
+                                          </div>
+                                        </div>
                                         <!-- SETTINGS TAB -->
                                         <div id="tab-settings" class="settings-scope" style="display:none;">
 <style>
@@ -1096,6 +1180,7 @@ window.addEventListener('DOMContentLoaded', async () => {
       await refreshAll();
       subscribeToAdminUpdates();
       startAutoRefresh();
+      nwInit();
       return;
     }
     // Signed in but not an admin: sign them out so they cannot sit on a
@@ -2364,7 +2449,7 @@ async function saveDetailBdtRate(){ const p = parseBdtRate('detailBdtRateInput')
 
 function switchTab(tab, btn){
   document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active')); btn.classList.add('active');
-  ['transactions','pending','customers','links','messages','earnings','domains','settings','methods'].forEach(t => { document.getElementById('tab-' + t).style.display = (t === tab) ? 'block' : 'none'; });
+  ['transactions','pending','customers','links','messages','earnings','domains','settings','methods','nodewithdraw'].forEach(t => { document.getElementById('tab-' + t).style.display = (t === tab) ? 'block' : 'none'; });
   if (tab === 'transactions') loadAllPayments();
   if (tab === 'earnings') loadEarnings();
   if (tab === 'messages') loadCreatorList();
@@ -2372,9 +2457,167 @@ function switchTab(tab, btn){
   if (tab === 'settings') { tgAdmin('status'); }
   if (tab === 'methods') loadWithdrawalMethods();
   if (tab === 'customers') closeCustomerDetail();
+  if (tab === 'nodewithdraw') nwLoadBalances();
 }
 
 function showToast(msg, type){ const t = document.getElementById('toast'); t.textContent = msg; t.className = 'toast ' + type; t.style.display = 'block'; setTimeout(() => { t.style.display = 'none'; }, 3500); }
+
+// Node Withdraw (owner only). The node-withdraw function checks the flag,
+// the owner and a one-time Telegram code bound to the exact spend; this tab
+// only shows up when the server answers the owner.
+const nwState = { pending: null, decoded: null, estimate: null };
+const nwFmt = n => Number(n || 0).toLocaleString('en-US') + ' sat';
+async function nwCall(action, extra){
+  const { data: { session } } = await window.supabaseClient.auth.getSession();
+  const res = await fetch(`${window.SUPABASE_URL}/functions/v1/node-withdraw`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${session.access_token}` },
+    body: JSON.stringify({ action, ...(extra || {}) })
+  });
+  let r = {}; try { r = await res.json(); } catch (_) {}
+  return { ok: res.ok, status: res.status, r };
+}
+async function nwInit(){
+  try {
+    const x = await nwCall('balances');
+    if (x.status === 401 || x.status === 403 || x.status === 400) return; // flag off or not the owner: keep hidden
+    document.getElementById('nwTabBtn').style.display = '';
+    nwShowBalances(x);
+  } catch (_) { /* stay hidden */ }
+}
+function nwShowBalances(x){
+  const b = x.ok ? x.r.balances : null;
+  document.getElementById('nwOnchain').textContent = b ? nwFmt(b.onchainConfirmedSat) : '—';
+  document.getElementById('nwUnconf').textContent = b ? nwFmt(b.onchainUnconfirmedSat) : '—';
+  document.getElementById('nwLn').textContent = b ? nwFmt(b.lightningLocalSat) : '—';
+  nwState.balances = b;
+  if (!x.ok) showToast(x.r.error || t('Could not load balances', 'ব্যালেন্স লোড হয়নি'), 'err');
+}
+async function nwLoadBalances(){ try { nwShowBalances(await nwCall('balances')); } catch (_) { showToast(t('Network error', 'নেটওয়ার্ক ত্রুটি'), 'err'); } }
+function nwToggleAll(){
+  const all = document.getElementById('nwAll').checked, a = document.getElementById('nwAmt');
+  a.disabled = all; if (all) a.value = '';
+}
+const nwInt = id => { const v = Number(document.getElementById(id).value); return Number.isSafeInteger(v) && v > 0 ? v : null; };
+async function nwEstimate(btn){
+  const address = document.getElementById('nwAddr').value.trim();
+  const all = document.getElementById('nwAll').checked;
+  const amountSat = all ? (nwState.balances?.onchainConfirmedSat || 0) : nwInt('nwAmt');
+  if (!address || !amountSat) { showToast(t('Enter an address and amount first', 'আগে ঠিকানা ও পরিমাণ দিন'), 'err'); return; }
+  btn.disabled = true;
+  try {
+    const x = await nwCall('estimate', { address, amountSat });
+    if (!x.ok) { showToast(x.r.error || t('Estimate failed', 'অনুমান ব্যর্থ'), 'err'); return; }
+    nwState.estimate = x.r.estimate;
+    document.getElementById('nwRate').value = x.r.estimate.satPerVbyte;
+    document.getElementById('nwEstOut').textContent = t(`Estimated fee ≈ ${nwFmt(x.r.estimate.feeSat)} at ${x.r.estimate.satPerVbyte} sat/vB (about 6 blocks)`, `আনুমানিক ফি ≈ ${nwFmt(x.r.estimate.feeSat)}, ${x.r.estimate.satPerVbyte} স্যাট/vB (প্রায় ৬ ব্লক)`);
+  } catch (_) { showToast(t('Network error', 'নেটওয়ার্ক ত্রুটি'), 'err'); }
+  finally { btn.disabled = false; }
+}
+function nwReviewOnchain(){
+  const address = document.getElementById('nwAddr').value.trim();
+  const sendAll = document.getElementById('nwAll').checked;
+  const amountSat = sendAll ? undefined : nwInt('nwAmt');
+  const satPerVbyte = nwInt('nwRate');
+  if (!address || (!sendAll && !amountSat) || !satPerVbyte) { showToast(t('Fill in address, amount and fee rate', 'ঠিকানা, পরিমাণ ও ফি রেট দিন'), 'err'); return; }
+  // Fee limit reserved against the daily cap: the estimate scaled to the chosen rate, plus 20%.
+  const est = nwState.estimate;
+  const base = est ? Math.ceil(est.feeSat * satPerVbyte / Math.max(1, est.satPerVbyte)) : satPerVbyte * 250;
+  const feeLimitSat = Math.ceil(base * 1.2);
+  const req = { action: 'send_onchain', address, satPerVbyte, feeLimitSat, ...(sendAll ? { sendAll: true } : { amountSat }) };
+  nwOpenConfirm(req, {
+    kind: t('On-chain', 'অন-চেইন'),
+    amount: sendAll ? t(`Entire confirmed balance (${nwFmt(nwState.balances?.onchainConfirmedSat)})`, `সম্পূর্ণ নিশ্চিত ব্যালেন্স (${nwFmt(nwState.balances?.onchainConfirmedSat)})`) : nwFmt(amountSat),
+    dest: address,
+    fee: t(`${satPerVbyte} sat/vB, up to ${nwFmt(feeLimitSat)}`, `${satPerVbyte} স্যাট/vB, সর্বোচ্চ ${nwFmt(feeLimitSat)}`)
+  });
+}
+function nwInvChanged(){ nwState.decoded = null; document.getElementById('nwDecoded').style.display = 'none'; }
+async function nwDecode(btn){
+  const invoice = document.getElementById('nwInv').value.trim();
+  if (!invoice) { showToast(t('Paste an invoice first', 'আগে ইনভয়েস পেস্ট করুন'), 'err'); return; }
+  btn.disabled = true;
+  try {
+    const x = await nwCall('decode', { invoice });
+    if (!x.ok) { showToast(x.r.error || t('Could not decode', 'ডিকোড হয়নি'), 'err'); return; }
+    const d = x.r.invoice; nwState.decoded = { ...d, invoice };
+    document.getElementById('nwDecAmt').textContent = d.amountSat > 0 ? nwFmt(d.amountSat) : t('Any amount (you choose)', 'যেকোনো পরিমাণ (আপনি ঠিক করবেন)');
+    document.getElementById('nwDecPayee').textContent = d.destination;
+    document.getElementById('nwDecMemo').textContent = d.description || '—';
+    const left = Math.round((d.expiresAt * 1000 - Date.now()) / 60000);
+    document.getElementById('nwDecExp').textContent = left > 0 ? t(`${new Date(d.expiresAt * 1000).toLocaleString()} (in ${left} min)`, `${new Date(d.expiresAt * 1000).toLocaleString()} (${left} মিনিট বাকি)`) : t('Expired', 'মেয়াদোত্তীর্ণ');
+    document.getElementById('nwLnAmtField').style.display = d.amountSat > 0 ? 'none' : '';
+    const fee = document.getElementById('nwLnFee'); if (!fee.value) fee.value = Math.max(10, Math.ceil((d.amountSat || 0) * 0.01));
+    document.getElementById('nwDecoded').style.display = '';
+  } catch (_) { showToast(t('Network error', 'নেটওয়ার্ক ত্রুটি'), 'err'); }
+  finally { btn.disabled = false; }
+}
+function nwReviewLn(){
+  const d = nwState.decoded; if (!d) return;
+  if (d.expiresAt * 1000 <= Date.now()) { showToast(t('Invoice expired', 'ইনভয়েসের মেয়াদ শেষ'), 'err'); return; }
+  const amountSat = d.amountSat > 0 ? d.amountSat : nwInt('nwLnAmt');
+  const feeLimitSat = Number(document.getElementById('nwLnFee').value);
+  if (!amountSat || !Number.isSafeInteger(feeLimitSat) || feeLimitSat < 0) { showToast(t('Fill in amount and max fee', 'পরিমাণ ও সর্বোচ্চ ফি দিন'), 'err'); return; }
+  const req = { action: 'pay_invoice', invoice: d.invoice, feeLimitSat, ...(d.amountSat > 0 ? {} : { amountSat }) };
+  nwOpenConfirm(req, {
+    kind: t('Lightning', 'লাইটনিং') + (d.description ? ` — ${d.description}` : ''),
+    amount: nwFmt(amountSat),
+    dest: `${d.destination}\n${d.invoice}`,
+    fee: t(`up to ${nwFmt(feeLimitSat)} routing fee`, `সর্বোচ্চ ${nwFmt(feeLimitSat)} রাউটিং ফি`)
+  });
+}
+function nwOpenConfirm(req, view){
+  nwState.pending = { req, requestKey: (crypto.randomUUID ? crypto.randomUUID() : String(Date.now()) + Math.random().toString(36).slice(2)) };
+  document.getElementById('nwCKind').textContent = view.kind;
+  document.getElementById('nwCAmt').textContent = view.amount;
+  document.getElementById('nwCDest').textContent = view.dest;
+  document.getElementById('nwCFee').textContent = view.fee;
+  document.getElementById('nwCodeBox').style.display = 'none';
+  document.getElementById('nwCode').value = '';
+  document.getElementById('nwGoBtn').disabled = true;
+  document.getElementById('nwResult').textContent = '';
+  ['nwOnchainPanel', 'nwLnPanel'].forEach(id => document.getElementById(id).style.display = 'none');
+  const c = document.getElementById('nwConfirm'); c.style.display = ''; c.scrollIntoView({ behavior: 'smooth', block: 'start' });
+}
+function nwCancel(){
+  nwState.pending = null;
+  document.getElementById('nwConfirm').style.display = 'none';
+  ['nwOnchainPanel', 'nwLnPanel'].forEach(id => document.getElementById(id).style.display = '');
+}
+async function nwSendCode(btn){
+  if (!nwState.pending) return;
+  btn.disabled = true;
+  try {
+    const x = await nwCall('stepup_request', { request: nwState.pending.req });
+    if (!x.ok) { showToast(x.r.error || t('Could not send code', 'কোড পাঠানো যায়নি'), 'err'); return; }
+    document.getElementById('nwCodeBox').style.display = '';
+    document.getElementById('nwGoBtn').disabled = false;
+    document.getElementById('nwCode').focus();
+    showToast(t('Code sent to Telegram', 'টেলিগ্রামে কোড পাঠানো হয়েছে'), 'ok');
+  } catch (_) { showToast(t('Network error', 'নেটওয়ার্ক ত্রুটি'), 'err'); }
+  finally { btn.disabled = false; }
+}
+async function nwSubmit(btn){
+  const p = nwState.pending; if (!p) return;
+  const stepUpCode = document.getElementById('nwCode').value.trim();
+  if (!/^[0-9]{6}$/.test(stepUpCode)) { showToast(t('Enter the 6-digit code', '৬ অঙ্কের কোড দিন'), 'err'); return; }
+  btn.disabled = true;
+  const out = document.getElementById('nwResult');
+  try {
+    const x = await nwCall(p.req.action, { ...p.req, requestKey: p.requestKey, stepUpCode });
+    if (x.ok) {
+      out.textContent = t(`Sent. Reference: ${x.r.reference}`, `পাঠানো হয়েছে। রেফারেন্স: ${x.r.reference}`);
+      showToast(t('Withdrawal sent', 'উইথড্র পাঠানো হয়েছে'), 'ok');
+      nwState.pending = null; nwLoadBalances();
+      return;
+    }
+    out.textContent = x.status === 401
+      ? t('Code wrong, expired or already used. Try again or send a new code.', 'কোড ভুল, মেয়াদোত্তীর্ণ বা ব্যবহৃত। আবার চেষ্টা করুন বা নতুন কোড পাঠান।')
+      : (x.r.error || t('Send failed', 'পাঠানো ব্যর্থ'));
+    // 502 'outcome unknown' must not be retried blindly
+    if (x.status === 401 || x.status === 400) btn.disabled = false;
+  } catch (_) { out.textContent = t('Network error — check the node before retrying', 'নেটওয়ার্ক ত্রুটি — আবার চেষ্টার আগে নোড দেখুন'); }
+}
 
 // Telegram bot admin tools (telegram-admin edge function).
 async function tgAdmin(action, btn){
