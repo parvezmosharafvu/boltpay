@@ -57,6 +57,15 @@ Deno.serve(async (req) => {
     stepUpSecret: Deno.env.get("NODE_WITHDRAW_STEPUP_SECRET") ?? SERVICE_ROLE_KEY,
     alert: (t) => sendOpsAlert(t),
     sendStepupCode: (t) => sendNodeWithdrawStepup(t, prof?.telegram_chat_id),
+    pending: async (owner) => {
+      // Server-side service-role read, only reached after owner+admin check.
+      const { data, error } = await admin.from("node_withdrawals")
+        .select("id,kind,payment_hash")
+        .eq("actor_id", owner).eq("status", "reserved")
+        .order("id", { ascending: true }).limit(25);
+      if (error) throw new Error("pending withdrawal query failed");
+      return (data ?? []) as Array<{ id: number; kind: string; payment_hash: string | null }>;
+    },
   });
   return json(r.body, r.status);
 });
