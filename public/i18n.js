@@ -85,7 +85,7 @@
     document.querySelectorAll('.lang-btn').forEach(b => { b.textContent = lang() === 'bn' ? 'English' : 'বাংলা'; });
   }
   window.applyUiLang = apply;
-  window.toggleUiLang = () => { localStorage.setItem(KEY, lang() === 'bn' ? 'en' : 'bn'); apply(); };
+  window.toggleUiLang = () => { localStorage.setItem(KEY, lang() === 'bn' ? 'en' : 'bn'); apply(); window.dispatchEvent(new Event('uilangchange')); };
 
   // Native dialogs take raw strings.
   const _c = window.confirm.bind(window), _p = window.prompt.bind(window), _a = window.alert.bind(window);

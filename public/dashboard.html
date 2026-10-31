@@ -845,7 +845,7 @@ textarea.w-input{ padding:10px 12px !important; }
                 <button class="btn-ghost" style="padding:6px 12px; font-size:11px;"
                         onclick="showSection('income', document.querySelector('.tab-btn[data-sec=income]'))">View all</button>
               </div>
-              <div id="recentActivityList"><div class="empty-state">No payments yet</div></div>
+              <div id="recentActivityList"><div class="empty-state" data-en="No payments yet" data-bn="এখনো কোনো পেমেন্ট নেই">No payments yet</div></div>
             </div>
           </div>
 
@@ -959,7 +959,7 @@ textarea.w-input{ padding:10px 12px !important; }
               </div>
 
               <div id="paymentsList" class="income-list">
-                <div class="empty-state">No payment records found</div>
+                <div class="empty-state" data-en="No payment records found" data-bn="কোনো পেমেন্ট রেকর্ড পাওয়া যায়নি">No payment records found</div>
               </div>
               <!-- The feed is paged server-side. The count is the honest
                    number of rows behind the filter, not a guess from the
@@ -1242,7 +1242,7 @@ textarea.w-input{ padding:10px 12px !important; }
                 <div class="cashout-card-title" data-en="Withdrawal history" data-bn="উইথড্রর ইতিহাস">Withdrawal history</div>
               </div>
               <div id="withdrawalsList">
-                <div class="empty-state">No withdrawal history</div>
+                <div class="empty-state" data-en="No withdrawal history" data-bn="কোনো উত্তোলনের ইতিহাস নেই">No withdrawal history</div>
               </div>
             </div>
 
@@ -1954,19 +1954,33 @@ async function fetchPayments(append = false){
   updateLoadMore();
 }
 
+// Status words built by shared JS, through the existing t() i18n helper.
+function statusText(st){
+  const m = { settled:['Settled','সেটেল্ড'], new:['New','নতুন'], pending:['Pending','পেন্ডিং'], expired:['Expired','মেয়াদোত্তীর্ণ'], failed:['Failed','ব্যর্থ'], paid:['Paid','পরিশোধিত'], approved:['Approved','অনুমোদিত'], rejected:['Rejected','বাতিল'], completed:['Completed','সম্পন্ন'], processing:['Processing','প্রসেস হচ্ছে'], cancelled:['Cancelled','বাতিল'] };
+  const v = m[String(st || '').toLowerCase()];
+  return v ? t(v[0], v[1]) : String(st || '');
+}
+
+// Re-render JS-built lists when the language is switched.
+window.addEventListener('uilangchange', () => {
+  try { if (Array.isArray(allPayments)) { renderPayments(); updateLoadMore(); } } catch(e){}
+  try { if (Array.isArray(allWithdrawals) && allWithdrawals.length) renderWithdrawals(); } catch(e){}
+  try { loadDailySettled(); } catch(e){}
+});
+
 function updateLoadMore(){
   const btn = document.getElementById('payLoadMore');
   const note = document.getElementById('payCountNote');
   if (note){
     note.textContent = payTotal
-      ? `Showing ${allPayments.length} of ${payTotal}`
+      ? t(`Showing ${allPayments.length} of ${payTotal}`, `${payTotal} টির মধ্যে ${allPayments.length} টি দেখানো হচ্ছে`)
       : '';
   }
   if (!btn) return;
   // Hidden rather than disabled once everything is loaded — a permanently
   // greyed button reads as broken.
   btn.style.display = allPayments.length < payTotal ? '' : 'none';
-  btn.textContent = `Load ${Math.min(PAY_PAGE, payTotal - allPayments.length)} more`;
+  btn.textContent = t(`Load ${Math.min(PAY_PAGE, payTotal - allPayments.length)} more`, `আরও ${Math.min(PAY_PAGE, payTotal - allPayments.length)} টি দেখুন`);
 }
 
 /**
@@ -2181,14 +2195,14 @@ function renderRecentActivity(){
   const el = document.getElementById('recentActivityList');
   if (!el) return;
   const recent = allPayments.slice(0, 6);
-  if (!recent.length){ el.innerHTML = '<div class="empty-state">No payments yet</div>'; return; }
+  if (!recent.length){ el.innerHTML = '<div class="empty-state">' + t('No payments yet', 'এখনো কোনো পেমেন্ট নেই') + '</div>'; return; }
   el.innerHTML = recent.map(p => `
     <div class="mini-pay-row" onclick="showSection('income', document.querySelector('.tab-btn[data-sec=income]'))">
       <div style="min-width:0;">
         <div class="mini-pay-amt">$${payNet(p).toFixed(2)}</div>
         <div class="mini-pay-meta">${escapeHtml((p.method || 'lightning').toUpperCase())} \u00b7 ${fmtDate(p.created_at)}</div>
       </div>
-      <span class="mini-pay-badge ${escapeAttr(p.status)}">${escapeHtml(p.status)}</span>
+      <span class="mini-pay-badge ${escapeAttr(p.status)}">${escapeHtml(statusText(p.status))}</span>
     </div>`).join('');
 }
 
@@ -2212,9 +2226,9 @@ function renderPayments(){
     return true;
   });
 
-  if (!filtered.length){ container.innerHTML = `<div class="empty-state">No payment records found</div>`; return; }
+  if (!filtered.length){ container.innerHTML = `<div class="empty-state">${t('No payment records found', 'কোনো পেমেন্ট রেকর্ড পাওয়া যায়নি')}</div>`; return; }
   container.innerHTML = filtered.map(p => {
-    const location = [p.customer_city, p.customer_country].filter(Boolean).join(', ') || 'Unknown location';
+    const location = [p.customer_city, p.customer_country].filter(Boolean).join(', ') || t('Unknown location', 'অজানা লোকেশন');
     const inv = p.id || '\u2014';
     const shortInv = inv.length > 15 ? inv.slice(0, 8) + '...' + inv.slice(-7) : (inv || '\u2014');
     const ln = p.lightning_invoice || '';
@@ -2225,27 +2239,27 @@ function renderPayments(){
     const isMarked = !!(staffMark || localMark);
 
     const markLine = staffMark
-      ? `<div class="mark-line">\u2713 Checked by ${staffMark.marked_by_self ? 'you' : escapeHtml(staffMark.marked_by_name || 'staff')}${staffMark.mark_note ? ' \u2014 ' + escapeHtml(staffMark.mark_note) : ''}</div>`
+      ? `<div class="mark-line">\u2713 ${t('Checked by', 'যাচাই করেছেন')} ${staffMark.marked_by_self ? t('you', 'আপনি') : escapeHtml(staffMark.marked_by_name || t('staff', 'স্টাফ'))}${staffMark.mark_note ? ' \u2014 ' + escapeHtml(staffMark.mark_note) : ''}</div>`
       : (localMark
-        ? `<div class="mark-line">\u2713 Locally marked \u00b7 ${fmtDate(localMark.at)}${localMark.note === 'bulk' ? ' (bulk)' : ''}</div>`
+        ? `<div class="mark-line">\u2713 ${t('Locally marked', 'লোকালি মার্ক করা')} \u00b7 ${fmtDate(localMark.at)}${localMark.note === 'bulk' ? ' ' + t('(bulk)', '(একসাথে)') : ''}</div>`
         : '');
 
     const localToggle = `<label class="mark-box ${localMark ? 'checked' : ''}" onclick="event.stopPropagation(); event.preventDefault(); toggleLocalMark('${escapeAttr(p.id)}')">
       <span class="tick">${localMark ? '\u2713' : ''}</span>
-      <span>${localMark ? 'Marked' : 'Mark'}</span>
+      <span>${localMark ? t('Marked', 'মার্ক করা') : t('Mark', 'মার্ক')}</span>
     </label>`;
 
     const markBtn = p.status === 'settled'
       ? (staffMark
-          ? `<button class="tx-btn unmark" onclick="unmarkPayment('${escapeAttr(p.id)}', this)">Remove staff mark</button>`
-          : `<button class="tx-btn mark" onclick="markChecked('${escapeAttr(p.id)}', this)">Staff mark</button>`)
+          ? `<button class="tx-btn unmark" onclick="unmarkPayment('${escapeAttr(p.id)}', this)">${t('Remove staff mark', 'স্টাফ মার্ক সরান')}</button>`
+          : `<button class="tx-btn mark" onclick="markChecked('${escapeAttr(p.id)}', this)">${t('Staff mark', 'স্টাফ মার্ক')}</button>`)
       : '';
 
     const settledField = (p.status === 'settled' && p.amount_settled != null)
-      ? `<div class="pay-field"><div class="pay-field-label">Amount settled</div><div class="pay-field-value" style="color:var(--ok);">$${parseFloat(p.amount_settled).toFixed(2)}</div></div>`
+      ? `<div class="pay-field"><div class="pay-field-label">${t('Amount settled', 'সেটেল্ড পরিমাণ')}</div><div class="pay-field-value" style="color:var(--ok);">$${parseFloat(p.amount_settled).toFixed(2)}</div></div>`
       : '';
     const settledAtField = (p.status === 'settled' && p.settled_at)
-      ? `<div class="pay-field"><div class="pay-field-label">Settled at</div><div class="pay-field-value">${fmtDate(p.settled_at)}</div></div>`
+      ? `<div class="pay-field"><div class="pay-field-label">${t('Settled at', 'সেটেল হয়েছে')}</div><div class="pay-field-value">${fmtDate(p.settled_at)}</div></div>`
       : '';
 
     // Every field admin shows now shows here too: nothing was
@@ -2254,28 +2268,28 @@ function renderPayments(){
     const detailsInner = `
       <div class="pay-grid">
         <div class="pay-field">
-          <div class="pay-field-label">Link &amp; payer cost</div>
+          <div class="pay-field-label">${t('Link &amp; payer cost', 'লিংক ও ক্রেতার খরচ')}</div>
           <div class="pay-field-value">\ud83c\udf0e ${escapeHtml(p.link_name || p.link_slug || '\u2014')}</div>
         </div>
         <div class="pay-field">
-          <div class="pay-field-label">Method</div>
+          <div class="pay-field-label">${t('Method', 'পদ্ধতি')}</div>
           <div class="pay-field-value">${escapeHtml((p.method||'lightning').toUpperCase())}</div>
         </div>
         <div class="pay-field">
-          <div class="pay-field-label">Created</div>
+          <div class="pay-field-label">${t('Created', 'তৈরি')}</div>
           <div class="pay-field-value">${fmtDate(p.created_at)}</div>
         </div>
         <div class="pay-field">
-          <div class="pay-field-label">Location</div>
+          <div class="pay-field-label">${t('Location', 'লোকেশন')}</div>
           <div class="pay-field-value">\ud83d\udccd ${escapeHtml(location)}</div>
         </div>
         ${settledField}
         ${settledAtField}
         <div class="pay-field wide">
-          <div class="pay-field-label">Invoice ID</div>
-          <div class="pay-field-value with-copy"><span>${escapeHtml(shortInv)}</span>${inv !== '\u2014' ? `<button class="copy-mini" data-copy="${escapeAttr(inv)}">copy</button>` : ''}</div>
+          <div class="pay-field-label">${t('Invoice ID', 'ইনভয়েস আইডি')}</div>
+          <div class="pay-field-value with-copy"><span>${escapeHtml(shortInv)}</span>${inv !== '\u2014' ? `<button class="copy-mini" data-copy="${escapeAttr(inv)}">${t('copy', 'কপি')}</button>` : ''}</div>
         </div>
-        ${ln ? `<div class="pay-field wide"><div class="pay-field-label">Lightning invoice</div><div class="pay-field-value with-copy"><span>${escapeHtml(shortLn)}</span><button class="copy-mini" data-copy="${escapeAttr(ln)}">copy</button></div></div>` : ''}
+        ${ln ? `<div class="pay-field wide"><div class="pay-field-label">${t('Lightning invoice', 'লাইটনিং ইনভয়েস')}</div><div class="pay-field-value with-copy"><span>${escapeHtml(shortLn)}</span><button class="copy-mini" data-copy="${escapeAttr(ln)}">${t('copy', 'কপি')}</button></div></div>` : ''}
       </div>
       ${markLine}
       <div class="pay-actions">${localToggle}${markBtn}</div>`;
@@ -2290,7 +2304,7 @@ function renderPayments(){
           </div>
           <div class="pay-summary-right">
             <div class="pay-status">
-              <span class="badge ${escapeAttr(p.status)}"><span class="badge-dot"></span>${escapeHtml(p.status)}</span>
+              <span class="badge ${escapeAttr(p.status)}"><span class="badge-dot"></span>${escapeHtml(statusText(p.status))}</span>
               ${(p.status === 'new' || p.status === 'pending') ? '<div class="pay-timer mono" data-timer>--:--</div>' : ''}
             </div>
             <div class="pay-caret">\u203a</div>
@@ -2325,14 +2339,14 @@ async function loadDailySettled(){
   if (error){ box.innerHTML = `<div class="empty-state">${escapeHtml(error.message)}</div>`; return; }
 
   const rows = data || [];
-  if (!rows.length){ box.innerHTML = '<div class="empty-state">Nothing settled yet</div>'; list.innerHTML = ''; return; }
+  if (!rows.length){ box.innerHTML = '<div class="empty-state">' + t('Nothing settled yet', 'এখনো কিছু সেটেল হয়নি') + '</div>'; list.innerHTML = ''; return; }
 
   const maxVal = Math.max(...rows.map(r => parseFloat(r.settled || 0)), 1);
   const today = rows[0];
   box.innerHTML = `
-    <div class="dc-label">Current cycle \u00b7 started ${fmtDate(today.cycle_start)}</div>
+    <div class="dc-label">${t('Current cycle', 'বর্তমান সাইকেল')} \u00b7 ${t('started', 'শুরু')} ${fmtDate(today.cycle_start)}</div>
     <div class="dc-total">$${parseFloat(today.settled).toFixed(2)}</div>
-    <div class="dc-sub">${today.payment_count} settled payment${today.payment_count == 1 ? '' : 's'} this cycle</div>`;
+    <div class="dc-sub">${today.payment_count} ${t('settled payment' + (today.payment_count == 1 ? '' : 's') + ' this cycle', 'টি সেটেল্ড পেমেন্ট এই সাইকেলে')}</div>`;
 
   list.innerHTML = rows.slice(1).map(r => {
     const pct = Math.max(4, (parseFloat(r.settled || 0) / maxVal) * 100);
@@ -2343,7 +2357,7 @@ async function loadDailySettled(){
         <div class="daily-bar-wrap"><div class="daily-bar" style="width:${pct}%;"></div></div>
         <div class="daily-total">$${parseFloat(r.settled).toFixed(2)}</div>
       </div>`;
-  }).join('') || '<div class="empty-state">No earlier cycles yet</div>';
+  }).join('') || '<div class="empty-state">' + t('No earlier cycles yet', 'আগের কোনো সাইকেল নেই') + '</div>';
 }
 
 function tickPaymentTimers(){
@@ -2356,11 +2370,11 @@ function tickPaymentTimers(){
 
 function renderWithdrawals(){
   const c = document.getElementById('withdrawalsList');
-  if (!allWithdrawals.length){ c.innerHTML = '<div class="empty-state">No withdrawal history</div>'; return; }
+  if (!allWithdrawals.length){ c.innerHTML = '<div class="empty-state">' + t('No withdrawal history', 'কোনো উত্তোলনের ইতিহাস নেই') + '</div>'; return; }
   c.innerHTML = allWithdrawals.map(w => `<div class="tx-row"><div class="tx-top"><div>
     <div class="tx-amt" style="color:var(--alert);">-$${parseFloat(w.amount_after_fee||0).toFixed(2)}${w.payout_currency === 'BDT' && w.payout_amount != null ? ' · ৳' + parseFloat(w.payout_amount).toFixed(2) : ''}</div>
     <div class="tx-meta-row">${safeMethod(w.method)} · ${fmtDate(w.requested_at)}</div></div>
-    <span class="badge ${escapeHtml(w.status)}"><span class="badge-dot"></span>${escapeHtml(w.status)}</span></div></div>`).join('');
+    <span class="badge ${escapeHtml(w.status)}"><span class="badge-dot"></span>${escapeHtml(statusText(w.status))}</span></div></div>`).join('');
 }
 
 function toggleInvoiceInput() {
@@ -2436,7 +2450,7 @@ async function submitWithdrawal(){
 
   if (!wdRequestKey) wdRequestKey = newRequestKey();
   const requestKey = wdRequestKey;
-  btn.disabled = true; btn.textContent = 'Processing...';
+  btn.disabled = true; btn.textContent = t('Processing...', 'প্রসেস হচ্ছে...');
   const { data: { session } } = await window.supabaseClient.auth.getSession();
 
   try {
@@ -2456,7 +2470,7 @@ async function submitWithdrawal(){
       await refreshBalance();
     }
   } catch(e) { showToast('Network error', 'err'); }
-  btn.disabled = false; btn.textContent = 'Submit request';
+  btn.disabled = false; btn.textContent = t('Submit request', 'রিকোয়েস্ট জমা দিন');
 }
 
 // === MESSAGES LOGIC ===
