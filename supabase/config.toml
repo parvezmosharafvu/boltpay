@@ -24,6 +24,9 @@ project_id = "ohwzmxwsphsfzudmlins"
 [functions.user-withdraw]
 verify_jwt = true
 
+[functions.node-withdraw]
+verify_jwt = true
+
 [functions.daily-report]
 verify_jwt = false
 
