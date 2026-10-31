@@ -647,6 +647,22 @@ textarea.w-input{ padding:10px 12px !important; }
 .detail-section-title, .w-label{ font-size:14px !important; font-weight:500 !important; text-transform:none !important; letter-spacing:0 !important; color:var(--text) !important; margin:20px 0 8px !important; }
 .page-sub, .stat-sub, .hint{ color:var(--text-dim); }
 @media (min-width:1024px){ .content{ max-width:1280px !important; padding-left:32px !important; padding-right:32px !important; } }
+
+/* creator-v2: premium payment cards + FAQ (display only) */
+#sec-income .pay-row{background:linear-gradient(160deg,#141a15,#0b0d0b);border:1px solid #1f2a20;border-radius:18px;margin:10px 0;padding:0;overflow:hidden}
+#sec-income .pc-summary{display:block;padding:14px 16px}
+#sec-income .pc-top,#sec-income .pc-bottom{display:flex;justify-content:space-between;align-items:center;gap:8px}
+#sec-income .pc-method,#sec-income .pc-time{font-size:11px;color:rgba(236,242,238,.5);letter-spacing:.04em}
+#sec-income .pc-name{text-align:center;font-size:19px;font-weight:800;margin:8px 0 6px;letter-spacing:-.01em}
+.pc-pct{color:#00D632;font-weight:800}
+#sec-income .pc-amt{font-size:22px;font-weight:800;font-variant-numeric:tabular-nums}
+#sec-income .pc-bottom .pay-status{display:flex;align-items:center;gap:6px}
+#sec-income .pay-caret{display:none}
+.faq-panel .faq-item{border-top:1px solid rgba(255,255,255,.07);padding:12px 2px}
+.faq-panel summary{cursor:pointer;font-weight:700;font-size:14px;list-style:none}
+.faq-panel summary::after{content:'+';float:right;color:#00D632}
+.faq-panel details[open] summary::after{content:'\2212'}
+.faq-panel p{margin:8px 0 0;font-size:13px;line-height:1.55;color:rgba(236,242,238,.7)}
 </style>
     <link rel="stylesheet" href="dash.css">
     <link rel="stylesheet" href="links.css">
@@ -723,8 +739,7 @@ textarea.w-input{ padding:10px 12px !important; }
 
       <div class="content">
         <div class="tabs">
-          <button class="tab-btn active" data-sec="income"   onclick="showSection('income', this)"><span class="live-dot"></span>Transactions</button>
-          <button class="tab-btn" data-sec="overview" onclick="showSection('overview', this)">📊 Overview</button>
+          <button class="tab-btn active" data-sec="overview" onclick="showSection('overview', this)"><span class="live-dot"></span>Overview</button>
           <button class="tab-btn" data-sec="links"    onclick="showSection('links', this)">🔗 Payment Links</button>
           <button class="tab-btn" data-sec="daily"    onclick="showSection('daily', this)">📅 Daily settled</button>
           <button class="tab-btn" data-sec="earnings" onclick="showSection('earnings', this)">🏆 Earnings</button>
@@ -732,8 +747,6 @@ textarea.w-input{ padding:10px 12px !important; }
           <button class="tab-btn" data-sec="cashout"  onclick="showSection('cashout', this)">💸 Cash Out</button>
           <button class="tab-btn" data-sec="messages" onclick="showSection('messages', this)">💬 Messages <span class="tab-badge" id="msgBadge">0</span></button>
         </div>
-
-          <div class="hint" id="convFeeNote" style="display:none;margin:0 0 12px;padding:10px 12px;border:1px solid var(--line);border-radius:10px;font-size:12px;line-height:1.5;" data-en="" data-bn=""></div>
           <!-- ===== STAT CARDS ===== -->
             <div class="stats-grid">
               <div class="stat-card">
@@ -802,7 +815,7 @@ textarea.w-input{ padding:10px 12px !important; }
               </div>
             </div>
 
-          <div class="section" id="sec-overview">
+          <div class="section active" id="sec-overview">
             <!-- Shown only while there is nothing to pay out to.
                  A creator can share links and take payments before ever
                  setting this up, and the first they would learn of the
@@ -839,13 +852,81 @@ textarea.w-input{ padding:10px 12px !important; }
                  filters or bulk actions, so Overview stays a glance rather
                  than a second copy of the Transactions tab. "View all"
                  hands off to the real thing. -->
-            <div class="panel" style="margin-top:4px;">
-              <div class="panel-head">
-                <div class="panel-title">Recent activity</div>
-                <button class="btn-ghost" style="padding:6px 12px; font-size:11px;"
-                        onclick="showSection('income', document.querySelector('.tab-btn[data-sec=income]'))">View all</button>
+          <!-- ============ TRANSACTIONS ============ -->
+          <div class="income-section" id="sec-income" style="margin-top:14px;">
+            <div class="income-hero">
+              <div class="income-hero-top">
+                <div>
+                  <div class="income-eyebrow" data-en="Income" data-bn="আয়">Income</div>
+                  <div class="income-title" data-en="Live payments" data-bn="লাইভ পেমেন্ট">Live payments</div>
+                </div>
+                <div class="income-hero-actions">
+                  <span class="sync-pill income-live" id="creatorLiveStatus2">Live sync</span>
+                  <button class="btn-icon income-icon-btn" onclick="fetchPayments()" title="Refresh" aria-label="Refresh">⟳</button>
+                </div>
               </div>
-              <div id="recentActivityList"><div class="empty-state" data-en="No payments yet" data-bn="এখনো কোনো পেমেন্ট নেই">No payments yet</div></div>
+              <div class="income-sub" data-en="Real-time feed. Amounts are what you receive." data-bn="রিয়েল-টাইম ফিড। পরিমাণগুলো আপনি যা পাবেন।">Real-time feed. Amounts are what you receive.</div>
+              <div class="mark-summary income-stats" id="markSummary">
+                <div class="income-stat"><b id="markCountLocal">0</b><span data-en="Marked locally" data-bn="লোকালি মার্ক করা">Marked locally</span></div>
+                <div class="income-stat"><b id="markCountVerified">0</b><span data-en="Verified by staff" data-bn="স্টাফ যাচাই করেছে">Verified by staff</span></div>
+                <div class="income-stat income-stat-accent"><b id="markCountTotal">$0.00</b><span data-en="Total marked" data-bn="মোট মার্ক করা">Total marked</span></div>
+              </div>
+            </div>
+
+            <div class="panel income-panel">
+              <div class="income-search">
+                <input type="text" class="w-input income-input" id="txSearch" placeholder="Search by invoice ID or Lightning address..." data-ph-en="Search by invoice ID or Lightning address..." data-ph-bn="ইনভয়েস আইডি বা লাইটনিং ঠিকানা দিয়ে খুঁজুন..." oninput="renderPayments()">
+              </div>
+              <div class="income-filters">
+                <select class="filter-select income-select" id="txStatusFilter" onchange="renderPayments()">
+                  <option value="" data-en="All Status" data-bn="সব স্ট্যাটাস">All Status</option>
+                  <option value="new" data-en="New" data-bn="নতুন">New</option>
+                  <option value="pending" data-en="Pending" data-bn="অপেক্ষমাণ">Pending</option>
+                  <option value="settled" data-en="Settled" data-bn="সেটেলড">Settled</option>
+                  <option value="expired" data-en="Expired" data-bn="মেয়াদোত্তীর্ণ">Expired</option>
+                  <option value="invalid" data-en="Invalid" data-bn="অবৈধ">Invalid</option>
+                </select>
+                <select class="filter-select income-select" id="txTimeFilter" onchange="renderPayments()">
+                  <option value="" data-en="All Time" data-bn="সব সময়">All Time</option>
+                  <option value="today" data-en="Today" data-bn="আজ">Today</option>
+                  <option value="7d" data-en="7 days" data-bn="৭ দিন">7 days</option>
+                  <option value="30d" data-en="30 days" data-bn="৩০ দিন">30 days</option>
+                </select>
+                <select class="filter-select income-select" id="txMarkFilter" onchange="renderPayments()">
+                  <option value="" data-en="All marks" data-bn="সব মার্ক">All marks</option>
+                  <option value="marked" data-en="Marked" data-bn="মার্ক করা">Marked</option>
+                  <option value="unmarked" data-en="Unmarked" data-bn="মার্ক করা হয়নি">Unmarked</option>
+                </select>
+              </div>
+
+              <div class="bulk-bar income-bulk">
+                <button class="mark-box income-chip" onclick="markAllVisible()"><span class="tick">✓</span><span data-en="Mark all visible" data-bn="দৃশ্যমান সব মার্ক করুন">Mark all visible</span></button>
+                <button class="mark-box income-chip" onclick="unmarkAllVisible()"><span class="tick">×</span><span data-en="Clear visible" data-bn="দৃশ্যমান মার্ক মুছুন">Clear visible</span></button>
+                <button class="mark-box income-chip" onclick="exportMarks()"><span class="tick">↓</span><span data-en="Export marks" data-bn="মার্ক এক্সপোর্ট">Export marks</span></button>
+              </div>
+
+              <div id="paymentsList" class="income-list">
+                <div class="empty-state" data-en="No payment records found" data-bn="কোনো পেমেন্ট রেকর্ড পাওয়া যায়নি">No payment records found</div>
+              </div>
+              <!-- The feed is paged server-side. The count is the honest
+                   number of rows behind the filter, not a guess from the
+                   size of the last page. -->
+              <div class="pay-more-row income-foot">
+                <span class="pay-count-note" id="payCountNote"></span>
+                <div class="income-foot-actions">
+                  <button class="btn-ghost income-ghost" id="payExport" onclick="exportPayments(this)" data-en="Export CSV" data-bn="CSV এক্সপোর্ট">Export CSV</button>
+                  <button class="btn-ghost income-ghost" id="payLoadMore" style="display:none;"
+                          onclick="loadMorePayments(this)" data-en="Load more" data-bn="আরও দেখুন">Load more</button>
+                </div>
+              </div>
+            </div>
+          </div>
+
+            <div class="panel faq-panel" id="creatorFaq" style="margin-top:14px;">
+              <div class="panel-title" data-en="Common questions" data-bn="সাধারণ প্রশ্ন">Common questions</div>
+              <details class="faq-item"><summary data-en="What is the conversion fee?" data-bn="কনভার্সন ফি কী?">What is the conversion fee?</summary><p id="faqConvFee" data-en="A 2.5% conversion fee covers BTC→USDT conversion and BTC price movement. Every amount on your dashboard is already after fees." data-bn="২.৫% কনভার্সন ফি BTC→USDT কনভার্সন ও BTC দামের ওঠানামা কভার করে। ড্যাশবোর্ডের সব পরিমাণ ফি বাদে দেখানো হয়।">A 2.5% conversion fee covers BTC→USDT conversion and BTC price movement. Every amount on your dashboard is already after fees.</p></details>
+              <details class="faq-item"><summary data-en="What does “Luna 27%” mean?" data-bn="“Luna 27%” মানে কী?">What does “Luna 27%” mean?</summary><p data-en="The percent next to a link name is the extra fee you set on that link when you created it. The buyer pays it on top of the price. It is locked and can't be changed later." data-bn="লিংকের নামের পাশের শতাংশ হলো লিংক তৈরির সময় আপনার সেট করা অতিরিক্ত ফি। ক্রেতা দামের উপর এটি দেন। এটি লক করা, পরে বদলানো যায় না।">The percent next to a link name is the extra fee you set on that link when you created it. The buyer pays it on top of the price. It is locked and can't be changed later.</p></details>
+              <details class="faq-item"><summary data-en="Which amount do I see?" data-bn="আমি কোন পরিমাণ দেখি?">Which amount do I see?</summary><p data-en="Payments, invoices, balance and Telegram alerts all show your net amount — what you actually receive." data-bn="পেমেন্ট, ইনভয়েস, ব্যালেন্স ও টেলিগ্রাম মেসেজ — সব জায়গায় আপনার নিট পরিমাণ দেখানো হয়, যা আপনি আসলে পান।">Payments, invoices, balance and Telegram alerts all show your net amount — what you actually receive.</p></details>
             </div>
           </div>
 
@@ -902,76 +983,6 @@ textarea.w-input{ padding:10px 12px !important; }
             <div class="links-domain-hint" id="domainCountHint"></div>
             <div id="linksList" class="links-list">
               <div class="links-empty" data-en="No payment links yet" data-bn="এখনও কোনো পেমেন্ট লিংক নেই">No payment links yet</div>
-            </div>
-          </div>
-
-          <!-- ============ TRANSACTIONS ============ -->
-          <div class="section active income-section" id="sec-income">
-            <div class="income-hero">
-              <div class="income-hero-top">
-                <div>
-                  <div class="income-eyebrow" data-en="Income" data-bn="আয়">Income</div>
-                  <div class="income-title" data-en="Transactions" data-bn="লেনদেন">Transactions</div>
-                </div>
-                <div class="income-hero-actions">
-                  <span class="sync-pill income-live" id="creatorLiveStatus2">Live sync</span>
-                  <button class="btn-icon income-icon-btn" onclick="fetchPayments()" title="Refresh" aria-label="Refresh">⟳</button>
-                </div>
-              </div>
-              <div class="income-sub" data-en="Live payment feed. Amounts shown are what you receive after the conversion fee." data-bn="লাইভ পেমেন্ট ফিড। দেখানো পরিমাণ কনভার্সন ফি বাদে আপনি যা পান।">Live payment feed. Amounts shown are what you receive after the conversion fee.</div>
-              <div class="mark-summary income-stats" id="markSummary">
-                <div class="income-stat"><b id="markCountLocal">0</b><span data-en="Marked locally" data-bn="লোকালি মার্ক করা">Marked locally</span></div>
-                <div class="income-stat"><b id="markCountVerified">0</b><span data-en="Verified by staff" data-bn="স্টাফ যাচাই করেছে">Verified by staff</span></div>
-                <div class="income-stat income-stat-accent"><b id="markCountTotal">$0.00</b><span data-en="Total marked" data-bn="মোট মার্ক করা">Total marked</span></div>
-              </div>
-            </div>
-
-            <div class="panel income-panel">
-              <div class="income-search">
-                <input type="text" class="w-input income-input" id="txSearch" placeholder="Search by invoice ID or Lightning address..." data-ph-en="Search by invoice ID or Lightning address..." data-ph-bn="ইনভয়েস আইডি বা লাইটনিং ঠিকানা দিয়ে খুঁজুন..." oninput="renderPayments()">
-              </div>
-              <div class="income-filters">
-                <select class="filter-select income-select" id="txStatusFilter" onchange="renderPayments()">
-                  <option value="" data-en="All Status" data-bn="সব স্ট্যাটাস">All Status</option>
-                  <option value="new" data-en="New" data-bn="নতুন">New</option>
-                  <option value="pending" data-en="Pending" data-bn="অপেক্ষমাণ">Pending</option>
-                  <option value="settled" data-en="Settled" data-bn="সেটেলড">Settled</option>
-                  <option value="expired" data-en="Expired" data-bn="মেয়াদোত্তীর্ণ">Expired</option>
-                  <option value="invalid" data-en="Invalid" data-bn="অবৈধ">Invalid</option>
-                </select>
-                <select class="filter-select income-select" id="txTimeFilter" onchange="renderPayments()">
-                  <option value="" data-en="All Time" data-bn="সব সময়">All Time</option>
-                  <option value="today" data-en="Today" data-bn="আজ">Today</option>
-                  <option value="7d" data-en="7 days" data-bn="৭ দিন">7 days</option>
-                  <option value="30d" data-en="30 days" data-bn="৩০ দিন">30 days</option>
-                </select>
-                <select class="filter-select income-select" id="txMarkFilter" onchange="renderPayments()">
-                  <option value="" data-en="All marks" data-bn="সব মার্ক">All marks</option>
-                  <option value="marked" data-en="Marked" data-bn="মার্ক করা">Marked</option>
-                  <option value="unmarked" data-en="Unmarked" data-bn="মার্ক করা হয়নি">Unmarked</option>
-                </select>
-              </div>
-
-              <div class="bulk-bar income-bulk">
-                <button class="mark-box income-chip" onclick="markAllVisible()"><span class="tick">✓</span><span data-en="Mark all visible" data-bn="দৃশ্যমান সব মার্ক করুন">Mark all visible</span></button>
-                <button class="mark-box income-chip" onclick="unmarkAllVisible()"><span class="tick">×</span><span data-en="Clear visible" data-bn="দৃশ্যমান মার্ক মুছুন">Clear visible</span></button>
-                <button class="mark-box income-chip" onclick="exportMarks()"><span class="tick">↓</span><span data-en="Export marks" data-bn="মার্ক এক্সপোর্ট">Export marks</span></button>
-              </div>
-
-              <div id="paymentsList" class="income-list">
-                <div class="empty-state" data-en="No payment records found" data-bn="কোনো পেমেন্ট রেকর্ড পাওয়া যায়নি">No payment records found</div>
-              </div>
-              <!-- The feed is paged server-side. The count is the honest
-                   number of rows behind the filter, not a guess from the
-                   size of the last page. -->
-              <div class="pay-more-row income-foot">
-                <span class="pay-count-note" id="payCountNote"></span>
-                <div class="income-foot-actions">
-                  <button class="btn-ghost income-ghost" id="payExport" onclick="exportPayments(this)" data-en="Export CSV" data-bn="CSV এক্সপোর্ট">Export CSV</button>
-                  <button class="btn-ghost income-ghost" id="payLoadMore" style="display:none;"
-                          onclick="loadMorePayments(this)" data-en="Load more" data-bn="আরও দেখুন">Load more</button>
-                </div>
-              </div>
             </div>
           </div>
 
@@ -1083,7 +1094,7 @@ textarea.w-input{ padding:10px 12px !important; }
                 <div>
                   <div class="earnings-eyebrow" data-en="Available balance" data-bn="উপলব্ধ ব্যালান্স">Available balance</div>
                   <div class="earnings-hero-amount mono" id="statAvailableUSD">$0.00</div>
-                  <div class="earnings-hero-note" data-en="Net after conversion fee · Withdraw anytime, no withdrawal fee" data-bn="কনভার্সন ফি বাদে নিট · যেকোনো সময় উত্তোলন, কোনো উত্তোলন ফি নেই">Net after conversion fee · Withdraw anytime, no withdrawal fee</div>
+                  <div class="earnings-hero-note" data-en="Withdraw anytime, no withdrawal fee" data-bn="যেকোনো সময় উত্তোলন, কোনো উত্তোলন ফি নেই">Withdraw anytime, no withdrawal fee</div>
                 </div>
                 <div class="earnings-gauge" aria-hidden="true">
                   <svg viewBox="0 0 120 62" width="96" height="50">
@@ -1605,6 +1616,7 @@ async function fetchLinks(){
     .eq('user_id', currentUser.id).is('deleted_at', null)
     .order('created_at').limit(500);
   allLinks = data || [];
+  if (typeof allPayments !== "undefined" && allPayments.length) renderPayments();
   const activeCount = new Set(
     allLinks.filter(l => l.is_active).map(l => l.variant_group || l.id)
   ).size;
@@ -1618,6 +1630,13 @@ async function fetchLinks(){
 
 // Item 11: one-off invoice for a fixed amount, link copied to the clipboard.
 // 0104: creator nets amount minus the conversion fee snapshotted on the payment.
+function payLinkLabel(p){
+  const slug = p.link_slug || '';
+  const l = allLinks.find(x => x.slug === slug) || allLinks.find(x => String(x.slug).toLowerCase() === slug.toLowerCase());
+  const name = p.link_name || (l && (l.display_name || l.slug)) || slug || '\u2014';
+  const pct = l ? Number(l.cost_percent || 0) : 0;
+  return escapeHtml(name) + (pct > 0 ? ` <span class="pc-pct">${escapeHtml(String(pct))}%</span>` : '');
+}
 function payNet(p){
   if (p.net_amount != null) return Number(p.net_amount);
   return parseFloat(p.amount_settled || p.amount_requested || 0);
@@ -1711,8 +1730,7 @@ function renderLinks(){
       <div class="links-item-head">
         <div class="links-avatar">${escapeHtml(String(name).trim().charAt(0).toUpperCase() || '#')}</div>
         <div class="links-item-meta">
-          <div class="links-item-name">${escapeHtml(name)}</div>
-          <div class="links-fee">${qiT('Extra fee', 'অতিরিক্ত ফি')}: ${escapeHtml(String(Number(head.cost_percent || 0)))}% 🔒</div>
+          <div class="links-item-name">${escapeHtml(name)}${Number(head.cost_percent) > 0 ? ` <span class="pc-pct">${escapeHtml(String(Number(head.cost_percent)))}%</span>` : ''}</div>
         </div>
         <span class="links-status ${anyActive ? 'on' : 'off'}">${anyActive ? qiT('Active', 'সক্রিয়') : qiT('Disabled', 'নিষ্ক্রিয়')}</span>
       </div>
@@ -2268,8 +2286,8 @@ function renderPayments(){
     const detailsInner = `
       <div class="pay-grid">
         <div class="pay-field">
-          <div class="pay-field-label">${t('Link &amp; payer cost', 'লিংক ও ক্রেতার খরচ')}</div>
-          <div class="pay-field-value">\ud83c\udf0e ${escapeHtml(p.link_name || p.link_slug || '\u2014')}</div>
+          <div class="pay-field-label">${t('Link', 'লিংক')}</div>
+          <div class="pay-field-value">${payLinkLabel(p)}</div>
         </div>
         <div class="pay-field">
           <div class="pay-field-label">${t('Method', 'পদ্ধতি')}</div>
@@ -2296,13 +2314,11 @@ function renderPayments(){
 
     return `
       <div class="pay-row${openPayRows.has(p.id) ? ' open' : ''}${isMarked ? ' is-marked' : ''}" ${p.status === 'new' || p.status === 'pending' ? `data-expires="${escapeAttr(p.expires_at)}"` : ''} data-pid="${escapeAttr(p.id)}" onclick="togglePayRow(this, event)">
-        <div class="pay-summary">
-          <div style="min-width:0;">
-            <div class="pay-amt">$${payNet(p).toFixed(2)}</div>
-            ${Number(p.fee_usd) > 0 ? `<div class="pay-meta">${p.status === 'settled' ? qiT('Buyer paid', 'ক্রেতা পরিশোধ করেছেন') : qiT('Invoice', 'ইনভয়েস')} $${(Number(p.net_amount || 0) + Number(p.fee_usd || 0)).toFixed(2)} \u2212 $${Number(p.fee_usd || 0).toFixed(2)} ${qiT('conversion fee', 'কনভার্সন ফি')} (${Number(p.fee_percent)}%)${p.status === 'settled' ? '' : ' \u00b7 ' + qiT('not paid', 'পরিশোধ হয়নি')}</div>` : ''}
-            <div class="pay-meta">${escapeHtml((p.method||'lightning').toUpperCase())} \u00b7 ${fmtDate(p.created_at)}</div>
-          </div>
-          <div class="pay-summary-right">
+        <div class="pay-summary pc-summary">
+          <div class="pc-top"><span class="pc-method">${escapeHtml((p.method||'lightning').toUpperCase())}</span><span class="pc-time">${fmtDate(p.created_at)}</span></div>
+          <div class="pc-name">${payLinkLabel(p)}</div>
+          <div class="pc-bottom">
+            <div class="pay-amt pc-amt">$${payNet(p).toFixed(2)}</div>
             <div class="pay-status">
               <span class="badge ${escapeAttr(p.status)}"><span class="badge-dot"></span>${escapeHtml(statusText(p.status))}</span>
               ${(p.status === 'new' || p.status === 'pending') ? '<div class="pay-timer mono" data-timer>--:--</div>' : ''}
@@ -2583,7 +2599,7 @@ async function loadInvoicesTab(){
   const il = document.getElementById('invList');
   il.innerHTML = inv.error ? empty('Could not load invoices.', 'ইনভয়েস লোড হয়নি।') : (inv.data.length
     ? inv.data.map(r => `<div class="inv-day"><div class="inv-day-top"><div><div class="inv-name">${esc(r.cycle_date)}</div><div class="inv-meta">${r.payment_count} ${T('payments', 'পেমেন্ট')}</div></div><div class="inv-amt inv-pos">${m(r.net_usd)}<span class="inv-amt-s">${T('Net', 'নিট')}</span></div></div>`
-      + `<div class="inv-break"><div class="inv-cell"><div class="inv-cell-l">${T('Gross', 'মোট')}</div><div class="inv-cell-v">${m(r.gross_usd)}</div></div><div class="inv-cell"><div class="inv-cell-l">${T('Conversion fee', 'কনভার্সন ফি')}</div><div class="inv-cell-v">${m(r.commission_usd)}</div></div><div class="inv-cell"><div class="inv-cell-l">${T('Net', 'নিট')}</div><div class="inv-cell-v inv-pos">${m(r.net_usd)}</div></div></div></div>`).join('')
+      + `</div>`).join('')
     : empty('No invoices yet.', 'এখনো কোনো ইনভয়েস নেই।'));
   const mi = await window.supabaseClient.rpc('my_manual_invoices');
   const ml = document.getElementById('manualInvList');
@@ -2646,6 +2662,7 @@ async function disconnectTelegram(){
 }
 
 function showSection(sec, btn){
+  if (sec === 'income') { sec = 'overview'; btn = document.querySelector('.tab-btn[data-sec=overview]'); }
   const target = document.getElementById('sec-' + sec);
   if (!target) return;
   document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
@@ -2688,7 +2705,7 @@ function openInitialSection(){
   // first, not a stat summary they already glanced at on the last visit.
   const requested = (window.location.hash || '').replace(/^#/, '').toLowerCase();
   const known = ['overview','income','links','daily','earnings','cashout','messages'];
-  const section = known.includes(requested) ? requested : 'income';
+  const section = known.includes(requested) && requested !== 'income' ? requested : 'overview';
   const btn = document.querySelector(`.tab-btn[data-sec="${section}"]`);
   showSection(section, btn);
 }
