@@ -44,9 +44,29 @@ function deps(o: { enabled?: unknown; owner?: unknown; stepUp?: boolean; lnd?: W
   return { d, rpcs, stepRpcs, alerts };
 }
 
-Deno.test("flag off refuses everything, even reads", async () => {
-  const { d } = deps({ enabled: false });
-  assertEquals((await handle(OWNER, "admin", { action: "balances" }, d)).status, 403);
+Deno.test("flag off permits owner reads but never codes or spends", async () => {
+  const f = fakeLnd();
+  const { d, rpcs, stepRpcs, alerts } = deps({ enabled: false, lnd: f.lnd });
+  assertEquals((await handle(OWNER, "admin", { action: "status" }, d)).body, { enabled: false });
+  assertEquals((await handle(OWNER, "admin", { action: "balances" }, d)).status, 200);
+  assertEquals((await handle(OWNER, "admin", { action: "decode", invoice: INV }, d)).status, 200);
+  assertEquals((await handle(OWNER, "admin", { action: "estimate", address: ADDR, amountSat: 1000 }, d)).status, 200);
+  const spend = { action: "send_onchain", address: ADDR, amountSat: 1000, satPerVbyte: 2, feeLimitSat: 100, stepUpCode: "123456", requestKey: "readonly-01" };
+  assertEquals((await handle(OWNER, "admin", { action: "stepup_request", request: spend }, d)).status, 403);
+  assertEquals((await handle(OWNER, "admin", spend, d)).status, 403);
+  assertEquals((await handle(OWNER, "admin", { action: "pay_invoice", invoice: INV, feeLimitSat: 100, stepUpCode: "123456", requestKey: "readonly-02" }, d)).status, 403);
+  assertEquals(f.calls, ["balances", "decode", "estimate"]);
+  assertEquals(rpcs.length, 0);
+  assertEquals(stepRpcs.length, 0);
+  assertEquals(alerts.length, 0);
+});
+
+Deno.test("status does not require LND config; only owner admin may see it", async () => {
+  assertEquals((await handle(OWNER, "admin", { action: "status" }, deps({ lnd: null }).d)).body, { enabled: true });
+  assertEquals((await handle(OWNER, "admin", { action: "status" }, deps({ enabled: false, lnd: null }).d)).body, { enabled: false });
+  assertEquals((await handle("other", "admin", { action: "status" }, deps({ enabled: false }).d)).status, 403);
+  assertEquals((await handle(OWNER, "creator", { action: "status" }, deps({ enabled: false }).d)).status, 403);
+  assertEquals((await handle(OWNER, "admin", { action: "status" }, deps({ owner: null }).d)).status, 403);
 });
 
 Deno.test("only the owner admin gets through", async () => {
