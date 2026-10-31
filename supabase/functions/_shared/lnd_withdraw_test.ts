@@ -26,10 +26,10 @@ function mock(reply: (c: Call) => unknown, status = 200) {
 
 Deno.test("macaroon is URI-scoped: no channel, peer, macaroon or stop RPCs", () => {
   for (const u of WITHDRAW_MACAROON_URIS) {
-    assert(u.startsWith("uri:/lnrpc.Lightning/"), u);
+    assert(u.startsWith("uri:/lnrpc.Lightning/") || u === "uri:/routerrpc.Router/TrackPaymentV2", u);
     assert(!/Channel(?!Balance)|Peer|Macaroon|Stop|Policy|Backup|Abandon|Debug/.test(u), u);
   }
-  assertEquals(WITHDRAW_MACAROON_URIS.length, 7);
+  assertEquals(WITHDRAW_MACAROON_URIS.length, 8);
 });
 
 Deno.test("config needs LND_WITHDRAW_MACAROON, not the invoice macaroon", () => {
@@ -109,4 +109,31 @@ Deno.test("errors never contain the macaroon or the invoice", async () => {
   const e = await assertRejects(() => new LndWithdrawClient(cfg, f).decodeInvoice(INV));
   assert(!String((e as Error).message).includes(MAC));
   assert(!String((e as Error).message).includes(INV));
+});
+
+Deno.test("TrackPaymentV2: read-only streaming response maps status and fees", async () => {
+  const sent: string[] = [];
+  const fetchFn = (async (u: string, init: RequestInit) => {
+    assertEquals(init.method, "GET");
+    sent.push(u);
+    return new Response('{"result":{"status":"SUCCEEDED","fee_sat":"7"}}\n', { status: 200 });
+  }) as unknown as typeof fetch;
+  const client = new LndWithdrawClient(cfg, fetchFn);
+  const result = await client.trackPayment("ab".repeat(32));
+  assertEquals(result, { status: "SUCCEEDED", feeSat: 7 });
+  assert(sent[0].includes("/v2/router/track/"));
+  assert(!sent[0].includes(MAC));
+  await assertRejects(() => client.trackPayment("notahash"));
+});
+
+Deno.test("TrackPaymentV2 denies permission errors without calling a payment endpoint", async () => {
+  const called: string[] = [];
+  const fetchFn = (async (u: string) => {
+    called.push(u);
+    return new Response('{"error":"forbidden"}', { status: 403 });
+  }) as unknown as typeof fetch;
+  const e = await assertRejects(() => new LndWithdrawClient(cfg, fetchFn).trackPayment("ab".repeat(32)));
+  assert(String((e as Error).message).includes("403"));
+  assertEquals(called.length, 1);
+  assert(!called[0].includes("/v1/channels/transactions"));
 });

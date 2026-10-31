@@ -15,14 +15,15 @@ function fakeLnd(over: Partial<WithdrawLnd> = {}) {
     balances: async () => { calls.push("balances"); return { onchainConfirmedSat: 40000, onchainUnconfirmedSat: 0, lightningLocalSat: 9000 }; },
     estimateFee: async () => { calls.push("estimate"); return { feeSat: 300, satPerVbyte: 2 }; },
     sendCoins: async () => { calls.push("sendCoins"); return { txid: "ab".repeat(32) }; },
-    decodeInvoice: async () => { calls.push("decode"); return { destination: "02aa", paymentHash: "cd", amountSat: 250, description: "x", expiresAt: Date.now() / 1000 + 600 }; },
+    decodeInvoice: async () => { calls.push("decode"); return { destination: "02aa", paymentHash: "cd".repeat(32), amountSat: 250, description: "x", expiresAt: Date.now() / 1000 + 600 }; },
     payInvoice: async () => { calls.push("pay"); return { paymentHashHex: "cd".repeat(32), feeSat: 1 }; },
+    trackPayment: async () => { calls.push("track"); return { status: "IN_FLIGHT", feeSat: 0 }; },
     ...over,
   };
   return { lnd, calls };
 }
 
-function deps(o: { enabled?: unknown; owner?: unknown; stepUp?: boolean; lnd?: WithdrawLnd | null; reserveErr?: string; finishErr?: string; finishReturn?: boolean; telegramDelivery?: boolean } = {}) {
+function deps(o: { enabled?: unknown; owner?: unknown; stepUp?: boolean; lnd?: WithdrawLnd | null; reserveErr?: string; finishErr?: string; finishReturn?: boolean; telegramDelivery?: boolean; pendingRows?: Array<{ id: number; kind: string; payment_hash: string | null }> } = {}) {
   const rpcs: { fn: string; args: any }[] = [];
   const stepRpcs: { fn: string; args: any }[] = [];
   const alerts: string[] = [];
@@ -34,15 +35,16 @@ function deps(o: { enabled?: unknown; owner?: unknown; stepUp?: boolean; lnd?: W
         return Promise.resolve({ data: fn.endsWith("consume") ? (o.stepUp ?? false) : "2026-10-31T01:05:00Z", error: null });
       }
       rpcs.push({ fn, args });
-      if (fn === "system_node_withdraw_reserve" && o.reserveErr) return Promise.resolve({ data: null, error: { message: o.reserveErr } });
+      if (fn === "system_node_withdraw_reserve_payment" && o.reserveErr) return Promise.resolve({ data: null, error: { message: o.reserveErr } });
       if (fn === "system_node_withdraw_finish" && o.finishErr) return Promise.resolve({ data: null, error: { message: o.finishErr } });
-      return Promise.resolve({ data: fn === "system_node_withdraw_reserve" ? 7 : fn === "system_node_withdraw_finish" ? (o.finishReturn ?? true) : true, error: null });
+      return Promise.resolve({ data: fn === "system_node_withdraw_reserve_payment" ? 7 : fn === "system_node_withdraw_finish" ? (o.finishReturn ?? true) : true, error: null });
     },
     setting: async (k) => k === "node_withdraw_enabled" ? (o.enabled ?? true) : k === "node_withdraw_owner_id" ? ("owner" in o ? o.owner : OWNER) : null,
     lnd: async () => (o.lnd === undefined ? fakeLnd().lnd : o.lnd),
     stepUpSecret: "test-secret",
     alert: async (t) => { alerts.push(t); },
     sendStepupCode: async (t) => { stepupMessages.push(t); return o.telegramDelivery ?? true; },
+    pending: async () => o.pendingRows ?? [],
   };
   return { d, rpcs, stepRpcs, alerts, stepupMessages };
 }
@@ -132,7 +134,7 @@ Deno.test("lightning: amount must match invoice; LND failure retains reservation
   const { d, rpcs, alerts } = deps({ stepUp: true, lnd: f.lnd });
   const r = await handle(OWNER, "admin", { action: "pay_invoice", invoice: INV, feeLimitSat: 10, stepUpCode: "123456", requestKey: "key-000007" }, d);
   assertEquals(r.status, 502);
-  assertEquals(rpcs.map((x) => x.fn), ["system_node_withdraw_reserve"]);
+  assertEquals(rpcs.map((x) => x.fn), ["system_node_withdraw_reserve_payment"]);
   assert(alerts[0].includes("outcome unknown"));
   assert(String(r.body.error).includes("DO NOT retry") || String(r.body.error).includes("do NOT retry"));
 });
@@ -142,7 +144,7 @@ Deno.test("Lightning timeout leaves the prior reservation in place", async () =>
   const { d, rpcs } = deps({ stepUp: true, lnd: f.lnd });
   const r = await handle(OWNER, "admin", { action: "pay_invoice", invoice: INV, feeLimitSat: 500, stepUpCode: "123456", requestKey: "key-000008" }, d);
   assertEquals(r.status, 502);
-  assertEquals(rpcs.map((x) => x.fn), ["system_node_withdraw_reserve"]);
+  assertEquals(rpcs.map((x) => x.fn), ["system_node_withdraw_reserve_payment"]);
 });
 
 Deno.test("successful LND transfer with failed or rejected database finish never reports success", async () => {
@@ -154,7 +156,7 @@ Deno.test("successful LND transfer with failed or rejected database finish never
     assert(String(r.body.error).includes("DO NOT RETRY"));
     assert(String(r.body.error).includes("cd".repeat(32)));
     assertEquals(f.calls.filter((x) => x === "pay").length, 1);
-    assertEquals(rpcs.map((x) => x.fn), ["system_node_withdraw_reserve", "system_node_withdraw_finish"]);
+    assertEquals(rpcs.map((x) => x.fn), ["system_node_withdraw_reserve_payment", "system_node_withdraw_finish"]);
     assert(alerts.some((x) => x.includes("ledger finalize failed")));
   }
 });
@@ -164,7 +166,62 @@ Deno.test("a failed Telegram notification cannot turn an already-recorded send i
   d.alert = async () => { throw new Error("Telegram offline"); };
   const r = await handle(OWNER, "admin", { action: "pay_invoice", invoice: INV, feeLimitSat: 10, stepUpCode: "123456", requestKey: "telegram-off-01" }, d);
   assertEquals(r.status, 200);
-  assertEquals(rpcs.map(x => x.fn), ["system_node_withdraw_reserve", "system_node_withdraw_finish"]);
+  assertEquals(rpcs.map(x => x.fn), ["system_node_withdraw_reserve_payment", "system_node_withdraw_finish"]);
+});
+
+Deno.test("same invoice hash is bound into SQL reservation", async () => {
+  const f = fakeLnd();
+  const { d, rpcs } = deps({ stepUp: true, lnd: f.lnd });
+  const result = await handle(OWNER, "admin", { action: "pay_invoice", invoice: INV, feeLimitSat: 25, stepUpCode: "123456", requestKey: "unique-hash-test" }, d);
+  assertEquals(result.status, 200);
+  assertEquals(rpcs[0].fn, "system_node_withdraw_reserve_payment");
+  assertEquals(rpcs[0].args.p_payment_hash, "cd".repeat(32));
+});
+
+Deno.test("owner reconciliation with transfers OFF never sends Lightning funds", async () => {
+  const hash = "ab".repeat(32);
+  const f = fakeLnd({ trackPayment: async (h) => {
+    assertEquals(h, hash);
+    return { status: "SUCCEEDED", feeSat: 4 };
+  } });
+  const { d, rpcs } = deps({ enabled: false, pendingRows: [{ id: 11, kind: "lightning", payment_hash: hash }], lnd: f.lnd });
+  const result = await handle(OWNER, "admin", { action: "reconcile" }, d);
+  assertEquals(result.body.reconciliation, { checked: 1, sent: 1, failed: 0, unresolved: 0 });
+  assertEquals(rpcs.map(x => x.fn), ["system_node_withdraw_finish"]);
+  assertEquals(rpcs[0].args.p_reference, hash);
+  assert(!f.calls.includes("pay"));
+  assertEquals((await handle("other", "admin", { action: "reconcile" }, d)).status, 403);
+});
+
+Deno.test("LND unexpected payment hash cannot finalize a different invoice", async () => {
+  const f = fakeLnd({ payInvoice: async () => ({ paymentHashHex: "ef".repeat(32), feeSat: 3 }) });
+  const { d, rpcs } = deps({ stepUp: true, lnd: f.lnd });
+  const res = await handle(OWNER, "admin", {
+    action: "pay_invoice", invoice: INV, feeLimitSat: 25,
+    stepUpCode: "123456", requestKey: "hash-mismatch-001",
+  }, d);
+  assertEquals(res.status, 502);
+  assertEquals(rpcs.map(x => x.fn), ["system_node_withdraw_reserve_payment"]);
+  assert(String(res.body.error).includes("do NOT retry"));
+});
+
+Deno.test("reconciliation never treats an in-flight or unknown payment as failed", async () => {
+  for (const mode of ["IN_FLIGHT", "FAILED", "UNKNOWN", "throw"] as const) {
+    const f = fakeLnd({ trackPayment: async () => {
+      if (mode === "throw") throw new WithdrawError("LND tracking permission denied", 403);
+      return { status: mode, feeSat: 0 };
+    } });
+    const { d, rpcs } = deps({ enabled: false, lnd: f.lnd, pendingRows: [{ id: 9, kind: "lightning", payment_hash: "ab".repeat(32) }] });
+    const result = await handle(OWNER, "admin", { action: "reconcile" }, d);
+    assertEquals(result.status, 200);
+    const { checked, sent, failed, unresolved } = result.body.reconciliation as any;
+    assertEquals(checked, 1);
+    assertEquals(sent, 0);
+    assertEquals(failed, mode === "FAILED" ? 1 : 0);
+    assertEquals(unresolved, mode === "FAILED" ? 0 : 1);
+    assertEquals(rpcs.length, mode === "FAILED" ? 1 : 0);
+    assert(!f.calls.includes("pay"));
+  }
 });
 
 Deno.test("end to end with mocked fetch: macaroon never in response or alert", async () => {
@@ -200,7 +257,7 @@ function stepUpDb() {
       if (row.rh !== a.p_request_hash || row.ch !== a.p_code_hash) { if (++row.attempts >= 5) row.used = true; return { data: false, error: null }; }
       row.used = true; return { data: true, error: null };
     }
-    return { data: fn === "system_node_withdraw_reserve" ? 9 : true, error: null };
+    return { data: fn === "system_node_withdraw_reserve_payment" ? 9 : true, error: null };
   };
 }
 
@@ -227,7 +284,7 @@ Deno.test("step-up: code goes to confirmed owner Telegram only, bound to spend a
     const x = await handle(OWNER, "admin", { ...spend, stepUpCode: "424242", requestKey: "key-bad-01", ...bad }, d);
     assertEquals(x.status, 401);
   }
-  assert(!calls.some((c) => c.fn === "system_node_withdraw_reserve"));
+  assert(!calls.some((c) => c.fn === "system_node_withdraw_reserve_payment"));
 });
 
 Deno.test("step-up delivery failure is fail-closed and never claims code_sent", async () => {
@@ -280,7 +337,7 @@ Deno.test("step-up: right code spends once, reuse refused; 5 misses burn it", as
   await handle(OWNER, "admin", { action: "stepup_request", request: spend }, d);
   const ok = await handle(OWNER, "admin", { ...spend, stepUpCode: "135790", requestKey: "key-good-01" }, d);
   assertEquals(ok.status, 200);
-  assert(fns.includes("system_node_withdraw_reserve"));
+  assert(fns.includes("system_node_withdraw_reserve_payment"));
   assertEquals((await handle(OWNER, "admin", { ...spend, stepUpCode: "135790", requestKey: "key-good-02" }, d)).status, 401);
 
   await handle(OWNER, "admin", { action: "stepup_request", request: spend }, d);

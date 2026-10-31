@@ -1,4 +1,4 @@
--- Runtime checks for 0112 + 0118 + 0119 (owner-only node withdraw, no daily cap). Runs inside BEGIN/ROLLBACK.
+-- Runtime checks for 0112 + 0118 + 0119 + 0120 (owner-only node withdraw, no daily cap). Runs inside BEGIN/ROLLBACK.
 \set ON_ERROR_STOP on
 begin;
 insert into auth.users(id, email) values
@@ -64,6 +64,25 @@ begin
   exception when others then if sqlerrm not like 'duplicate request_key:%' then raise; end if;
   end;
 
+  -- Same Lightning invoice hash, even with a NEW requestKey, must be refused.
+  -- The nested transaction rolls back its successful test reservation.
+  begin
+    v_id2 := system_node_withdraw_reserve_payment(
+      o, 'lightning', 'lnbc200u1pexampleinvoice', 20000, 1000,
+      'hash-first-0001', repeat('ab', 32));
+    begin
+      perform system_node_withdraw_reserve_payment(
+        o, 'lightning', 'lnbc200u1pexampleinvoice', 20000, 1000,
+        'hash-second-0002', repeat('ab', 32));
+      raise exception 'duplicate invoice accepted';
+    exception when others then
+      if sqlerrm not like 'duplicate payment hash or request_key:%' then raise; end if;
+    end;
+    raise exception 'rollback hash test';
+  exception when others then
+    if sqlerrm <> 'rollback hash test' then raise; end if;
+  end;
+
   -- No daily cap: well past the old 50000 limit still reserves (then roll it back)
   begin
     perform system_node_withdraw_reserve(o, 'onchain', addr, 5000000, 2000, 'key-big-00001');
@@ -91,4 +110,4 @@ begin
   if not has_function_privilege('service_role', 'system_node_withdraw_reserve(uuid,text,text,bigint,bigint,text)', 'execute') then raise exception 'service cannot reserve'; end if;
 end $$;
 rollback;
-select 'Node withdraw 0112/0118/0119 runtime checks passed' as result;
+select 'Node withdraw 0112/0118/0119/0120 runtime checks passed' as result;

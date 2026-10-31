@@ -24,6 +24,7 @@ export interface WithdrawLnd {
   sendCoins(a: { address: string; satPerVbyte: number; amountSat?: number; sendAll?: boolean }): Promise<{ txid: string }>;
   decodeInvoice(invoice: string): Promise<DecodedInvoice>;
   payInvoice(invoice: string, feeLimitSat: number, amountSat?: number): Promise<PayResult>;
+  trackPayment(paymentHash: string): Promise<{ status: "SUCCEEDED" | "FAILED" | "IN_FLIGHT" | "UNKNOWN"; feeSat: number }>;
 }
 
 type Rpc = (fn: string, args?: Record<string, unknown>) => PromiseLike<{ data: unknown; error: { message?: string } | null }>;
@@ -35,6 +36,7 @@ export interface Deps {
   stepUpSecret: string;                           // server-only HMAC key for code hashes
   alert: (text: string) => Promise<unknown>; // nonsensitive ops alerts only
   sendStepupCode: (text: string) => Promise<boolean>; // confirmed owner Telegram delivery
+  pending: (owner: string) => Promise<Array<{ id: number; kind: string; payment_hash: string | null }>>;
   newCode?: () => string;                         // test hook
 }
 
@@ -82,7 +84,7 @@ const ok = (body: Record<string, unknown>): Result => ({ status: 200, body });
 const err = (status: number, error: string): Result => ({ status, body: { error } });
 
 export const SPEND_ACTIONS = new Set(["send_onchain", "pay_invoice"]);
-const READ_ACTIONS = new Set(["status", "balances", "decode", "estimate"]);
+const READ_ACTIONS = new Set(["status", "balances", "decode", "estimate", "reconcile"]);
 
 export function shortDest(d: string): string {
   const s = String(d);
@@ -158,6 +160,33 @@ export async function handle(userId: string, role: string | null, body: Record<s
   if (!lnd) return err(503, "LND withdraw not configured");
 
   try {
+    if (action === "reconcile") {
+      // Safe with transfers OFF: queries LND and finalizes old reservations only.
+      // It NEVER initiates a payment or frees a previously-used hash for reuse.
+      const rows = await d.pending(userId);
+      let sent = 0, failed = 0, unresolved = 0;
+      for (const row of rows.slice(0, 25)) {
+        if (row.kind !== "lightning" || !row.payment_hash || !/^[0-9a-f]{64}$/.test(row.payment_hash)) {
+          unresolved++; continue;
+        }
+        try {
+          const result = await lnd.trackPayment(row.payment_hash);
+          if (result.status !== "SUCCEEDED" && result.status !== "FAILED") {
+            unresolved++; continue;
+          }
+          const { data, error } = await d.rpc("system_node_withdraw_finish", {
+            p_id: row.id, p_status: result.status === "SUCCEEDED" ? "sent" : "failed",
+            p_reference: result.status === "SUCCEEDED" ? row.payment_hash : null,
+            p_fee_sat: result.status === "SUCCEEDED" ? result.feeSat : null,
+            p_error: result.status === "FAILED" ? "LND confirmed failed; hash cannot be reused" : null,
+          });
+          if (error || data !== true) { unresolved++; continue; }
+          if (result.status === "SUCCEEDED") sent++; else failed++;
+        } catch { unresolved++; }
+      }
+      return ok({ reconciliation: { checked: Math.min(rows.length, 25), sent, failed, unresolved } });
+    }
+
     if (action === "balances") return ok({ balances: await lnd.balances() });
 
     if (action === "decode") {
@@ -180,6 +209,7 @@ export async function handle(userId: string, role: string | null, body: Record<s
 
     let kind: "onchain" | "lightning", destination: string, amountSat: number;
     let sendAll = false, satPerVbyte = 0, invoiceAmt: number | undefined;
+    let paymentHash: string | undefined;
     if (action === "send_onchain") {
       kind = "onchain";
       destination = String(body.address ?? "").trim();
@@ -200,6 +230,8 @@ export async function handle(userId: string, role: string | null, body: Record<s
       if (!inv) return err(400, "bad invoice");
       destination = inv;
       const dec = await lnd.decodeInvoice(inv);
+      paymentHash = dec.paymentHash.toLowerCase();
+      if (!/^[0-9a-f]{64}$/.test(paymentHash)) return err(400, "invalid decoded payment hash");
       if (dec.expiresAt * 1000 <= Date.now()) return err(400, "invoice expired");
       if (dec.amountSat > 0) {
         if (body.amountSat !== undefined && body.amountSat !== dec.amountSat) return err(400, "amount does not match invoice");
@@ -213,9 +245,12 @@ export async function handle(userId: string, role: string | null, body: Record<s
 
     await lnd.assertReady();
 
-    const { data: id, error: rErr } = await d.rpc("system_node_withdraw_reserve", {
+    // The SQL constraint rejects BOTH the same request key and the same
+    // invoice hash even when the caller creates an entirely new request key.
+    const { data: id, error: rErr } = await d.rpc("system_node_withdraw_reserve_payment", {
       p_actor: userId, p_kind: kind, p_destination: destination,
-      p_amount_sat: amountSat, p_fee_limit_sat: feeLimitSat, p_request_key: requestKey,
+      p_amount_sat: amountSat, p_fee_limit_sat: feeLimitSat,
+      p_request_key: requestKey, p_payment_hash: paymentHash,
     });
     if (rErr || id == null) return err(409, rErr?.message ?? "reserve failed");
 
@@ -227,6 +262,11 @@ export async function handle(userId: string, role: string | null, body: Record<s
         throw new WithdrawError("On-chain withdrawals paused");
       }
       const r = await lnd.payInvoice(destination, feeLimitSat, invoiceAmt);
+      // A mismatched response must never be finalized under the wrong invoice.
+      // A payment may already have moved; retain the reservation for review.
+      if (r.paymentHashHex.toLowerCase() !== paymentHash) {
+        throw new WithdrawError("LND returned unexpected payment hash");
+      }
       reference = r.paymentHashHex; feeSat = r.feeSat;
     } catch {
       // Even an HTTP error can arrive after LND accepted the payment.
