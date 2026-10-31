@@ -84,7 +84,7 @@ alter table payments add column if not exists display_net_usd numeric
          then round((amount_settled - commission_usd) * buyer_amount / (amount_settled - coalesce(buyer_fee_usd, 0)), 2)
          else round(coalesce(amount_settled, 0) - commission_usd, 2) end) stored;
 
-create or replace function public.get_my_display_totals()
+create or replace function get_my_display_totals()
 returns table(earned numeric, available numeric, withdrawn numeric)
 language plpgsql stable security definer set search_path to 'public' as $$
 declare v_uid uuid := auth.uid(); b record; v_disp numeric; v_ratio numeric;
@@ -97,8 +97,8 @@ begin
   v_ratio := case when b.earned > 0 then v_disp / b.earned else 1 end;
   return query select round(v_disp, 2), round(greatest(b.available, 0) * v_ratio, 2), round(b.withdrawn * v_ratio, 2);
 end $$;
-revoke all on function public.get_my_display_totals() from public, anon;
-grant execute on function public.get_my_display_totals() to authenticated, service_role;
+revoke all on function get_my_display_totals() from public, anon;
+grant execute on function get_my_display_totals() to authenticated, service_role;
 
 create or replace function public.my_daily_settled(p_days integer default 14)
  returns table(cycle_date date, cycle_start timestamptz, cycle_end timestamptz, settled numeric, payment_count bigint)
