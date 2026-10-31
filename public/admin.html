@@ -842,6 +842,13 @@ textarea.w-input{ padding:10px 12px !important; }
                                             <div class="nw-btns" style="margin-bottom:12px;">
                                               <button class="btn-sm" type="button" id="nwReconcileBtn" onclick="nwReconcilePending(this)" data-en="Reconcile pending payments (no send)" data-bn="অমীমাংসিত পেমেন্ট যাচাই (টাকা পাঠাবে না)">Reconcile pending payments (no send)</button>
                                             </div>
+                                            <div class="nw-note" style="margin:12px 0 6px;" data-en="LND withdrawal connection check (read-only, sends no funds)" data-bn="LND সংযোগ পরীক্ষা (শুধু পড়বে, টাকা পাঠাবে না)">LND withdrawal connection check (read-only, sends no funds)</div>
+                                            <label class="nw-label" for="nwReadinessHash" data-en="Past outgoing payment hash (optional, 64 hex characters)" data-bn="আগের outgoing payment hash (ঐচ্ছিক, ৬৪টি hex অক্ষর)">Past outgoing payment hash (optional, 64 hex characters)</label>
+                                            <input class="nw-input" id="nwReadinessHash" type="text" autocomplete="off" spellcheck="false" maxlength="64" placeholder="Past settled payment hash (optional)" />
+                                            <div class="nw-btns" style="margin:8px 0;">
+                                              <button class="btn-sm" type="button" onclick="nwCheckLndReadiness(this)" data-en="Check LND safely (no payment)" data-bn="LND নিরাপদে পরীক্ষা (কোনো পেমেন্ট নয়)">Check LND safely (no payment)</button>
+                                            </div>
+                                            <div class="nw-note" id="nwReadinessStatus" role="status" style="margin-bottom:10px;" data-en="Verifies node sync and optional historical payment tracking. Outgoing payment permission cannot be proven without a separate authorized check." data-bn="নোড সিঙ্ক ও পুরনো পেমেন্ট tracking যাচাই করে। আলাদা পরীক্ষা ছাড়া টাকা পাঠানোর permission প্রমাণিত নয়।">Verifies node sync and optional historical payment tracking. Outgoing payment permission cannot be proven without a separate authorized check.</div>
                                             <div class="nw-note" id="nwReconcileStatus" role="status" style="margin-bottom:10px;" data-en="Reconciliation reads payment statuses only. It cannot initiate a payment." data-bn="এটি শুধু পেমেন্টের অবস্থা পড়ে; টাকা পাঠায় না।">Reconciliation reads payment statuses only. It cannot initiate a payment.</div>
                                             <div class="nw-grid">
                                               <div class="nw-stat"><div class="k" data-en="On-chain" data-bn="অন-চেইন">On-chain</div><div class="v" id="nwOnchain">—</div></div>
@@ -2752,6 +2759,35 @@ async function nwLoadBalances(){
     nwApplyMode();
     nwShowBalances(await nwCall('balances'));
   } catch (_) { showToast(t('Network error', 'নেটওয়ার্ক ত্রুটি'), 'err'); }
+}
+async function nwCheckLndReadiness(btn) {
+  btn.disabled = true;
+  const out = document.getElementById('nwReadinessStatus');
+  const hash = document.getElementById('nwReadinessHash').value.trim();
+  if (hash && !/^[a-fA-F0-9]{64}$/.test(hash)) {
+    out.textContent = t('Payment hash must be 64 hexadecimal characters.', 'পেমেন্ট hash অবশ্যই ৬৪টি hex অক্ষরের হতে হবে।');
+    btn.disabled = false; return;
+  }
+  try {
+    const res = await nwCall('readiness', hash ? { paymentHash: hash } : {});
+    if (!res.ok) {
+      out.textContent = t('Node readiness check failed: ', 'LND পরীক্ষা ব্যর্থ: ') + String(res.r.error || res.status);
+      return;
+    }
+    const data = res.r || {};
+    const tr = data.tracking || {};
+    const trackText = tr.result === 'confirmed'
+      ? t('Historical payment tracking succeeded (', 'আগের পেমেন্ট tracking সফল (') + String(tr.paymentStatus || 'UNKNOWN') + ')'
+      : tr.result === 'not_tested'
+      ? t('Tracking not tested (provide a prior payment hash).', 'Tracking পরীক্ষা হয়নি (আগের payment hash দিলে পরীক্ষা হবে)।')
+      : t('Tracking unverified: ', 'Tracking যাচাই হয়নি: ') + String(tr.errorClass || 'unavailable');
+    out.textContent = t(
+      'Node connected and synced. ', 'নোড সংযুক্ত ও synced। ') +
+      trackText + ' ' +
+      t('SendPaymentSync permission NOT verified. No funds moved.', 'SendPaymentSync permission যাচাই হয়নি। কোনো টাকা পাঠানো হয়নি।');
+  } catch {
+    out.textContent = t('Connection check failed; no payment was sent.', 'সংযোগ পরীক্ষা ব্যর্থ; কোনো পেমেন্ট পাঠানো হয়নি।');
+  } finally { btn.disabled = false; }
 }
 async function nwReconcilePending(btn) {
   // Read-only LND payment tracking and owner-only database finalization.
