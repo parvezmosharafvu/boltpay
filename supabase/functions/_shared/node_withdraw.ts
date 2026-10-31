@@ -33,7 +33,8 @@ export interface Deps {
   setting: (key: string) => Promise<unknown>;     // app_settings value (parsed jsonb)
   lnd: () => Promise<WithdrawLnd | null>;         // null = not configured
   stepUpSecret: string;                           // server-only HMAC key for code hashes
-  alert: (text: string) => Promise<unknown>;
+  alert: (text: string) => Promise<unknown>; // nonsensitive ops alerts only
+  sendStepupCode: (text: string) => Promise<boolean>; // confirmed owner Telegram delivery
   newCode?: () => string;                         // test hook
 }
 
@@ -127,7 +128,12 @@ export async function handle(userId: string, role: string | null, body: Record<s
       p_actor: userId, p_request_hash: rh, p_code_hash: await codeHash(code, rh, d.stepUpSecret),
     });
     if (error) return err(409, error.message ?? "step-up failed");
-    await d.alert(`🔐 Node withdraw code ${code} (5 min, one use)\n${c.summary}\nIf this was not you, turn node_withdraw_enabled off.`);
+    // Never send a verification code via sendOpsAlert: that also forwards
+    // messages to a generic webhook and may claim success for rejected HTTP.
+    const message = `🔐 Node withdraw code ${code} (5 min, one use)\n${c.summary}\nIf this was not you, turn node_withdraw_enabled off.`;
+    let delivered = false;
+    try { delivered = await d.sendStepupCode(message); } catch { /* fail closed */ }
+    if (!delivered) return err(503, "Telegram code delivery not confirmed. Link the owner Telegram account; do not proceed.");
     return ok({ status: "code_sent", expiresAt: exp });
   }
 
