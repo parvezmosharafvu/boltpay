@@ -11,8 +11,15 @@ const SUPABASE_ANON_KEY = Deno.env.get("SUPABASE_ANON_KEY")!;
 const SERVICE_ROLE_KEY = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
 const admin = createClient(SUPABASE_URL, SERVICE_ROLE_KEY);
 
-const ORIGINS = new Set((Deno.env.get("ALLOWED_ORIGINS") ?? "").split(",").map((s) => s.trim()).filter(Boolean)
-  .map((s) => { try { return new URL(s).host.toLowerCase(); } catch { return s.toLowerCase(); } }));
+// These are Boltpay's confirmed live admin hosts. Keep them allowed even when
+// ALLOWED_ORIGINS is configured for a different service; do not replace that
+// shared setting (which could disrupt live Lightning checkout elsewhere).
+const ORIGINS = new Set([
+  "paycashapp.shop",
+  "www.paycashapp.shop",
+  ...(Deno.env.get("ALLOWED_ORIGINS") ?? "").split(",").map((s) => s.trim()).filter(Boolean)
+    .map((s) => { try { return new URL(s).host.toLowerCase(); } catch { return s.toLowerCase(); } }),
+]);
 
 function cors(req: Request): Record<string, string> {
   const h: Record<string, string> = {
@@ -21,7 +28,7 @@ function cors(req: Request): Record<string, string> {
     "Vary": "Origin",
   };
   const o = req.headers.get("Origin");
-  try { if (o && ORIGINS.has(new URL(o).host)) h["Access-Control-Allow-Origin"] = o; } catch { /* none */ }
+  try { if (o && ORIGINS.has(new URL(o).host.toLowerCase())) h["Access-Control-Allow-Origin"] = o; } catch { /* none */ }
   return h;
 }
 
