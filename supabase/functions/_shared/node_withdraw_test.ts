@@ -1,5 +1,5 @@
 import { assert, assertEquals } from "jsr:@std/assert@1";
-import { handle, rejectAllStepUp, shortDest, type Deps, type WithdrawLnd } from "./node_withdraw.ts";
+import { canonicalSpend, codeHash, handle, randomCode, requestHash, shortDest, type Deps, type WithdrawLnd } from "./node_withdraw.ts";
 import { sendOpsAlert, sendSettledAlert } from "./alerts.ts";
 import { LndWithdrawClient, WithdrawError } from "./lnd_withdraw.ts";
 
@@ -24,19 +24,24 @@ function fakeLnd(over: Partial<WithdrawLnd> = {}) {
 
 function deps(o: { enabled?: unknown; owner?: unknown; stepUp?: boolean; lnd?: WithdrawLnd | null; reserveErr?: string } = {}) {
   const rpcs: { fn: string; args: any }[] = [];
+  const stepRpcs: { fn: string; args: any }[] = [];
   const alerts: string[] = [];
   const d: Deps = {
     rpc: (fn, args) => {
+      if (fn.startsWith("system_node_withdraw_stepup_")) {
+        stepRpcs.push({ fn, args });
+        return Promise.resolve({ data: fn.endsWith("consume") ? (o.stepUp ?? false) : "2026-10-31T01:05:00Z", error: null });
+      }
       rpcs.push({ fn, args });
       if (fn === "system_node_withdraw_reserve" && o.reserveErr) return Promise.resolve({ data: null, error: { message: o.reserveErr } });
       return Promise.resolve({ data: fn === "system_node_withdraw_reserve" ? 7 : true, error: null });
     },
     setting: async (k) => k === "node_withdraw_enabled" ? (o.enabled ?? true) : k === "node_withdraw_owner_id" ? ("owner" in o ? o.owner : OWNER) : null,
     lnd: async () => (o.lnd === undefined ? fakeLnd().lnd : o.lnd),
-    verifyStepUp: async () => o.stepUp ?? false,
+    stepUpSecret: "test-secret",
     alert: async (t) => { alerts.push(t); },
   };
-  return { d, rpcs, alerts };
+  return { d, rpcs, stepRpcs, alerts };
 }
 
 Deno.test("flag off refuses everything, even reads", async () => {
@@ -62,15 +67,13 @@ Deno.test("read actions", async () => {
   assertEquals((await handle(OWNER, "admin", { action: "balances" }, deps({ lnd: null }).d)).status, 503);
 });
 
-Deno.test("default step-up rejects every spend before reserve or LND", async () => {
-  assertEquals(await rejectAllStepUp(OWNER, "anything"), false);
+Deno.test("refused step-up stops every spend before reserve or LND", async () => {
   for (const body of [
-    { action: "send_onchain", address: ADDR, amountSat: 1000, satPerVbyte: 2, feeLimitSat: 500, requestKey: "key-000001" },
-    { action: "pay_invoice", invoice: INV, feeLimitSat: 10, requestKey: "key-000002" },
+    { action: "send_onchain", address: ADDR, amountSat: 1000, satPerVbyte: 2, feeLimitSat: 500, stepUpCode: "123456", requestKey: "key-000001" },
+    { action: "pay_invoice", invoice: INV, feeLimitSat: 10, stepUpCode: "123456", requestKey: "key-000002" },
   ]) {
     const f = fakeLnd();
     const { d, rpcs, alerts } = deps({ lnd: f.lnd });
-    d.verifyStepUp = rejectAllStepUp;
     const r = await handle(OWNER, "admin", body, d);
     assertEquals(r.status, 401);
     assertEquals(r.body.error, "step-up required");
@@ -83,7 +86,7 @@ Deno.test("default step-up rejects every spend before reserve or LND", async () 
 Deno.test("on-chain spend: reserve -> sendCoins -> finish -> alert", async () => {
   const f = fakeLnd();
   const { d, rpcs, alerts } = deps({ stepUp: true, lnd: f.lnd });
-  const r = await handle(OWNER, "admin", { action: "send_onchain", address: ADDR, amountSat: 1000, satPerVbyte: 2, feeLimitSat: 500, requestKey: "key-000003" }, d);
+  const r = await handle(OWNER, "admin", { action: "send_onchain", address: ADDR, amountSat: 1000, satPerVbyte: 2, feeLimitSat: 500, stepUpCode: "123456", requestKey: "key-000003" }, d);
   assertEquals(r.status, 200);
   assertEquals(rpcs.map((x) => x.fn), ["system_node_withdraw_reserve", "system_node_withdraw_finish"]);
   assertEquals(rpcs[0].args.p_amount_sat, 1000);
@@ -94,24 +97,24 @@ Deno.test("on-chain spend: reserve -> sendCoins -> finish -> alert", async () =>
 
 Deno.test("send-all reserves the confirmed balance", async () => {
   const { d, rpcs } = deps({ stepUp: true });
-  await handle(OWNER, "admin", { action: "send_onchain", address: ADDR, sendAll: true, satPerVbyte: 2, feeLimitSat: 500, requestKey: "key-000004" }, d);
+  await handle(OWNER, "admin", { action: "send_onchain", address: ADDR, sendAll: true, satPerVbyte: 2, feeLimitSat: 500, stepUpCode: "123456", requestKey: "key-000004" }, d);
   assertEquals(rpcs[0].args.p_amount_sat, 40000);
 });
 
 Deno.test("cap / reserve refusal stops before LND spend", async () => {
   const f = fakeLnd();
   const { d } = deps({ stepUp: true, lnd: f.lnd, reserveErr: "daily cap exceeded" });
-  const r = await handle(OWNER, "admin", { action: "pay_invoice", invoice: INV, feeLimitSat: 10, requestKey: "key-000005" }, d);
+  const r = await handle(OWNER, "admin", { action: "pay_invoice", invoice: INV, feeLimitSat: 10, stepUpCode: "123456", requestKey: "key-000005" }, d);
   assertEquals(r.status, 409);
   assertEquals(r.body.error, "daily cap exceeded");
   assert(!f.calls.includes("pay"));
 });
 
 Deno.test("lightning: amount must match invoice; failure marks failed", async () => {
-  assertEquals((await handle(OWNER, "admin", { action: "pay_invoice", invoice: INV, amountSat: 999, feeLimitSat: 10, requestKey: "key-000006" }, deps({ stepUp: true }).d)).status, 400);
+  assertEquals((await handle(OWNER, "admin", { action: "pay_invoice", invoice: INV, amountSat: 999, feeLimitSat: 10, stepUpCode: "123456", requestKey: "key-000006" }, deps({ stepUp: true }).d)).status, 400);
   const f = fakeLnd({ payInvoice: async () => { throw new WithdrawError("payment failed: no_route"); } });
   const { d, rpcs, alerts } = deps({ stepUp: true, lnd: f.lnd });
-  const r = await handle(OWNER, "admin", { action: "pay_invoice", invoice: INV, feeLimitSat: 10, requestKey: "key-000007" }, d);
+  const r = await handle(OWNER, "admin", { action: "pay_invoice", invoice: INV, feeLimitSat: 10, stepUpCode: "123456", requestKey: "key-000007" }, d);
   assertEquals(r.status, 502);
   assertEquals(rpcs[1].args.p_status, "failed");
   assert(alerts[0].startsWith("❌ Node withdraw failed"));
@@ -120,7 +123,7 @@ Deno.test("lightning: amount must match invoice; failure marks failed", async ()
 Deno.test("unknown on-chain outcome leaves the reservation in place", async () => {
   const f = fakeLnd({ sendCoins: async () => { throw new WithdrawError("LND unreachable: TimeoutError"); } });
   const { d, rpcs } = deps({ stepUp: true, lnd: f.lnd });
-  const r = await handle(OWNER, "admin", { action: "send_onchain", address: ADDR, amountSat: 1000, satPerVbyte: 2, feeLimitSat: 500, requestKey: "key-000008" }, d);
+  const r = await handle(OWNER, "admin", { action: "send_onchain", address: ADDR, amountSat: 1000, satPerVbyte: 2, feeLimitSat: 500, stepUpCode: "123456", requestKey: "key-000008" }, d);
   assertEquals(r.status, 502);
   assertEquals(rpcs.map((x) => x.fn), ["system_node_withdraw_reserve"]);
 });
@@ -146,4 +149,73 @@ Deno.test("sendOpsAlert posts to Telegram without logging; settled switch still 
   assertEquals(n, 1);
   assertEquals(urls[0], "https://api.telegram.org/botT/sendMessage");
   assertEquals(await sendSettledAlert("x", env({ ALERT_TELEGRAM_BOT_TOKEN: "T", ALERT_TELEGRAM_CHAT_ID: "1", ALERT_ON_SETTLED: "false" }), f), 0);
+});
+
+// In-memory stand-in for 0113 issue/consume, same rules as the SQL.
+function stepUpDb() {
+  let row: { rh: string; ch: string; attempts: number; used: boolean; exp: number } | null = null;
+  return async (fn: string, a: any) => {
+    if (fn === "system_node_withdraw_stepup_issue") { row = { rh: a.p_request_hash, ch: a.p_code_hash, attempts: 0, used: false, exp: Date.now() + 300000 }; return { data: new Date(row.exp).toISOString(), error: null }; }
+    if (fn === "system_node_withdraw_stepup_consume") {
+      if (!row || row.used || row.exp <= Date.now() || row.attempts >= 5) return { data: false, error: null };
+      if (row.rh !== a.p_request_hash || row.ch !== a.p_code_hash) { if (++row.attempts >= 5) row.used = true; return { data: false, error: null }; }
+      row.used = true; return { data: true, error: null };
+    }
+    return { data: fn === "system_node_withdraw_reserve" ? 9 : true, error: null };
+  };
+}
+
+Deno.test("step-up: code goes to Telegram alert, is bound to the exact spend, works once", async () => {
+  const { d, alerts } = deps();
+  const calls: { fn: string; args: any }[] = [];
+  const db = stepUpDb();
+  d.rpc = (fn, args) => { calls.push({ fn, args }); return db(fn, args); };
+  d.newCode = () => "424242";
+  const spend = { action: "send_onchain", address: ADDR, amountSat: 1000, satPerVbyte: 2, feeLimitSat: 500 };
+  const r = await handle(OWNER, "admin", { action: "stepup_request", request: spend }, d);
+  assertEquals(r.status, 200);
+  assertEquals(r.body.status, "code_sent");
+  assert(!JSON.stringify(r.body).includes("424242"), "code never returned to the browser");
+  assert(alerts[0].includes("424242") && alerts[0].includes("1000 sat"));
+  const issued = calls[0].args;
+  assertEquals(issued.p_request_hash.length, 64);
+  assert(!JSON.stringify(issued).includes("424242"), "only the hash is stored");
+  assertEquals(issued.p_code_hash, await codeHash("424242", issued.p_request_hash, "test-secret"));
+
+  // different amount, address, fee rate or wrong code -> refused
+  for (const bad of [{ amountSat: 1001 }, { satPerVbyte: 3 }, { feeLimitSat: 501 }, { stepUpCode: "000000" }, { stepUpCode: undefined }]) {
+    const x = await handle(OWNER, "admin", { ...spend, stepUpCode: "424242", requestKey: "key-bad-01", ...bad }, d);
+    assertEquals(x.status, 401);
+  }
+  assert(!calls.some((c) => c.fn === "system_node_withdraw_reserve"));
+});
+
+Deno.test("step-up: right code spends once, reuse refused; 5 misses burn it", async () => {
+  const { d } = deps();
+  const db = stepUpDb();
+  const fns: string[] = [];
+  d.rpc = (fn, args) => { fns.push(fn); return db(fn, args); };
+  d.newCode = () => "135790";
+  const spend = { action: "pay_invoice", invoice: INV, feeLimitSat: 10 };
+  await handle(OWNER, "admin", { action: "stepup_request", request: spend }, d);
+  const ok = await handle(OWNER, "admin", { ...spend, stepUpCode: "135790", requestKey: "key-good-01" }, d);
+  assertEquals(ok.status, 200);
+  assert(fns.includes("system_node_withdraw_reserve"));
+  assertEquals((await handle(OWNER, "admin", { ...spend, stepUpCode: "135790", requestKey: "key-good-02" }, d)).status, 401);
+
+  await handle(OWNER, "admin", { action: "stepup_request", request: spend }, d);
+  for (let i = 0; i < 5; i++) await handle(OWNER, "admin", { ...spend, stepUpCode: "999999", requestKey: "key-miss-0" + i }, d);
+  assertEquals((await handle(OWNER, "admin", { ...spend, stepUpCode: "135790", requestKey: "key-good-03" }, d)).status, 401);
+});
+
+Deno.test("step-up request is gated and validated", async () => {
+  const spend = { action: "send_onchain", address: ADDR, amountSat: 1000, satPerVbyte: 2, feeLimitSat: 500 };
+  assertEquals((await handle(OWNER, "admin", { action: "stepup_request", request: spend }, deps({ enabled: false }).d)).status, 403);
+  assertEquals((await handle("other", "admin", { action: "stepup_request", request: spend }, deps().d)).status, 403);
+  assertEquals((await handle(OWNER, "admin", { action: "stepup_request", request: { action: "close_channel" } }, deps().d)).status, 400);
+  assertEquals(canonicalSpend({ ...spend, amountSat: -1 }), null);
+  // canonical form ignores key order and requestKey
+  const a = canonicalSpend({ ...spend, requestKey: "x" })!.text, b = canonicalSpend({ feeLimitSat: 500, satPerVbyte: 2, amountSat: 1000, address: ` ${ADDR} `, action: "send_onchain" })!.text;
+  assertEquals(await requestHash(a), await requestHash(b));
+  for (let i = 0; i < 50; i++) assert(/^[0-9]{6}$/.test(randomCode()));
 });
