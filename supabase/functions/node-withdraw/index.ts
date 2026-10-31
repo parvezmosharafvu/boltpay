@@ -2,7 +2,7 @@
 // node. Behind app_settings.node_withdraw_enabled (default false) and a
 // per-spend step-up code sent to the admin Telegram (0113). Logic: _shared/node_withdraw.ts.
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
-import { sendOpsAlert } from "../_shared/alerts.ts";
+import { sendOpsAlert, sendNodeWithdrawStepup } from "../_shared/alerts.ts";
 import { LndWithdrawClient, withdrawConfig } from "../_shared/lnd_withdraw.ts";
 import { handle } from "../_shared/node_withdraw.ts";
 
@@ -42,7 +42,7 @@ Deno.serve(async (req) => {
   const caller = createClient(SUPABASE_URL, SUPABASE_ANON_KEY, { global: { headers: { Authorization: auth } } });
   const { data: { user } } = await caller.auth.getUser(auth.replace(/^Bearer\s+/i, ""));
   if (!user) return json({ error: "Invalid session" }, 401);
-  const { data: prof } = await admin.from("profiles").select("role").eq("id", user.id).single();
+  const { data: prof } = await admin.from("profiles").select("role, telegram_chat_id").eq("id", user.id).single();
 
   let body: Record<string, unknown> = {};
   try { body = await req.json(); } catch { /* empty */ }
@@ -56,6 +56,7 @@ Deno.serve(async (req) => {
     },
     stepUpSecret: Deno.env.get("NODE_WITHDRAW_STEPUP_SECRET") ?? SERVICE_ROLE_KEY,
     alert: (t) => sendOpsAlert(t),
+    sendStepupCode: (t) => sendNodeWithdrawStepup(t, prof?.telegram_chat_id),
   });
   return json(r.body, r.status);
 });
