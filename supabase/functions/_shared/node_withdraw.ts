@@ -262,6 +262,11 @@ export async function handle(userId: string, role: string | null, body: Record<s
         throw new WithdrawError("On-chain withdrawals paused");
       }
       const r = await lnd.payInvoice(destination, feeLimitSat, invoiceAmt);
+      // A mismatched response must never be finalized under the wrong invoice.
+      // A payment may already have moved; retain the reservation for review.
+      if (r.paymentHashHex.toLowerCase() !== paymentHash) {
+        throw new WithdrawError("LND returned unexpected payment hash");
+      }
       reference = r.paymentHashHex; feeSat = r.feeSat;
     } catch {
       // Even an HTTP error can arrive after LND accepted the payment.
