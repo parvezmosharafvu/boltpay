@@ -84,7 +84,7 @@ const ok = (body: Record<string, unknown>): Result => ({ status: 200, body });
 const err = (status: number, error: string): Result => ({ status, body: { error } });
 
 export const SPEND_ACTIONS = new Set(["send_onchain", "pay_invoice"]);
-const READ_ACTIONS = new Set(["status", "balances", "decode", "estimate", "reconcile"]);
+const READ_ACTIONS = new Set(["status", "balances", "decode", "estimate", "reconcile", "readiness"]);
 
 export function shortDest(d: string): string {
   const s = String(d);
@@ -160,6 +160,38 @@ export async function handle(userId: string, role: string | null, body: Record<s
   if (!lnd) return err(503, "LND withdraw not configured");
 
   try {
+    if (action === "readiness") {
+      // Strictly read-only, owner-only, permitted while withdrawals are OFF.
+      // No OTP, no reservation and NO SendPaymentSync calls.
+      // A historical payment hash is optional; the endpoint cannot prove
+      // SendPaymentSync permission and must report that honestly.
+      const supplied = body.paymentHash;
+      if (supplied !== undefined && (typeof supplied !== "string" || !/^[a-fA-F0-9]{64}$/.test(supplied))) {
+        return err(400, "paymentHash must be a 64-character hex string");
+      }
+      await lnd.assertReady();
+      const balances = await lnd.balances();
+      let tracking: { result: string; paymentStatus?: string; errorClass?: string } =
+        { result: "not_tested" };
+      if (typeof supplied === "string") {
+        try {
+          const tracked = await lnd.trackPayment(supplied.toLowerCase());
+          tracking = { result: "confirmed", paymentStatus: tracked.status };
+        } catch (e) {
+          const status = e instanceof WithdrawError ? e.status : undefined;
+          tracking = { result: "unverified", errorClass:
+            status === 401 || status === 403 ? "authentication_or_permission_denied" :
+            status === 404 ? "payment_not_found_or_unavailable" : "tracking_unavailable" };
+        }
+      }
+      return ok({
+        nodeConnectedAndSynced: true, balances, tracking,
+        sendPaymentPermission: "not_verified",
+        withdrawalsEnabled: enabled,
+        note: "Read-only checks cannot prove outgoing SendPaymentSync permission. No payment sent.",
+      });
+    }
+
     if (action === "reconcile") {
       // Safe with transfers OFF: queries LND and finalizes old reservations only.
       // It NEVER initiates a payment or frees a previously-used hash for reuse.
