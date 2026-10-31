@@ -1152,6 +1152,8 @@ async function doLogin(){
   await refreshAll();
   subscribeToAdminUpdates();
   startAutoRefresh();
+  // Manual login must perform the same owner-only tab initialization as a restored session.
+  nwInit();
 }
 
 async function doLogout(){
