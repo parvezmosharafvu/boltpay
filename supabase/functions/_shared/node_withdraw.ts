@@ -165,7 +165,7 @@ export async function handle(userId: string, role: string | null, body: Record<s
       sendAll = body.sendAll === true;
       if (sendAll) {
         if (body.amountSat !== undefined) return err(400, "amountSat and sendAll are exclusive");
-        amountSat = (await lnd.balances()).onchainConfirmedSat; // reserve the whole balance under the cap
+        amountSat = (await lnd.balances()).onchainConfirmedSat; // reserve the whole confirmed balance
       } else {
         amountSat = int(body.amountSat) ?? 0;
       }
@@ -211,7 +211,7 @@ export async function handle(userId: string, role: string | null, body: Record<s
       return ok({ status: "sent", id, reference, feeSat });
     } catch (e) {
       // Ambiguous for on-chain: LND may have broadcast. Leave the row
-      // 'reserved' (still counts against the cap) unless LND said no.
+      // 'reserved' (so the same requestKey can't send twice) unless LND said no.
       const definite = e instanceof WithdrawError && (e.status ?? 0) >= 400 || String((e as Error).message).startsWith("payment failed");
       if (definite) {
         await d.rpc("system_node_withdraw_finish", { p_id: id, p_status: "failed", p_reference: null, p_fee_sat: null, p_error: (e as Error).message });

@@ -841,7 +841,7 @@ textarea.w-input{ padding:10px 12px !important; }
                                               <div class="nw-stat"><div class="k" data-en="Unconfirmed" data-bn="অনিশ্চিত">Unconfirmed</div><div class="v" id="nwUnconf">—</div></div>
                                               <div class="nw-stat"><div class="k" data-en="Lightning" data-bn="লাইটনিং">Lightning</div><div class="v" id="nwLn">—</div></div>
                                             </div>
-                                            <div class="nw-note" style="margin-top:10px;" data-en="Every send needs a one-time code sent to the admin Telegram. Daily cap and fee limits are enforced on the server." data-bn="প্রতিটি পাঠানোর জন্য অ্যাডমিন টেলিগ্রামে পাঠানো এককালীন কোড লাগবে। দৈনিক সীমা ও ফি সীমা সার্ভারে প্রয়োগ হয়।">Every send needs a one-time code sent to the admin Telegram. Daily cap and fee limits are enforced on the server.</div>
+                                            <div class="nw-note" style="margin-top:10px;" data-en="Every send needs a one-time code sent to the admin Telegram. The maximum fee is enforced on the server; there is no daily limit." data-bn="প্রতিটি পাঠানোর জন্য অ্যাডমিন টেলিগ্রামে পাঠানো এককালীন কোড লাগবে। সর্বোচ্চ ফি সার্ভারে প্রয়োগ হয়; কোনো দৈনিক সীমা নেই।">Every send needs a one-time code sent to the admin Telegram. The maximum fee is enforced on the server; there is no daily limit.</div>
                                           </div>
 
                                           <div class="panel" id="nwOnchainPanel">
@@ -2547,7 +2547,7 @@ function nwReviewOnchain(){
   const amountSat = sendAll ? undefined : nwInt('nwAmt');
   const satPerVbyte = nwInt('nwRate');
   if (!address || (!sendAll && !amountSat) || !satPerVbyte) { showToast(t('Fill in address, amount and fee rate', 'ঠিকানা, পরিমাণ ও ফি রেট দিন'), 'err'); return; }
-  // Fee limit reserved against the daily cap: the estimate scaled to the chosen rate, plus 20%.
+  // Fee limit (checked against node_withdraw_max_fee_sat): the estimate scaled to the chosen rate, plus 20%.
   const est = nwState.estimate;
   const base = est ? Math.ceil(est.feeSat * satPerVbyte / Math.max(1, est.satPerVbyte)) : satPerVbyte * 250;
   const feeLimitSat = Math.ceil(base * 1.2);
