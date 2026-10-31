@@ -2,7 +2,7 @@
 -- used by admin_daily_settled. Read-only; never uses or modifies balances.
 -- Includes historical/deleted payment links and all settled payments,
 -- so the sum of link totals reconciles to the daily settled history.
-create or replace function public.admin_daily_settled_link_details(p_cycle_date date)
+create or replace function admin_daily_settled_link_details(p_cycle_date date)
 returns table (
   link_id uuid,
   slug text,
