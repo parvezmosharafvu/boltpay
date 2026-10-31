@@ -855,6 +855,7 @@ textarea.w-input{ padding:10px 12px !important; }
                                             <div class="nw-note" style="margin-top:6px;" data-en="Link the admin owner account here; no Creator Dashboard is needed. This does not enable withdrawals." data-bn="এখান থেকেই অ্যাডমিন মালিকের অ্যাকাউন্ট যুক্ত করুন; Creator Dashboard লাগবে না। এতে উইথড্র চালু হবে না।">Link the admin owner account here; no Creator Dashboard is needed. This does not enable withdrawals.</div>
                                             <div class="nw-btns">
                                               <button class="btn-sm" type="button" id="nwTgConnectBtn" onclick="nwTgConnect(this)" disabled data-en="Connect Telegram" data-bn="টেলিগ্রাম যুক্ত করুন">Connect Telegram</button>
+                                              <button class="btn-sm" type="button" id="nwTgRepairBtn" onclick="nwTgRepairWebhook(this)" style="display:none;" data-en="Repair Telegram webhook" data-bn="Telegram webhook ঠিক করুন">Repair Telegram webhook</button>
                                               <button class="btn-sm" type="button" onclick="nwTgLoadStatus()" data-en="Refresh Telegram" data-bn="টেলিগ্রাম রিফ্রেশ">Refresh Telegram</button>
                                               <button class="btn-sm" type="button" id="nwTgDisconnectBtn" onclick="nwTgDisconnect(this)" style="display:none;" data-en="Disconnect Telegram" data-bn="টেলিগ্রাম বিচ্ছিন্ন">Disconnect Telegram</button>
                                             </div>
@@ -2549,6 +2550,7 @@ async function nwTgLoadStatus(){
   const status = document.getElementById('nwTgStatus');
   const connect = document.getElementById('nwTgConnectBtn');
   const disconnect = document.getElementById('nwTgDisconnectBtn');
+  const repair = document.getElementById('nwTgRepairBtn');
   const instructions = document.getElementById('nwTgInstructions');
   if (!status) return;
   try {
@@ -2563,6 +2565,7 @@ async function nwTgLoadStatus(){
     if (row.connected === true) {
       status.textContent = t('Telegram connected to this Admin owner account.', 'এই অ্যাডমিন মালিকের Telegram যুক্ত আছে।');
       connect.style.display = 'none'; disconnect.style.display = '';
+      repair.style.display = 'none';
       instructions.style.display = 'none';
       nwTgStopTimers();
       return;
@@ -2570,10 +2573,14 @@ async function nwTgLoadStatus(){
     disconnect.style.display = 'none';
     connect.style.display = '';
     connect.disabled = !nwTgBot || !nwTgWebhookOk;
+    // Keep a safe, user-triggered recovery path where the problem appears.
+    // The existing admin-only endpoint performs setWebhook; no secrets leave it.
+    repair.style.display = nwTgWebhookOk ? 'none' : '';
+    repair.disabled = false;
     status.textContent = !nwTgBot
-      ? t('Bot unavailable. Check Settings > Telegram bot status.', 'Bot পাওয়া যায়নি। Settings > Telegram bot status দেখুন।')
+      ? t('Telegram bot is unavailable. Tap Repair Telegram webhook.', 'Telegram bot পাওয়া যায়নি। Repair Telegram webhook চাপুন।')
       : !nwTgWebhookOk
-        ? t('Bot webhook needs repair in Settings > Telegram bot.', 'Settings > Telegram bot-এ webhook ঠিক করতে হবে।')
+        ? t('Webhook is not pointing to Boltpay. Tap Repair Telegram webhook, then Refresh Telegram.', 'Webhook Boltpay-এ যুক্ত নেই। Repair Telegram webhook, তারপর Refresh Telegram চাপুন।')
         : t('Telegram not connected. Tap Connect Telegram below.', 'Telegram যুক্ত নয়। নিচে Connect Telegram চাপুন।');
 
     const code = String(row.pending_code || '').toUpperCase().replace(/[^A-Z0-9]/g, '');
@@ -2603,8 +2610,47 @@ async function nwTgLoadStatus(){
   } catch {
     status.textContent = t('Could not check Telegram connection. Refresh to retry.', 'Telegram সংযোগ পরীক্ষা করা যায়নি। আবার রিফ্রেশ করুন।');
     connect.disabled = true;
+    repair.style.display = '';
+    repair.disabled = false;
     instructions.style.display = 'none';
     nwTgStopTimers();
+  }
+}
+
+async function nwTgRepairWebhook(btn){
+  // Explicit owner action only; do not register a webhook on page load.
+  // Existing telegram-admin backend checks the signed-in Admin role,
+  // reads the server-only bot token/secret and registers the same webhook
+  // already used by creator payment notifications.
+  btn.disabled = true;
+  const status = document.getElementById('nwTgStatus');
+  try {
+    const { data: { session } } = await window.supabaseClient.auth.getSession();
+    if (!session) throw new Error(t('Sign in again', 'আবার লগইন করুন'));
+    const res = await fetch(window.SUPABASE_URL + '/functions/v1/telegram-admin', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + session.access_token },
+      body: JSON.stringify({ action: 'resync' }),
+    });
+    const data = await res.json();
+    if (!res.ok || data.ok !== true) {
+      throw new Error(String(data.error || t('Webhook repair was rejected', 'Webhook ঠিক করা যায়নি')));
+    }
+    nwTgBot = '';
+    nwTgWebhookOk = false;
+    await nwTgLoadStatus();
+    if (!nwTgWebhookOk) {
+      status.textContent = t('Repair was requested, but the webhook is not healthy yet. Check Settings > Telegram bot.', 'Repair দেওয়া হয়েছে, কিন্তু webhook এখনো ঠিক নয়। Settings > Telegram bot দেখুন।');
+      showToast(t('Telegram webhook not yet healthy', 'Telegram webhook এখনো ঠিক নয়'), 'err');
+    } else {
+      showToast(t('Telegram webhook repaired. Tap Connect Telegram.', 'Telegram webhook ঠিক হয়েছে। Connect Telegram চাপুন।'), 'ok');
+    }
+  } catch (e) {
+    // Do not claim success for a timeout/failed Telegram API response.
+    status.textContent = t('Webhook repair failed: ', 'Webhook ঠিক করা যায়নি: ') + String(e.message || e);
+    showToast(t('Webhook repair failed', 'Webhook ঠিক করা যায়নি'), 'err');
+  } finally {
+    btn.disabled = false;
   }
 }
 
