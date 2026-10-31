@@ -1688,8 +1688,8 @@ function renderPending(){
       <div class="wd-row">
         <div class="wd-top">
           <div>
-            <div class="wd-amt">${Number(w.fee_usd) > 0 ? `<span style="font-size:12px;color:var(--text-faint);">Send · পাঠান</span> ` : ''}$${parseFloat(w.amount_after_fee ?? w.amount_requested).toFixed(2)}</div>
-            ${Number(w.fee_usd) > 0 ? `<div class="wd-meta wd-fee-line">Requested · অনুরোধ $${parseFloat(w.amount_requested).toFixed(2)} − withdraw fee · উইথড্র ফি $${Number(w.fee_usd).toFixed(2)} (${Number(w.fee_percent)}% + $${Number(w.fee_fixed_usd || 0).toFixed(2)})</div>` : (parseFloat(w.amount_after_fee) !== parseFloat(w.amount_requested) ? `<div class="wd-meta">Requested · অনুরোধ $${parseFloat(w.amount_requested).toFixed(2)}</div>` : '')}
+            <div class="wd-amt">${Number(w.fee_usd) > 0 ? `<span style="font-size:12px;color:var(--text-faint);">${wfT('Send', 'পাঠান')}</span> ` : ''}$${parseFloat(w.amount_after_fee ?? w.amount_requested).toFixed(2)}</div>
+            ${Number(w.fee_usd) > 0 ? `<div class="wd-meta wd-fee-line">${wfT('Requested', 'অনুরোধ')} $${parseFloat(w.amount_requested).toFixed(2)} − ${wfT('withdraw fee', 'উইথড্র ফি')} $${Number(w.fee_usd).toFixed(2)} (${Number(w.fee_percent)}% + $${Number(w.fee_fixed_usd || 0).toFixed(2)})</div>` : (parseFloat(w.amount_after_fee) !== parseFloat(w.amount_requested) ? `<div class="wd-meta">${wfT('Requested', 'অনুরোধ')} $${parseFloat(w.amount_requested).toFixed(2)}</div>` : '')}
             <div class="wd-meta">${safeText(who)} · ${safeMethod(w.method)} · ${fmtDate(w.requested_at)}</div>
             <div class="wd-dest" style="font-family:'Geist Mono'; color:var(--amber); font-weight:700;">${escapeHtml(w.destination)}</div>
           </div>
@@ -2388,6 +2388,7 @@ async function saveMarkup(btn){
   markupHint(Number(data));
   showToast('Conversion fee saved · কনভার্সন ফি সংরক্ষিত: ' + Number(data) + '%', 'ok');
 }
+function wfT(en, bn){ return (localStorage.getItem('boltpay_lang') === 'bn') ? bn : en; }
 // 0115: withdraw fee = amount x % + fixed $, charged when a creator withdraws.
 async function loadWithdrawFee(){
   const { data } = await window.supabaseClient.rpc('get_withdraw_fee');
