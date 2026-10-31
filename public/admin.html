@@ -86,6 +86,7 @@ body{ font-family:'Inter',sans-serif; background:var(--bg); color:var(--text); m
 .tabs{ display:flex; gap:8px; margin-bottom:14px; overflow-x:auto; }
 .tab-btn{ flex-shrink:0; background:var(--panel); border:1px solid var(--line); color:var(--text-dim); padding:10px 16px;
   border-radius:11px; font-size:13px; font-weight:600; cursor:pointer; font-family:'Inter'; display:flex; align-items:center; gap:6px; }
+#nwReviewOnchainBtn:disabled,#nwReviewLnBtn:disabled{ opacity:.45 !important; cursor:not-allowed !important; filter:grayscale(.6); }
 .tab-btn.active{ background:rgba(0,214,50,0.10); border-color:rgba(0,214,50,0.35); color:var(--amber); }
 .tab-badge{ background:var(--alert); color:#fff; font-size:10px; font-weight:700; padding:1px 6px; border-radius:999px; display:none; }
 .tab-badge.show{ display:inline-block; }
@@ -2509,9 +2510,10 @@ async function nwCall(action, extra){
 function nwApplyMode(){
   const enabled = nwState.enabled === true;
   document.getElementById('nwMode').textContent = enabled
-    ? t('Transfers enabled — every send still requires Telegram confirmation.', 'পাঠানো চালু — প্রতিবার টেলিগ্রাম নিশ্চিতকরণ লাগবে।')
+    ? t('Lightning sends need Telegram confirmation. On-chain sends are paused until an enforceable total fee cap is available.', 'লাইটনিং পেমেন্টে টেলিগ্রাম নিশ্চিতকরণ লাগবে। নির্দিষ্ট মোট ফি-সীমা কার্যকর না হওয়া পর্যন্ত অন-চেইন পাঠানো বন্ধ।')
     : t('Transfers OFF — balance, invoice decoding and fee estimates only.', 'পাঠানো বন্ধ — শুধু ব্যালেন্স, ইনভয়েস ডিকোড ও ফি অনুমান।');
-  document.getElementById('nwReviewOnchainBtn').disabled = !enabled;
+  // LND SendCoins has no absolute on-chain fee ceiling. Fail closed in both UI and server.
+  document.getElementById('nwReviewOnchainBtn').disabled = true;
   document.getElementById('nwReviewLnBtn').disabled = !enabled;
   if (!enabled) {
     nwState.pending = null;
@@ -2575,6 +2577,8 @@ async function nwEstimate(btn){
   finally { btn.disabled = false; }
 }
 function nwReviewOnchain(){
+  showToast(t('On-chain sends paused until a hard fee cap is available', 'মোট ফি-সীমা নিশ্চিত না হওয়া পর্যন্ত অন-চেইন পাঠানো বন্ধ'), 'err');
+  return;
   if (!nwState.enabled) { showToast(t('Transfers are OFF', 'পাঠানো বন্ধ আছে'), 'err'); return; }
   const address = document.getElementById('nwAddr').value.trim();
   const sendAll = document.getElementById('nwAll').checked;
