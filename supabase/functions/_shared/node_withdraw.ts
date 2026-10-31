@@ -3,10 +3,14 @@
 //
 // Read actions:  balances, decode, estimate
 // Spend actions: send_onchain, pay_invoice
-//   flag + owner -> fresh step-up token -> system_node_withdraw_reserve
+//   flag + owner -> step-up code -> system_node_withdraw_reserve
 //   -> LND -> system_node_withdraw_finish -> ops alert.
-// Step-up is not built yet, so the default verifier rejects every spend
-// with 'step-up required' before anything is reserved or sent.
+// Step-up: 'stepup_request' with { request: <the spend body> } makes a
+// random 6-digit code, sends it to the admin Telegram, and stores only
+// HMAC(code, requestHash) (0113: 5 min, 5 attempts, single use).
+// requestHash = SHA-256 of the canonical spend, so the code is bound to the
+// exact action, destination, amount, fee rate and fee limit. A spend must
+// carry stepUpCode; any mismatch is refused before reserve or LND.
 //
 // No channel, peer or stop calls (see lnd_withdraw.ts). Never logs or
 // returns secrets; alerts carry only a shortened destination.
@@ -28,19 +32,56 @@ export interface Deps {
   rpc: Rpc;                                       // service-role client
   setting: (key: string) => Promise<unknown>;     // app_settings value (parsed jsonb)
   lnd: () => Promise<WithdrawLnd | null>;         // null = not configured
-  verifyStepUp: (userId: string, token: unknown) => Promise<boolean>;
+  stepUpSecret: string;                           // server-only HMAC key for code hashes
   alert: (text: string) => Promise<unknown>;
+  newCode?: () => string;                         // test hook
 }
 
-/** Until step-up exists every spend is refused. */
-export const rejectAllStepUp = (_u: string, _t: unknown) => Promise.resolve(false);
+const hex = (b: ArrayBuffer) => [...new Uint8Array(b)].map((x) => x.toString(16).padStart(2, "0")).join("");
+const enc = new TextEncoder();
+
+/** Canonical spend: fixed key order, normalised values. null = malformed. */
+export function canonicalSpend(b: Record<string, unknown>): { text: string; summary: string } | null {
+  const num = (v: unknown) => (v === undefined || v === null ? null : typeof v === "number" && Number.isSafeInteger(v) && v >= 0 ? v : NaN);
+  const feeLimitSat = num(b.feeLimitSat), amountSat = num(b.amountSat);
+  if (feeLimitSat === null || Number.isNaN(feeLimitSat) || Number.isNaN(amountSat)) return null;
+  if (b.action === "send_onchain") {
+    const address = String(b.address ?? "").trim();
+    const satPerVbyte = num(b.satPerVbyte), sendAll = b.sendAll === true;
+    if (!address || !satPerVbyte || Number.isNaN(satPerVbyte)) return null;
+    const c = { action: "send_onchain", address, amountSat: sendAll ? null : amountSat, sendAll, satPerVbyte, feeLimitSat };
+    return { text: JSON.stringify(c), summary: `${sendAll ? "ALL on-chain" : `${amountSat} sat on-chain`} to ${shortDest(address)}, ${satPerVbyte} sat/vB, fee limit ${feeLimitSat} sat` };
+  }
+  if (b.action === "pay_invoice") {
+    const invoice = normalizeInvoice(String(b.invoice ?? ""));
+    if (!invoice) return null;
+    const c = { action: "pay_invoice", invoice, amountSat, feeLimitSat };
+    return { text: JSON.stringify(c), summary: `Lightning ${amountSat ?? "invoice amount"}${amountSat ? " sat" : ""} to ${shortDest(invoice)}, fee limit ${feeLimitSat} sat` };
+  }
+  return null;
+}
+
+export async function requestHash(text: string): Promise<string> {
+  return hex(await crypto.subtle.digest("SHA-256", enc.encode(text)));
+}
+
+export async function codeHash(code: string, reqHash: string, secret: string): Promise<string> {
+  const k = await crypto.subtle.importKey("raw", enc.encode(secret), { name: "HMAC", hash: "SHA-256" }, false, ["sign"]);
+  return hex(await crypto.subtle.sign("HMAC", k, enc.encode(`${code}:${reqHash}`)));
+}
+
+export function randomCode(): string {
+  // rejection sampling to avoid modulo bias
+  const a = new Uint32Array(1);
+  for (;;) { crypto.getRandomValues(a); if (a[0] < 4294000000) return String(a[0] % 1000000).padStart(6, "0"); }
+}
 
 export interface Result { status: number; body: Record<string, unknown> }
 const ok = (body: Record<string, unknown>): Result => ({ status: 200, body });
 const err = (status: number, error: string): Result => ({ status, body: { error } });
 
 export const SPEND_ACTIONS = new Set(["send_onchain", "pay_invoice"]);
-const READ_ACTIONS = new Set(["balances", "decode", "estimate"]);
+const READ_ACTIONS = new Set(["balances", "decode", "estimate", "stepup_request"]);
 
 export function shortDest(d: string): string {
   const s = String(d);
@@ -58,9 +99,33 @@ export async function handle(userId: string, role: string | null, body: Record<s
   const owner = await d.setting("node_withdraw_owner_id");
   if (role !== "admin" || typeof owner !== "string" || owner !== userId) return err(403, "Not authorized");
 
+  if (action === "stepup_request") {
+    const req = (body.request ?? {}) as Record<string, unknown>;
+    const c = canonicalSpend(req);
+    if (!c) return err(400, "bad spend request");
+    const rh = await requestHash(c.text);
+    const code = (d.newCode ?? randomCode)();
+    const { data: exp, error } = await d.rpc("system_node_withdraw_stepup_issue", {
+      p_actor: userId, p_request_hash: rh, p_code_hash: await codeHash(code, rh, d.stepUpSecret),
+    });
+    if (error) return err(409, error.message ?? "step-up failed");
+    await d.alert(`🔐 Node withdraw code ${code} (5 min, one use)\n${c.summary}\nIf this was not you, turn node_withdraw_enabled off.`);
+    return ok({ status: "code_sent", expiresAt: exp });
+  }
+
   if (SPEND_ACTIONS.has(action)) {
-    if (!(await d.verifyStepUp(userId, body.stepUpToken))) {
-      await d.alert(`⚠️ Node withdraw ${action} refused: step-up required`);
+    const c = canonicalSpend(body);
+    const code = String(body.stepUpCode ?? "");
+    let passed = false;
+    if (c && /^[0-9]{6}$/.test(code)) {
+      const rh = await requestHash(c.text);
+      const { data, error } = await d.rpc("system_node_withdraw_stepup_consume", {
+        p_actor: userId, p_request_hash: rh, p_code_hash: await codeHash(code, rh, d.stepUpSecret),
+      });
+      passed = !error && data === true;
+    }
+    if (!passed) {
+      await d.alert(`⚠️ Node withdraw ${action} refused: step-up code missing, wrong, expired or for a different request`);
       return err(401, "step-up required");
     }
   }

@@ -1,10 +1,10 @@
 // node-withdraw: owner-only on-chain sends and Lightning payments from the
 // node. Behind app_settings.node_withdraw_enabled (default false) and a
-// step-up check that, for now, refuses every spend. Logic: _shared/node_withdraw.ts.
+// per-spend step-up code sent to the admin Telegram (0113). Logic: _shared/node_withdraw.ts.
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 import { sendOpsAlert } from "../_shared/alerts.ts";
 import { LndWithdrawClient, withdrawConfig } from "../_shared/lnd_withdraw.ts";
-import { handle, rejectAllStepUp } from "../_shared/node_withdraw.ts";
+import { handle } from "../_shared/node_withdraw.ts";
 
 const SUPABASE_URL = Deno.env.get("SUPABASE_URL")!;
 const SUPABASE_ANON_KEY = Deno.env.get("SUPABASE_ANON_KEY")!;
@@ -47,7 +47,7 @@ Deno.serve(async (req) => {
       const cfg = await withdrawConfig(admin);
       return cfg ? new LndWithdrawClient(cfg) : null;
     },
-    verifyStepUp: rejectAllStepUp,
+    stepUpSecret: Deno.env.get("NODE_WITHDRAW_STEPUP_SECRET") ?? SERVICE_ROLE_KEY,
     alert: (t) => sendOpsAlert(t),
   });
   return json(r.body, r.status);
