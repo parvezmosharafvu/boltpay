@@ -5,7 +5,7 @@
 //
 // Secrets (Edge Function env, or Supabase Vault 'lnd_rest_url' /
 // 'lnd_withdraw_macaroon' via the service-role-only RPC
-// system_lnd_withdraw_config from migration 0111):
+// system_lnd_withdraw_config from migration 0112):
 //   LND_REST_URL            https base URL of the LND REST proxy
 //   LND_WITHDRAW_MACAROON   hex, URI-scoped macaroon (never admin.macaroon),
 //                           baked with exactly WITHDRAW_MACAROON_URIS below:

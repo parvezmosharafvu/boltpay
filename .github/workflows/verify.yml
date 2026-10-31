@@ -147,7 +147,7 @@ jobs:
           PGPASSWORD: postgres
         run: psql -h localhost -U postgres -v ON_ERROR_STOP=1 -f ci/daily_run_report_regression.sql
 
-      - name: Runtime regression — node withdraw (0111)
+      - name: Runtime regression — node withdraw (0112)
         env:
           PGPASSWORD: postgres
         run: psql -h localhost -U postgres -v ON_ERROR_STOP=1 -f ci/node_withdraw_regression.sql

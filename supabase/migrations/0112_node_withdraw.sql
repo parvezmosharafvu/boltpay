@@ -1,4 +1,4 @@
--- 0111: Owner-only node withdrawal — schema, flags and guard functions.
+-- 0112: Owner-only node withdrawal — schema, flags and guard functions.
 --
 -- Nothing here moves money. This adds the bookkeeping the future
 -- node-withdraw edge function will call around its LND request:
