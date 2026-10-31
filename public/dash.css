@@ -20,10 +20,10 @@ td, th{ overflow-wrap:anywhere; }
   display:inline-flex; align-items:center; justify-content:center;
   height:32px; min-width:44px; padding:0 10px; border-radius:999px;
   border:1px solid var(--line-strong, #3D3726); background:transparent;
-  color:var(--amber, #FFB800); font:700 12px/1 'Inter', system-ui, sans-serif;
+  color:var(--amber, #00D632); font:700 12px/1 'Inter', system-ui, sans-serif;
   letter-spacing:.04em; cursor:pointer; flex-shrink:0;
 }
-.lang-btn:hover{ background:var(--accent-wash, rgba(255,184,0,.1)); border-color:var(--amber, #FFB800); }
+.lang-btn:hover{ background:var(--accent-wash, rgba(0,214,50,.1)); border-color:var(--amber, #00D632); }
 
 @media (max-width:480px){
   .panel{ padding-left:14px; padding-right:14px; }
@@ -47,16 +47,16 @@ td, th{ overflow-wrap:anywhere; }
   background-position:calc(100% - 17px) 50%, calc(100% - 12px) 50%; background-size:5px 5px; background-repeat:no-repeat; padding-right:30px;
 }
 .panel input:not([class]):focus, .panel select:not([class]):focus, .panel textarea:not([class]):focus, .panel .w-select:focus{
-  border-color:var(--amber, #FFB800); box-shadow:0 0 0 3px var(--accent-ring, rgba(255,184,0,.3));
+  border-color:var(--amber, #00D632); box-shadow:0 0 0 3px var(--accent-ring, rgba(0,214,50,.3));
 }
 .panel input::placeholder{ color:var(--text-faint); }
 .btn-sm{
   display:inline-flex; align-items:center; justify-content:center; gap:6px;
   min-height:40px; padding:0 14px; border-radius:10px; cursor:pointer;
-  background:var(--amber, #FFB800); color:var(--on-accent, #2A1F00); border:none;
+  background:var(--amber, #00D632); color:var(--on-accent, #2A1F00); border:none;
   font:600 13px/1.2 'Inter', system-ui, sans-serif; white-space:nowrap; -webkit-appearance:none;
 }
-.btn-sm:hover{ background:var(--amber-600, #E0A200); }
+.btn-sm:hover{ background:var(--amber-600, #00B82B); }
 .btn-sm:disabled{ opacity:.55; cursor:default; }
 .panel-head .btn-sm{ min-height:34px; padding:0 12px; }
 .panel small{ display:block; margin-top:8px; color:var(--text-faint); font-size:11px; opacity:1 !important; }
