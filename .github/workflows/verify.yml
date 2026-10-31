@@ -161,6 +161,11 @@ jobs:
           PGPASSWORD: postgres
         run: psql -h localhost -U postgres -v ON_ERROR_STOP=1 -f ci/daily_run_report_regression.sql
 
+      - name: Runtime regression — daily settled link breakdown, admin only (0121)
+        env:
+          PGPASSWORD: postgres
+        run: psql -h localhost -U postgres -v ON_ERROR_STOP=1 -f ci/daily_settled_link_details_regression.sql
+
       - name: Runtime regression — node withdraw, no daily cap (0112, 0118)
         env:
           PGPASSWORD: postgres

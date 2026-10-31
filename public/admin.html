@@ -223,6 +223,16 @@ input:checked + .slider:before{ background:var(--ok); transform:translate(20px,-
 
 .earn-row{ display:flex; align-items:center; gap:12px; padding:10px 0; border-bottom:1px solid var(--line); }
 .earn-row:last-child{ border-bottom:none; }
+.earn-day-button{ display:flex; width:100%; color:inherit; background:none; border:0; text-align:left; font:inherit; cursor:pointer; }
+.earn-day-button:hover{ background:rgba(127,127,127,.06); }
+.earn-day-button:focus-visible{ outline:2px solid var(--ok); outline-offset:2px; }
+.earn-day-details{ margin:0 0 12px; padding:12px; border:1px solid var(--line); border-radius:12px; background:var(--panel-hi); }
+.earn-link-item{ border-top:1px solid var(--line); padding:9px 0; }
+.earn-link-item summary{ display:flex; justify-content:space-between; gap:10px; cursor:pointer; }
+.earn-link-label{ overflow-wrap:anywhere; font-size:13px; }
+.earn-link-total{ white-space:nowrap; font-weight:bold; font-family:'Geist Mono',monospace; }
+.earn-payment-amount{ display:flex; justify-content:space-between; gap:10px; padding:6px 8px; border-bottom:1px solid var(--line); font-size:12px; }
+
 .earn-date{ font-size:12px; font-family:'Geist Mono'; color:var(--text-dim); width:76px; flex-shrink:0; }
 .earn-bar-wrap{ flex:1; background:var(--panel-hi); border-radius:6px; overflow:hidden; height:22px; position:relative; }
 .earn-bar{ height:100%; background:linear-gradient(90deg,var(--violet),var(--amber)); border-radius:6px; }
@@ -2062,25 +2072,71 @@ function tickPaymentTimers(){
 }
 
 function renderEarnings(rows){
-  const c = document.getElementById('earningsList');
-  if (!rows.length){ c.innerHTML = '<div class="empty-state">No earnings history yet</div>'; return; }
-  const maxVal = Math.max(...rows.map(r => parseFloat(r.settled || 0)), 1);
-  c.innerHTML = rows.map(r => {
-    const pct = Math.max(4, (parseFloat(r.settled || 0) / maxVal) * 100);
-    // cycle_start is the actual 7pm Dhaka boundary the day began at — use
-    // it for the label rather than cycle_date, which is a plain calendar
-    // date and would misdescribe the boundary by a few hours near midnight.
-    const label = new Date(r.cycle_start).toLocaleDateString([], { month:'short', day:'numeric' });
-    return `
-      <div class="earn-row">
-        <div class="earn-date">${label}</div>
-        <div class="earn-bar-wrap"><div class="earn-bar" style="width:${pct}%;"></div></div>
-        <div class="earn-amt-wrap">
-          <div class="earn-amt">$${parseFloat(r.settled || 0).toFixed(2)}</div>
-          <div class="earn-profit">+$${parseFloat(r.admin_profit || 0).toFixed(2)} profit</div>
-        </div>
-      </div>`;
+  const root = document.getElementById('earningsList');
+  if (!rows.length) { root.innerHTML = '<div class="empty-state">No earnings history yet</div>'; return; }
+  const max = Math.max(1, ...rows.map(r => Number(r.settled || 0)));
+  root.innerHTML = rows.map(r => {
+    const day = String(r.cycle_date || '');
+    if (!/^\d{4}-\d{2}-\d{2}$/.test(day)) return '';
+    const value = Number(r.settled || 0), profit = Number(r.admin_profit || 0);
+    const label = new Date(day + 'T12:00:00Z').toLocaleDateString('en-US', { timeZone:'UTC', month:'short', day:'numeric' });
+    const pct = Math.max(4, value / max * 100);
+    return '<button type="button" class="earn-row earn-day-button" data-day="' + day +
+      '" data-total="' + value.toFixed(2) + '" aria-expanded="false" aria-controls="earn-detail-' + day +
+      '" onclick="toggleDailySettledLinks(this)"><span class="earn-date">' + label + ' ▾</span>' +
+      '<span class="earn-bar-wrap"><span class="earn-bar" style="display:block;width:' + pct + '%"></span></span>' +
+      '<span class="earn-amt-wrap"><span class="earn-amt">$' + value.toFixed(2) + '</span>' +
+      '<span class="earn-profit">+$' + profit.toFixed(2) + ' profit</span></span></button>' +
+      '<div id="earn-detail-' + day + '" class="earn-day-details" hidden></div>';
   }).join('');
+}
+
+async function toggleDailySettledLinks(button){
+  const day = button.dataset.day;
+  if (!/^\d{4}-\d{2}-\d{2}$/.test(day)) return;
+  const panel = document.getElementById('earn-detail-' + day);
+  if (!panel) return;
+  if (!panel.hidden) { panel.hidden = true; button.setAttribute('aria-expanded','false'); return; }
+  document.querySelectorAll('#earningsList .earn-day-details').forEach(x => { x.hidden = true; });
+  document.querySelectorAll('#earningsList .earn-day-button').forEach(x => x.setAttribute('aria-expanded','false'));
+  panel.hidden = false;
+  button.setAttribute('aria-expanded','true');
+  if (panel.dataset.loaded === 'true') return;
+  panel.textContent = t('Loading payment details…','পেমেন্টের বিস্তারিত লোড হচ্ছে…');
+  button.disabled = true;
+  try {
+    const { data, error } = await window.supabaseClient.rpc('admin_daily_settled_link_details',{ p_cycle_date:day });
+    if (error) throw new Error(error.message);
+    const groups = Array.isArray(data) ? data : [];
+    const fmt = n => '$' + Number(n || 0).toFixed(2);
+    const total = groups.reduce((a,x) => a + Number(x.total_settled || 0),0);
+    const count = groups.reduce((a,x) => a + Number(x.payment_count || 0),0);
+    const mismatch = Math.abs(total - Number(button.dataset.total || 0)) > .005;
+    const alert = mismatch ? '<p style="color:var(--alert)">' +
+      t('Total changed since loading. Refresh Earnings.','মোট হিসাব পরিবর্তিত হয়েছে। Earnings রিফ্রেশ করুন।') + '</p>' : '';
+    const html = groups.map(g => {
+      const rows = Array.isArray(g.payments) ? g.payments : [];
+      const details = rows.map(p => {
+        const date = new Date(p.settled_at);
+        const stamp = Number.isNaN(date.getTime()) ? '—' : date.toLocaleString('en-GB',{
+          timeZone:'Asia/Dhaka',month:'short',day:'numeric',hour:'2-digit',minute:'2-digit',hour12:false
+        });
+        return '<div class="earn-payment-amount"><span>' + escAcc(stamp) + '</span><b>' + fmt(p.amount) + '</b></div>';
+      }).join('');
+      return '<details class="earn-link-item"><summary><span class="earn-link-label"><b>' +
+        escAcc(g.link_name || g.slug || 'Unlinked') + '</b><br><small>/' + escAcc(g.slug || 'unlinked') +
+        ' · ' + Number(g.payment_count || 0) + ' payments · ' +
+        t('tap for amounts','টাকার তালিকা দেখতে চাপুন') + '</small></span>' +
+        '<span class="earn-link-total">' + fmt(g.total_settled) + ' ▾</span></summary>' + details + '</details>';
+    }).join('');
+    panel.innerHTML = alert + '<div style="font-size:12px;margin-bottom:10px"><b>' +
+      escAcc(day) + '</b> · 7pm–7pm (Asia/Dhaka)<div>' + groups.length + ' links · ' +
+      count + ' payments · <b>' + fmt(total) + '</b></div></div>' +
+      (html || '<div class="empty-state">No settled payments for this day.</div>');
+    panel.dataset.loaded = 'true';
+  } catch (e) {
+    panel.textContent = t('Could not load details: ','বিস্তারিত লোড হয়নি: ') + String(e.message || e);
+  } finally { button.disabled = false; }
 }
 
 async function handleAction(withdrawalId, action, btnEl){
