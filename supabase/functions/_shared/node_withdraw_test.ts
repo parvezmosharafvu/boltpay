@@ -1,6 +1,6 @@
 import { assert, assertEquals } from "jsr:@std/assert@1";
 import { canonicalSpend, codeHash, handle, randomCode, requestHash, shortDest, type Deps, type WithdrawLnd } from "./node_withdraw.ts";
-import { sendOpsAlert, sendSettledAlert } from "./alerts.ts";
+import { sendNodeWithdrawStepup, sendOpsAlert, sendSettledAlert } from "./alerts.ts";
 import { LndWithdrawClient, WithdrawError } from "./lnd_withdraw.ts";
 
 const OWNER = "44444444-4444-4444-4444-444444444444";
@@ -22,10 +22,11 @@ function fakeLnd(over: Partial<WithdrawLnd> = {}) {
   return { lnd, calls };
 }
 
-function deps(o: { enabled?: unknown; owner?: unknown; stepUp?: boolean; lnd?: WithdrawLnd | null; reserveErr?: string; finishErr?: string; finishReturn?: boolean } = {}) {
+function deps(o: { enabled?: unknown; owner?: unknown; stepUp?: boolean; lnd?: WithdrawLnd | null; reserveErr?: string; finishErr?: string; finishReturn?: boolean; telegramDelivery?: boolean } = {}) {
   const rpcs: { fn: string; args: any }[] = [];
   const stepRpcs: { fn: string; args: any }[] = [];
   const alerts: string[] = [];
+  const stepupMessages: string[] = [];
   const d: Deps = {
     rpc: (fn, args) => {
       if (fn.startsWith("system_node_withdraw_stepup_")) {
@@ -41,8 +42,9 @@ function deps(o: { enabled?: unknown; owner?: unknown; stepUp?: boolean; lnd?: W
     lnd: async () => (o.lnd === undefined ? fakeLnd().lnd : o.lnd),
     stepUpSecret: "test-secret",
     alert: async (t) => { alerts.push(t); },
+    sendStepupCode: async (t) => { stepupMessages.push(t); return o.telegramDelivery ?? true; },
   };
-  return { d, rpcs, stepRpcs, alerts };
+  return { d, rpcs, stepRpcs, alerts, stepupMessages };
 }
 
 Deno.test("flag off permits owner reads but never codes or spends", async () => {
@@ -202,8 +204,8 @@ function stepUpDb() {
   };
 }
 
-Deno.test("step-up: code goes to Telegram alert, is bound to the exact spend, works once", async () => {
-  const { d, alerts } = deps();
+Deno.test("step-up: code goes to confirmed owner Telegram only, bound to spend and used once", async () => {
+  const { d, alerts, stepupMessages } = deps();
   const calls: { fn: string; args: any }[] = [];
   const db = stepUpDb();
   d.rpc = (fn, args) => { calls.push({ fn, args }); return db(fn, args); };
@@ -213,7 +215,8 @@ Deno.test("step-up: code goes to Telegram alert, is bound to the exact spend, wo
   assertEquals(r.status, 200);
   assertEquals(r.body.status, "code_sent");
   assert(!JSON.stringify(r.body).includes("424242"), "code never returned to the browser");
-  assert(alerts[0].includes("424242") && alerts[0].includes("1000 sat"));
+  assert(stepupMessages[0].includes("424242") && stepupMessages[0].includes("1000 sat"));
+  assert(!alerts.join(" ").includes("424242"), "ops/webhook must never see verification codes");
   const issued = calls[0].args;
   assertEquals(issued.p_request_hash.length, 64);
   assert(!JSON.stringify(issued).includes("424242"), "only the hash is stored");
@@ -225,6 +228,46 @@ Deno.test("step-up: code goes to Telegram alert, is bound to the exact spend, wo
     assertEquals(x.status, 401);
   }
   assert(!calls.some((c) => c.fn === "system_node_withdraw_reserve"));
+});
+
+Deno.test("step-up delivery failure is fail-closed and never claims code_sent", async () => {
+  const { d, rpcs, stepRpcs, alerts, stepupMessages } = deps({ telegramDelivery: false });
+  d.newCode = () => "424242";
+  const spend = { action: "pay_invoice", invoice: INV, feeLimitSat: 10 };
+  const res = await handle(OWNER, "admin", { action: "stepup_request", request: spend }, d);
+  assertEquals(res.status, 503);
+  assert(String(res.body.error).includes("Telegram code delivery not confirmed"));
+  assert(!JSON.stringify(res.body).includes("424242"));
+  assertEquals(stepRpcs.map(x => x.fn), ["system_node_withdraw_stepup_issue"]);
+  assertEquals(rpcs, []);
+  assertEquals(alerts, []);
+  assertEquals(stepupMessages.length, 1);
+  d.sendStepupCode = async () => { throw new Error("Telegram offline"); };
+  const thrown = await handle(OWNER, "admin", { action: "stepup_request", request: spend }, d);
+  assertEquals(thrown.status, 503);
+});
+
+Deno.test("withdrawal OTP requires linked owner Telegram and explicit API acknowledgement", async () => {
+  const got: { url: string; body: any }[] = [];
+  const env = (values: Record<string, string>) => (k: string) => values[k];
+  const good = { ALERT_TELEGRAM_BOT_TOKEN: "TEST_TOKEN", ALERT_WEBHOOK_URL: "https://webhook.test" };
+  const f = (async (url: string, opts: RequestInit) => {
+    got.push({ url, body: JSON.parse(String(opts.body)) });
+    return new Response(JSON.stringify({ ok: true, result: { message_id: 1 } }), { status: 200 });
+  }) as typeof fetch;
+  assertEquals(await sendNodeWithdrawStepup("test code", undefined, env(good), f), false);
+  assertEquals(await sendNodeWithdrawStepup("test code", "owner-chat", env(good), f), true);
+  assertEquals(got.length, 1);
+  assertEquals(got[0].url, "https://api.telegram.org/botTEST_TOKEN/sendMessage");
+  assertEquals(got[0].body.chat_id, "owner-chat");
+  assertEquals(got[0].body.text, "test code");
+  const rejected = (async () => new Response(JSON.stringify({ ok: false }), { status: 200 })) as typeof fetch;
+  const error = (async () => new Response(JSON.stringify({ ok: false }), { status: 403 })) as typeof fetch;
+  const network = (async () => { throw new Error("network"); }) as typeof fetch;
+  assertEquals(await sendNodeWithdrawStepup("x", "owner-chat", env(good), rejected), false);
+  assertEquals(await sendNodeWithdrawStepup("x", "owner-chat", env(good), error), false);
+  assertEquals(await sendNodeWithdrawStepup("x", "owner-chat", env(good), network), false);
+  assertEquals(await sendNodeWithdrawStepup("x", "owner-chat", env({}), f), false);
 });
 
 Deno.test("step-up: right code spends once, reuse refused; 5 misses burn it", async () => {
