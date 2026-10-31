@@ -1,7 +1,7 @@
 // Owner-only node withdrawal: request handling for the node-withdraw
 // edge function, kept here so it can be unit-tested with mocks.
 //
-// Read actions:  balances, decode, estimate
+// Read actions:  status, balances, decode, estimate (owner only, even with withdrawals OFF)
 // Spend actions: send_onchain, pay_invoice
 //   flag + owner -> step-up code -> system_node_withdraw_reserve
 //   -> LND -> system_node_withdraw_finish -> ops alert.
@@ -81,7 +81,7 @@ const ok = (body: Record<string, unknown>): Result => ({ status: 200, body });
 const err = (status: number, error: string): Result => ({ status, body: { error } });
 
 export const SPEND_ACTIONS = new Set(["send_onchain", "pay_invoice"]);
-const READ_ACTIONS = new Set(["balances", "decode", "estimate", "stepup_request"]);
+const READ_ACTIONS = new Set(["status", "balances", "decode", "estimate"]);
 
 export function shortDest(d: string): string {
   const s = String(d);
@@ -93,11 +93,19 @@ const int = (v: unknown) => (typeof v === "number" && Number.isSafeInteger(v) &&
 /** Caller is already authenticated (verify_jwt + getUser) and has profile role. */
 export async function handle(userId: string, role: string | null, body: Record<string, unknown>, d: Deps): Promise<Result> {
   const action = String(body.action ?? "");
-  if (!READ_ACTIONS.has(action) && !SPEND_ACTIONS.has(action)) return err(400, "unknown action");
+  if (!READ_ACTIONS.has(action) && !SPEND_ACTIONS.has(action) && action !== "stepup_request") return err(400, "unknown action");
 
-  if ((await d.setting("node_withdraw_enabled")) !== true) return err(403, "node withdraw is disabled");
+  // Authentication/authorization always comes before status or LND access.
   const owner = await d.setting("node_withdraw_owner_id");
   if (role !== "admin" || typeof owner !== "string" || owner !== userId) return err(403, "Not authorized");
+
+  // A disabled withdrawal switch must never authorize spend or issue a code.
+  // Owner-only inspection stays available so setup can be checked safely.
+  const enabled = (await d.setting("node_withdraw_enabled")) === true;
+  if (action === "status") return ok({ enabled });
+  if (!enabled && (SPEND_ACTIONS.has(action) || action === "stepup_request")) {
+    return err(403, "node withdraw is disabled");
+  }
 
   if (action === "stepup_request") {
     const req = (body.request ?? {}) as Record<string, unknown>;
