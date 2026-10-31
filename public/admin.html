@@ -836,6 +836,7 @@ textarea.w-input{ padding:10px 12px !important; }
                                               <div class="panel-title" data-en="Node balances" data-bn="নোড ব্যালেন্স">Node balances</div>
                                               <button class="btn-sm" onclick="nwLoadBalances()" data-en="Refresh" data-bn="রিফ্রেশ">Refresh</button>
                                             </div>
+                                            <div class="nw-note" id="nwMode" role="status" style="margin-bottom:12px;">Checking withdrawal status…</div>
                                             <div class="nw-grid">
                                               <div class="nw-stat"><div class="k" data-en="On-chain" data-bn="অন-চেইন">On-chain</div><div class="v" id="nwOnchain">—</div></div>
                                               <div class="nw-stat"><div class="k" data-en="Unconfirmed" data-bn="অনিশ্চিত">Unconfirmed</div><div class="v" id="nwUnconf">—</div></div>
@@ -854,7 +855,7 @@ textarea.w-input{ padding:10px 12px !important; }
                                               <button class="btn-sm" style="margin-bottom:12px;" onclick="nwEstimate(this)" data-en="Estimate fee" data-bn="ফি অনুমান">Estimate fee</button>
                                             </div>
                                             <div class="nw-note" id="nwEstOut"></div>
-                                            <button class="btn-primary" style="margin-top:12px;" onclick="nwReviewOnchain()" data-en="Review send" data-bn="পাঠানো যাচাই করুন">Review send</button>
+                                            <button class="btn-primary" id="nwReviewOnchainBtn" style="margin-top:12px;" onclick="nwReviewOnchain()" disabled data-en="Review send" data-bn="পাঠানো যাচাই করুন">Review send</button>
                                           </div>
 
                                           <div class="panel" id="nwLnPanel">
@@ -870,7 +871,7 @@ textarea.w-input{ padding:10px 12px !important; }
                                               </div>
                                               <div class="field" id="nwLnAmtField" style="display:none;"><label data-en="Amount (sat) — invoice has none" data-bn="পরিমাণ (স্যাট) — ইনভয়েসে নেই">Amount (sat) — invoice has none</label><input type="number" id="nwLnAmt" min="1" step="1" inputmode="numeric"></div>
                                               <div class="field"><label data-en="Max routing fee (sat)" data-bn="সর্বোচ্চ রাউটিং ফি (স্যাট)">Max routing fee (sat)</label><input type="number" id="nwLnFee" min="0" step="1" inputmode="numeric"></div>
-                                              <button class="btn-primary" onclick="nwReviewLn()" data-en="Review payment" data-bn="পেমেন্ট যাচাই করুন">Review payment</button>
+                                              <button class="btn-primary" id="nwReviewLnBtn" onclick="nwReviewLn()" disabled data-en="Review payment" data-bn="পেমেন্ট যাচাই করুন">Review payment</button>
                                             </div>
                                           </div>
 
@@ -2489,10 +2490,9 @@ function switchTab(tab, btn){
 
 function showToast(msg, type){ const t = document.getElementById('toast'); t.textContent = msg; t.className = 'toast ' + type; t.style.display = 'block'; setTimeout(() => { t.style.display = 'none'; }, 3500); }
 
-// Node Withdraw (owner only). The node-withdraw function checks the flag,
-// the owner and a one-time Telegram code bound to the exact spend; this tab
-// only shows up when the server answers the owner.
-const nwState = { pending: null, decoded: null, estimate: null };
+// Node Withdraw: owner-only reads remain available when transfers are OFF.
+// The server checks the feature flag for every spend and Telegram step-up.
+const nwState = { pending: null, decoded: null, estimate: null, enabled: false };
 const nwFmt = n => Number(n || 0).toLocaleString('en-US') + ' sat';
 async function nwCall(action, extra){
   const { data: { session } } = await window.supabaseClient.auth.getSession();
@@ -2504,13 +2504,31 @@ async function nwCall(action, extra){
   let r = {}; try { r = await res.json(); } catch (_) {}
   return { ok: res.ok, status: res.status, r };
 }
+function nwApplyMode(){
+  const enabled = nwState.enabled === true;
+  document.getElementById('nwMode').textContent = enabled
+    ? t('Transfers enabled — every send still requires Telegram confirmation.', 'পাঠানো চালু — প্রতিবার টেলিগ্রাম নিশ্চিতকরণ লাগবে।')
+    : t('Transfers OFF — balance, invoice decoding and fee estimates only.', 'পাঠানো বন্ধ — শুধু ব্যালেন্স, ইনভয়েস ডিকোড ও ফি অনুমান।');
+  document.getElementById('nwReviewOnchainBtn').disabled = !enabled;
+  document.getElementById('nwReviewLnBtn').disabled = !enabled;
+  if (!enabled) {
+    nwState.pending = null;
+    document.getElementById('nwConfirm').style.display = 'none';
+    document.getElementById('nwOnchainPanel').style.display = '';
+    document.getElementById('nwLnPanel').style.display = '';
+    document.getElementById('nwGoBtn').disabled = true;
+  }
+}
 async function nwInit(){
   try {
-    const x = await nwCall('balances');
-    if (x.status === 401 || x.status === 403 || x.status === 400) return; // flag off or not the owner: keep hidden
+    // Status is LND-independent: a broken node must not hide the owner tab.
+    const x = await nwCall('status');
+    if (!x.ok) return; // unauthorized: keep the tab hidden
     document.getElementById('nwTabBtn').style.display = '';
-    nwShowBalances(x);
-  } catch (_) { /* stay hidden */ }
+    nwState.enabled = x.r.enabled === true;
+    nwApplyMode();
+    nwShowBalances(await nwCall('balances'));
+  } catch (_) { /* unavailable: leave the tab hidden or show last known state */ }
 }
 function nwShowBalances(x){
   const b = x.ok ? x.r.balances : null;
@@ -2520,7 +2538,20 @@ function nwShowBalances(x){
   nwState.balances = b;
   if (!x.ok) showToast(x.r.error || t('Could not load balances', 'ব্যালেন্স লোড হয়নি'), 'err');
 }
-async function nwLoadBalances(){ try { nwShowBalances(await nwCall('balances')); } catch (_) { showToast(t('Network error', 'নেটওয়ার্ক ত্রুটি'), 'err'); } }
+async function nwLoadBalances(){
+  try {
+    const status = await nwCall('status');
+    if (!status.ok) {
+      nwState.enabled = false;
+      nwApplyMode();
+      showToast(status.r.error || t('Status unavailable', 'স্ট্যাটাস পাওয়া যায়নি'), 'err');
+      return;
+    }
+    nwState.enabled = status.r.enabled === true;
+    nwApplyMode();
+    nwShowBalances(await nwCall('balances'));
+  } catch (_) { showToast(t('Network error', 'নেটওয়ার্ক ত্রুটি'), 'err'); }
+}
 function nwToggleAll(){
   const all = document.getElementById('nwAll').checked, a = document.getElementById('nwAmt');
   a.disabled = all; if (all) a.value = '';
@@ -2542,6 +2573,7 @@ async function nwEstimate(btn){
   finally { btn.disabled = false; }
 }
 function nwReviewOnchain(){
+  if (!nwState.enabled) { showToast(t('Transfers are OFF', 'পাঠানো বন্ধ আছে'), 'err'); return; }
   const address = document.getElementById('nwAddr').value.trim();
   const sendAll = document.getElementById('nwAll').checked;
   const amountSat = sendAll ? undefined : nwInt('nwAmt');
@@ -2580,6 +2612,7 @@ async function nwDecode(btn){
   finally { btn.disabled = false; }
 }
 function nwReviewLn(){
+  if (!nwState.enabled) { showToast(t('Transfers are OFF', 'পাঠানো বন্ধ আছে'), 'err'); return; }
   const d = nwState.decoded; if (!d) return;
   if (d.expiresAt * 1000 <= Date.now()) { showToast(t('Invoice expired', 'ইনভয়েসের মেয়াদ শেষ'), 'err'); return; }
   const amountSat = d.amountSat > 0 ? d.amountSat : nwInt('nwLnAmt');
@@ -2612,6 +2645,7 @@ function nwCancel(){
   ['nwOnchainPanel', 'nwLnPanel'].forEach(id => document.getElementById(id).style.display = '');
 }
 async function nwSendCode(btn){
+  if (!nwState.enabled) { showToast(t('Transfers are OFF', 'পাঠানো বন্ধ আছে'), 'err'); return; }
   if (!nwState.pending) return;
   btn.disabled = true;
   try {
@@ -2625,6 +2659,7 @@ async function nwSendCode(btn){
   finally { btn.disabled = false; }
 }
 async function nwSubmit(btn){
+  if (!nwState.enabled) { showToast(t('Transfers are OFF', 'পাঠানো বন্ধ আছে'), 'err'); return; }
   const p = nwState.pending; if (!p) return;
   const stepUpCode = document.getElementById('nwCode').value.trim();
   if (!/^[0-9]{6}$/.test(stepUpCode)) { showToast(t('Enter the 6-digit code', '৬ অঙ্কের কোড দিন'), 'err'); return; }
