@@ -831,6 +831,7 @@ textarea.w-input{ padding:10px 12px !important; }
 .nw-btns{ display:flex; gap:10px; flex-wrap:wrap; margin-top:12px; }
 .nw-btns button{ flex:1; min-width:120px; }
 .nw-code{ letter-spacing:6px; font-size:20px !important; text-align:center; font-variant-numeric:tabular-nums; }
+.nw-tg-command{ border:1px solid var(--line); padding:10px; margin:8px 0; border-radius:10px; font:600 14px ui-monospace,monospace; user-select:all; overflow-wrap:anywhere; }
 </style>
                                           <div class="panel">
                                             <div class="panel-head">
@@ -844,6 +845,26 @@ textarea.w-input{ padding:10px 12px !important; }
                                               <div class="nw-stat"><div class="k" data-en="Lightning" data-bn="লাইটনিং">Lightning</div><div class="v" id="nwLn">—</div></div>
                                             </div>
                                             <div class="nw-note" style="margin-top:10px;" data-en="Every send needs a one-time code sent to the admin Telegram. The maximum fee is enforced on the server; there is no daily limit." data-bn="প্রতিটি পাঠানোর জন্য অ্যাডমিন টেলিগ্রামে পাঠানো এককালীন কোড লাগবে। সর্বোচ্চ ফি সার্ভারে প্রয়োগ হয়; কোনো দৈনিক সীমা নেই।">Every send needs a one-time code sent to the admin Telegram. The maximum fee is enforced on the server; there is no daily limit.</div>
+                                          </div>
+
+                                          <div class="panel" id="nwTelegramPanel">
+                                            <div class="panel-head">
+                                              <div class="panel-title" data-en="Owner Telegram verification" data-bn="মালিকের টেলিগ্রাম যাচাই">Owner Telegram verification</div>
+                                            </div>
+                                            <div class="nw-note" id="nwTgStatus" role="status">Checking Telegram connection…</div>
+                                            <div class="nw-note" style="margin-top:6px;" data-en="Link the admin owner account here; no Creator Dashboard is needed. This does not enable withdrawals." data-bn="এখান থেকেই অ্যাডমিন মালিকের অ্যাকাউন্ট যুক্ত করুন; Creator Dashboard লাগবে না। এতে উইথড্র চালু হবে না।">Link the admin owner account here; no Creator Dashboard is needed. This does not enable withdrawals.</div>
+                                            <div class="nw-btns">
+                                              <button class="btn-sm" type="button" id="nwTgConnectBtn" onclick="nwTgConnect(this)" disabled data-en="Connect Telegram" data-bn="টেলিগ্রাম যুক্ত করুন">Connect Telegram</button>
+                                              <button class="btn-sm" type="button" onclick="nwTgLoadStatus()" data-en="Refresh Telegram" data-bn="টেলিগ্রাম রিফ্রেশ">Refresh Telegram</button>
+                                              <button class="btn-sm" type="button" id="nwTgDisconnectBtn" onclick="nwTgDisconnect(this)" style="display:none;" data-en="Disconnect Telegram" data-bn="টেলিগ্রাম বিচ্ছিন্ন">Disconnect Telegram</button>
+                                            </div>
+                                            <div id="nwTgInstructions" class="nw-note" style="display:none; margin-top:14px;">
+                                              <a id="nwTgLink" target="_blank" rel="noopener noreferrer" href="https://t.me/" data-en="Open Boltpay bot in Telegram" data-bn="টেলিগ্রামে Boltpay bot খুলুন">Open Boltpay bot in Telegram</a>
+                                              <div style="margin-top:8px;" data-en="Tap Start, or send this command to the bot:" data-bn="Start চাপুন, অথবা bot-এ এই কমান্ড পাঠান:">Tap Start, or send this command to the bot:</div>
+                                              <div id="nwTgCommand" class="nw-tg-command"></div>
+                                              <div id="nwTgExpires"></div>
+                                              <div data-en="Do not share this link code with anyone. It links a Telegram chat; it is not a payment authorization." data-bn="এই লিংক কোড কাউকে দেবেন না। এটি Telegram chat যুক্ত করে; টাকা পাঠানোর অনুমোদন নয়।">Do not share this link code with anyone. It links a Telegram chat; it is not a payment authorization.</div>
+                                            </div>
                                           </div>
 
                                           <div class="panel" id="nwOnchainPanel">
@@ -1158,6 +1179,7 @@ async function doLogin(){
 }
 
 async function doLogout(){
+  nwTgStopTimers();
   if (adminRealtimeChannel) window.supabaseClient.removeChannel(adminRealtimeChannel);
   if (adminRefreshTimeout) clearTimeout(adminRefreshTimeout);
   if (liveRefreshInterval) clearInterval(liveRefreshInterval);
@@ -2488,10 +2510,133 @@ function switchTab(tab, btn){
   if (tab === 'settings') { tgAdmin('status'); }
   if (tab === 'methods') loadWithdrawalMethods();
   if (tab === 'customers') closeCustomerDetail();
-  if (tab === 'nodewithdraw') nwLoadBalances();
+  if (tab === 'nodewithdraw') { nwLoadBalances(); void nwTgLoadStatus(); }
 }
 
 function showToast(msg, type){ const t = document.getElementById('toast'); t.textContent = msg; t.className = 'toast ' + type; t.style.display = 'block'; setTimeout(() => { t.style.display = 'none'; }, 3500); }
+
+// Owner-only Telegram linking for Node Withdraw. Reuses existing authenticated
+// my_telegram_info / my_telegram_link_code RPCs; neither sends funds or OTPs.
+let nwTgPoll = null;
+let nwTgTick = null;
+let nwTgBot = "";
+let nwTgWebhookOk = false;
+
+function nwTgStopTimers(){
+  if (nwTgPoll) clearInterval(nwTgPoll);
+  if (nwTgTick) clearInterval(nwTgTick);
+  nwTgPoll = null; nwTgTick = null;
+}
+
+async function nwTgLookupBot(){
+  // The older telegram_bot_username app_setting may be null. Admin's
+  // existing status endpoint queries Telegram's getMe and webhook state.
+  const { data: { session } } = await window.supabaseClient.auth.getSession();
+  if (!session) return false;
+  const res = await fetch(window.SUPABASE_URL + '/functions/v1/telegram-admin', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + session.access_token },
+    body: JSON.stringify({ action: 'status' }),
+  });
+  if (!res.ok) return false;
+  const body = await res.json();
+  nwTgBot = String(body.bot || '').replace(/[^A-Za-z0-9_]/g, '');
+  nwTgWebhookOk = body.webhook_points_here === true;
+  return Boolean(nwTgBot && nwTgWebhookOk);
+}
+
+async function nwTgLoadStatus(){
+  const status = document.getElementById('nwTgStatus');
+  const connect = document.getElementById('nwTgConnectBtn');
+  const disconnect = document.getElementById('nwTgDisconnectBtn');
+  const instructions = document.getElementById('nwTgInstructions');
+  if (!status) return;
+  try {
+    const { data, error } = await window.supabaseClient.rpc('my_telegram_info');
+    const row = Array.isArray(data) ? data[0] : data;
+    if (error || !row) throw new Error('Telegram account status unavailable');
+    if (!nwTgBot || !nwTgWebhookOk) await nwTgLookupBot();
+    if (!nwTgBot && row.bot_username) {
+      nwTgBot = String(row.bot_username).replace(/[^A-Za-z0-9_]/g, '');
+    }
+
+    if (row.connected === true) {
+      status.textContent = t('Telegram connected to this Admin owner account.', 'এই অ্যাডমিন মালিকের Telegram যুক্ত আছে।');
+      connect.style.display = 'none'; disconnect.style.display = '';
+      instructions.style.display = 'none';
+      nwTgStopTimers();
+      return;
+    }
+    disconnect.style.display = 'none';
+    connect.style.display = '';
+    connect.disabled = !nwTgBot || !nwTgWebhookOk;
+    status.textContent = !nwTgBot
+      ? t('Bot unavailable. Check Settings > Telegram bot status.', 'Bot পাওয়া যায়নি। Settings > Telegram bot status দেখুন।')
+      : !nwTgWebhookOk
+        ? t('Bot webhook needs repair in Settings > Telegram bot.', 'Settings > Telegram bot-এ webhook ঠিক করতে হবে।')
+        : t('Telegram not connected. Tap Connect Telegram below.', 'Telegram যুক্ত নয়। নিচে Connect Telegram চাপুন।');
+
+    const code = String(row.pending_code || '').toUpperCase().replace(/[^A-Z0-9]/g, '');
+    const end = Date.parse(String(row.pending_expires_at || ''));
+    if (!/^[A-Z0-9]{8}$/.test(code) || !nwTgBot || !nwTgWebhookOk || !(end > Date.now())) {
+      instructions.style.display = 'none';
+      nwTgStopTimers();
+      return;
+    }
+    const link = document.getElementById('nwTgLink');
+    link.href = 'https://t.me/' + nwTgBot + '?start=' + code;
+    link.textContent = 'Open @' + nwTgBot + ' in Telegram';
+    document.getElementById('nwTgCommand').textContent = '/start ' + code;
+    instructions.style.display = '';
+    const tick = () => {
+      const seconds = Math.max(0, Math.ceil((end - Date.now()) / 1000));
+      document.getElementById('nwTgExpires').textContent = seconds
+        ? t('Link expires in ', 'লিংক কোডের মেয়াদ ') + Math.floor(seconds / 60) + ':' + String(seconds % 60).padStart(2, '0')
+        : t('Link code expired. Tap Connect Telegram again.', 'লিংক কোডের মেয়াদ শেষ। আবার Connect Telegram চাপুন।');
+      if (!seconds) { instructions.style.display = 'none'; nwTgStopTimers(); }
+    };
+    if (nwTgTick) clearInterval(nwTgTick);
+    nwTgTick = setInterval(tick, 1000); tick();
+    if (!nwTgPoll) nwTgPoll = setInterval(() => {
+      if (!document.hidden) nwTgLoadStatus();
+    }, 5000);
+  } catch {
+    status.textContent = t('Could not check Telegram connection. Refresh to retry.', 'Telegram সংযোগ পরীক্ষা করা যায়নি। আবার রিফ্রেশ করুন।');
+    connect.disabled = true;
+    instructions.style.display = 'none';
+    nwTgStopTimers();
+  }
+}
+
+async function nwTgConnect(btn){
+  if (btn.disabled) return;
+  btn.disabled = true;
+  try {
+    // This existing RPC creates a 15-minute linking code for auth.uid().
+    // The actual link is completed only by a private Telegram /start message.
+    const { error } = await window.supabaseClient.rpc('my_telegram_link_code');
+    if (error) throw new Error('Could not create linking code');
+    await nwTgLoadStatus();
+  } catch {
+    showToast(t('Could not create Telegram link code', 'Telegram লিংক কোড তৈরি হয়নি'), 'err');
+  } finally {
+    // nwTgLoadStatus remains authoritative about the button state.
+    await nwTgLoadStatus();
+  }
+}
+
+async function nwTgDisconnect(btn){
+  if (!confirm(t('Disconnect this owner Telegram? New withdrawal codes will not be deliverable.', 'মালিকের Telegram বিচ্ছিন্ন করবেন? নতুন উইথড্র কোড পাঠানো যাবে না।'))) return;
+  btn.disabled = true;
+  try {
+    const { error } = await window.supabaseClient.rpc('my_telegram_disconnect');
+    if (error) throw new Error('disconnect failed');
+    nwTgBot = ''; nwTgWebhookOk = false;
+    await nwTgLoadStatus();
+  } catch {
+    showToast(t('Could not disconnect Telegram', 'Telegram বিচ্ছিন্ন করা যায়নি'), 'err');
+  } finally { btn.disabled = false; }
+}
 
 // Node Withdraw: owner-only reads remain available when transfers are OFF.
 // The server checks the feature flag for every spend and Telegram step-up.
@@ -2529,6 +2674,8 @@ async function nwInit(){
     const x = await nwCall('status');
     if (!x.ok) return; // unauthorized: keep the tab hidden
     document.getElementById('nwTabBtn').style.display = '';
+    // Only after node-withdraw confirms the owner may linking controls load.
+    void nwTgLoadStatus();
     nwState.enabled = x.r.enabled === true;
     nwApplyMode();
     nwShowBalances(await nwCall('balances'));
